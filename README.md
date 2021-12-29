@@ -5,8 +5,9 @@
 <ul>
     <li> Gin-Gonic
     <li> Gin-jwt/v2
-    <li> Mongo-Go-Driver
     <li> Godotenv
+    <li> Mongo-Go-Driver
+    <li> Mongo-Go-Pagination
 </ul>
 
 &nbsp;

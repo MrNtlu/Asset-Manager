@@ -25,3 +25,13 @@ type Card struct {
 	Last4Digit string `json:"last_digit" binding:"required"`
 	CardType   string `json:"type" binding:"required"`
 }
+
+type SubscriptionUpdate struct {
+	SubscriptionID string     `json:"subscription_id" binding:"required"`
+	Name           *string    `json:"name"`
+	Description    *string    `json:"description"`
+	BillDate       *time.Time `json:"bill_date"`
+	BillCycle      *BillCycle `json:"bill_cycle"`
+	Price          *float32   `json:"price"`
+	Currency       *string    `json:"currency"`
+}

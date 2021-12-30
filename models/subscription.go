@@ -91,3 +91,59 @@ func CreateCard(data requests.Card) error {
 
 	return nil
 }
+
+func GetCardsByUserID(uid string) ([]Card, error) {
+
+	var cards []Card
+
+	return cards, nil
+}
+
+//Sort by total payment if possible
+func GetSubscriptionsByCardID(uid, cardID string) error {
+
+	return nil
+}
+
+//Sort by name, closest bill date(?), price monthly
+func GetSubscriptionsByUserID(uid string) ([]Subscription, error) {
+
+	var subscriptions []Subscription
+
+	return subscriptions, nil
+}
+
+func GetSubscriptionDetails(uid, subscriptionID string) (Subscription, error) {
+
+	var subscription Subscription
+
+	return subscription, nil
+}
+
+func UpdateSubscription(data requests.SubscriptionUpdate) error {
+	return nil
+}
+
+// func UpdateCard(data requests.CardUpdate) error {
+// 	return nil
+// }
+
+func DeleteSubscriptionBySubscriptionID(subscriptionID string) error {
+
+	return nil
+}
+
+func DeleteSubscriptionsByUserID(uid string) error {
+
+	return nil
+}
+
+func DeleteCardByCardID(cardID string) error {
+
+	return nil
+}
+
+func DeleteCardsByUserID(uid string) error {
+
+	return nil
+}

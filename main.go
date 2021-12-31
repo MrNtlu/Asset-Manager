@@ -7,24 +7,10 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gin-gonic/gin/binding"
-	"github.com/go-playground/validator/v10"
 	"github.com/joho/godotenv"
 )
-
-var billDate validator.Func = func(fl validator.FieldLevel) bool {
-	date, ok := fl.Field().Interface().(time.Time)
-	if ok {
-		today := time.Now()
-		if today.After(date) {
-			return false
-		}
-	}
-	return true
-}
 
 func main() {
 	fmt.Println("Running")
@@ -42,10 +28,6 @@ func main() {
 	jwtHandler := helpers.SetupJWTHandler()
 
 	router := gin.Default()
-	if v, ok := binding.Validator.Engine().(*validator.Validate); ok {
-		v.RegisterValidation("billDate", billDate)
-	}
-
 	routes.SetupRoutes(router, jwtHandler)
 	router.Run(":8080")
 }

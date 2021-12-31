@@ -9,13 +9,15 @@ import (
 )
 
 var (
-	userController  = new(controllers.AssetController)
-	assetController = new(controllers.AssetController)
+	userController         = new(controllers.UserController)
+	assetController        = new(controllers.AssetController)
+	subscriptionController = new(controllers.SubscriptionController)
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	userRouter(router, jwtToken)
 	assetRouter(router, jwtToken)
+	subscriptionRouter(router, jwtToken)
 
 	router.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "route not found"})

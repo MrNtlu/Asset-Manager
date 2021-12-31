@@ -31,7 +31,6 @@ type Card struct {
 	UserID     string             `bson:"user_id" json:"user_id"`
 	Name       string             `bson:"name" json:"name"`
 	Last4Digit string             `bson:"last_digit" json:"last_digit"`
-	CardType   string             `bson:"type" json:"type"`
 }
 
 type BillCycle struct {
@@ -40,39 +39,49 @@ type BillCycle struct {
 	Year  int `bson:"year" json:"year"`
 }
 
-func createSubscriptionObject(uid, cardID, name, description, currency string, price float32, billDate time.Time, billCycle BillCycle) *Subscription {
+func createSubscriptionObject(uid, name, currency string, cardID, description *string, price float32, billDate time.Time, billCycle *BillCycle) *Subscription {
 	return &Subscription{
 		UserID:      uid,
-		CardID:      &cardID,
+		CardID:      cardID,
 		Name:        name,
-		Description: &description,
+		Description: description,
 		BillDate:    billDate,
-		BillCycle:   &billCycle,
+		BillCycle:   billCycle,
 		Price:       price,
 		Currency:    currency,
 		CreatedAt:   time.Now().UTC(),
 	}
 }
 
-func createCardObject(uid, name, last4Digit, cardType string) *Card {
+func createCardObject(uid, name, last4Digit string) *Card {
 	return &Card{
 		UserID:     uid,
 		Name:       name,
 		Last4Digit: last4Digit,
-		CardType:   cardType,
 	}
 }
 
-func CreateSubscription(data requests.Subscription) error {
+func createBillCycleObject(data *requests.BillCycle) *BillCycle {
+	if data != nil {
+		return &BillCycle{
+			Day:   data.Day,
+			Month: data.Month,
+			Year:  data.Year,
+		}
+	}
+	return nil
+}
+
+func CreateSubscription(data requests.Subscription, uid string) error {
 	subscription := createSubscriptionObject(
-		data.UserID,
-		*data.CardID,
+		uid,
 		data.Name,
-		*data.Description,
 		data.Currency,
+		data.CardID,
+		data.Description,
 		data.Price,
-		data.BillDate,
-		BillCycle(*data.BillCycle),
+		time.Now(), //data.BillDate,
+		createBillCycleObject(data.BillCycle),
 	)
 
 	if _, err := db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
@@ -82,8 +91,8 @@ func CreateSubscription(data requests.Subscription) error {
 	return nil
 }
 
-func CreateCard(data requests.Card) error {
-	card := createCardObject(data.UserID, data.Name, data.Last4Digit, data.CardType)
+func CreateCard(data requests.Card, uid string) error {
+	card := createCardObject(uid, data.Name, data.Last4Digit)
 
 	if _, err := db.CardCollection.InsertOne(context.TODO(), card); err != nil {
 		return fmt.Errorf("failed to create new card: %w", err)

@@ -12,10 +12,7 @@ type AssetController struct{}
 
 func (a *AssetController) CreateAsset(c *gin.Context) {
 	var data requests.AssetCreate
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
 		return
 	}
 
@@ -24,6 +21,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
@@ -31,10 +29,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 
 func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 	var data requests.AssetSort
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
 		return
 	}
 
@@ -44,17 +39,15 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Successfully fetched.", "data": assets})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets})
 }
 
 func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLog
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
 		return
 	}
 
@@ -64,25 +57,41 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"data": assets, "pagination": pagination})
+	c.JSON(http.StatusOK, gin.H{"data": assets, "pagination": pagination})
 }
 
 func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	var data requests.AssetUpdate
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	asset, err := models.GetAssetByID(data.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, err.Error())
+
+		return
+	}
+
+	if asset.UserID == "" {
+		c.JSON(http.StatusNotFound, gin.H{"message": "asset not found"})
 		return
 	}
 
 	//uid := jwt.ExtractClaims(c)["id"].(string)
+	if "1" != asset.UserID {
+		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
+		return
+	}
+
 	if err := models.UpdateAssetLogByAssetID(data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "asset updated"})
@@ -90,10 +99,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 
 func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	var data requests.ID
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
 		return
 	}
 
@@ -101,6 +107,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "asset deleted successfully"})
@@ -108,10 +115,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 
 func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLogsDelete
-	if err := c.ShouldBindJSON(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
-		})
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
 		return
 	}
 
@@ -120,6 +124,7 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "assets deleted successfully"})
@@ -131,6 +136,7 @@ func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "assets deleted successfully by user id"})

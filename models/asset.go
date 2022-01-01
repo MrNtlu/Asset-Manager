@@ -62,6 +62,19 @@ func CreateAsset(data requests.AssetCreate, uid string) error {
 	return nil
 }
 
+func GetAssetByID(assetID string) (Asset, error) {
+	objectAssetID, _ := primitive.ObjectIDFromHex(assetID)
+
+	result := db.AssetCollection.FindOne(context.TODO(), bson.M{"_id": objectAssetID})
+
+	var asset Asset
+	if err := result.Decode(&asset); err != nil {
+		return Asset{}, fmt.Errorf("failed to find asset by asset id: %w", err)
+	}
+
+	return asset, nil
+}
+
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {
@@ -181,14 +194,14 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 	paginatedData, err := pagination.New(db.AssetCollection).Context(context.TODO()).
 		Limit(15).Sort(sortType, sortOrder).Page(data.Page).Filter(match).Decode(&assets).Find()
 	if err != nil {
-		return nil, pagination.PaginationData{}, fmt.Errorf("failed to fetct/decode: %w", err)
+		return nil, pagination.PaginationData{}, fmt.Errorf("failed to fetch/decode: %w", err)
 	}
 
 	return assets, paginatedData.Pagination, nil
 }
 
 func UpdateAssetLogByAssetID(data requests.AssetUpdate) error {
-	objectAssetID, _ := primitive.ObjectIDFromHex(data.AssetID)
+	objectAssetID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	var update bson.M
 	if data.BoughtPrice != nil && data.Amount != 0 {

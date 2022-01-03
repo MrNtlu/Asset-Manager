@@ -111,6 +111,32 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": subscription})
 }
 
+func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Context) {
+	//uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID("1")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": subscriptionStats})
+}
+
+func (s *SubscriptionController) GetCardStatisticsByUserID(c *gin.Context) {
+	//uid := jwt.ExtractClaims(c)["id"].(string)
+	cardStats, err := models.GetCardStatisticsByUserID("1")
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"data": cardStats})
+}
+
 func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 	var data requests.SubscriptionUpdate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {

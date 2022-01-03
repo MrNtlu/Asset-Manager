@@ -13,9 +13,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// var db.SubscriptionCollection = db.Database.Collection("subscriptions")
-// var cardCollection = db.Database.Collection("cards")
-
 type Subscription struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID      string             `bson:"user_id" json:"user_id"`
@@ -29,14 +26,6 @@ type Subscription struct {
 	CreatedAt   time.Time          `bson:"created_at" json:"-"`
 }
 
-type Card struct {
-	ID         primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserID     string             `bson:"user_id" json:"user_id"`
-	Name       string             `bson:"name" json:"name"`
-	Last4Digit string             `bson:"last_digit" json:"last_digit"`
-	CreatedAt  time.Time          `bson:"created_at" json:"-"`
-}
-
 func createSubscriptionObject(uid, name, currency string, cardID, description *string, price float64, billDate time.Time, billCycle *int) *Subscription {
 	return &Subscription{
 		UserID:      uid,
@@ -48,15 +37,6 @@ func createSubscriptionObject(uid, name, currency string, cardID, description *s
 		Price:       price,
 		Currency:    currency,
 		CreatedAt:   time.Now().UTC(),
-	}
-}
-
-func createCardObject(uid, name, last4Digit string) *Card {
-	return &Card{
-		UserID:     uid,
-		Name:       name,
-		Last4Digit: last4Digit,
-		CreatedAt:  time.Now().UTC(),
 	}
 }
 
@@ -79,16 +59,6 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 	return nil
 }
 
-func CreateCard(uid string, data requests.Card) error {
-	card := createCardObject(uid, data.Name, data.Last4Digit)
-
-	if _, err := db.CardCollection.InsertOne(context.TODO(), card); err != nil {
-		return fmt.Errorf("failed to create new card: %w", err)
-	}
-
-	return nil
-}
-
 func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
@@ -100,41 +70,6 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	}
 
 	return subscription, nil
-}
-
-func GetCardByID(cardID string) (Card, error) {
-	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
-
-	result := db.CardCollection.FindOne(context.TODO(), bson.M{"_id": objectCardID})
-
-	var card Card
-	if err := result.Decode(&card); err != nil {
-		return Card{}, fmt.Errorf("failed to find card by card id: %w", err)
-	}
-
-	return card, nil
-}
-
-func GetCardsByUserID(uid string) ([]Card, error) {
-	match := bson.M{
-		"user_id": uid,
-	}
-	sort := bson.M{
-		"created_at": 1,
-	}
-	options := options.Find().SetSort(sort)
-
-	cursor, err := db.CardCollection.Find(context.TODO(), match, options)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find card: %w", err)
-	}
-
-	var cards []Card
-	if err := cursor.All(context.TODO(), &cards); err != nil {
-		return nil, fmt.Errorf("failed to decode card: %w", err)
-	}
-
-	return cards, nil
 }
 
 func GetSubscriptionsByCardID(uid, cardID string) ([]Subscription, error) {
@@ -210,25 +145,48 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			},
 		},
 		"total_payment": bson.M{
-			"$round": bson.A{
-				bson.M{
-					"$multiply": bson.A{
-						bson.M{
-							"$floor": bson.M{
-								"$divide": bson.A{
-									bson.M{
-										"$dateDiff": bson.M{
-											"startDate": "$bill_date",
-											"endDate":   time.Now(),
-											"unit":      "day",
-										},
-									}, "$bill_cycle",
-								},
-							},
+			"$let": bson.M{
+				"vars": bson.M{
+					"date_diff": bson.M{
+						"$dateDiff": bson.M{
+							"startDate": "$bill_date",
+							"endDate":   time.Now(),
+							"unit":      "day",
 						},
-						"$price",
 					},
-				}, 1,
+				},
+				"in": bson.M{
+					"$round": bson.A{
+						bson.M{
+							"$multiply": bson.A{
+								bson.M{
+									"$sum": bson.A{
+										bson.M{
+											"$floor": bson.M{
+												"$divide": bson.A{
+													bson.M{
+														"$cond": bson.A{
+															bson.M{
+																"$gte": bson.A{
+																	"$$date_diff",
+																	1,
+																},
+															},
+															"$$date_diff",
+															-1,
+														},
+													}, "$bill_cycle",
+												},
+											},
+										},
+										1,
+									},
+								},
+								"$price",
+							},
+						}, 1,
+					},
+				},
 			},
 		},
 	}}
@@ -250,9 +208,222 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 	return responses.SubscriptionDetails{}, nil
 }
 
-//TODO: Aggregation
-func GetSubscriptionStatisticsByUserID(uid string) error {
-	return nil
+func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStatistics, error) {
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+	}}
+	addFields := bson.M{"$addFields": bson.M{
+		"monthly_payment": bson.M{
+			"$round": bson.A{
+				bson.M{
+					"$multiply": bson.A{
+						bson.M{"$divide": bson.A{30, "$bill_cycle"}},
+						"$price",
+					},
+				}, 1,
+			},
+		},
+		"total_payment": bson.M{
+			"$let": bson.M{
+				"vars": bson.M{
+					"date_diff": bson.M{
+						"$dateDiff": bson.M{
+							"startDate": "$bill_date",
+							"endDate":   time.Now(),
+							"unit":      "day",
+						},
+					},
+				},
+				"in": bson.M{
+					"$round": bson.A{
+						bson.M{
+							"$multiply": bson.A{
+								bson.M{
+									"$sum": bson.A{
+										bson.M{
+											"$floor": bson.M{
+												"$divide": bson.A{
+													bson.M{
+														"$cond": bson.A{
+															bson.M{
+																"$gte": bson.A{
+																	"$$date_diff",
+																	1,
+																},
+															},
+															"$$date_diff",
+															-1,
+														},
+													}, "$bill_cycle",
+												},
+											},
+										},
+										1,
+									},
+								},
+								"$price",
+							},
+						}, 1,
+					},
+				},
+			},
+		},
+	}}
+	sort := bson.M{"$sort": bson.M{
+		"monthly_payment": -1,
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": "$currency",
+		"total_monthly_payment": bson.M{
+			"$sum": "$monthly_payment",
+		},
+		"total_payment": bson.M{
+			"$sum": "$total_payment",
+		},
+		"most_expensive": bson.M{
+			"$first": "$monthly_payment",
+		},
+		"most_expensive_name": bson.M{
+			"$first": "$name",
+		},
+	}}
+
+	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
+		match, addFields, sort, group,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate subscription: %w", err)
+	}
+
+	var subscriptionStats []responses.SubscriptionStatistics
+	if err = cursor.All(context.TODO(), &subscriptionStats); err != nil {
+		return nil, fmt.Errorf("failed to decode subscriptions: %w", err)
+	}
+
+	return subscriptionStats, nil
+}
+
+func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+	}}
+	set := bson.M{"$set": bson.M{
+		"card_id": bson.M{
+			"$toObjectId": "$card_id",
+		},
+	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from":         "cards",
+		"localField":   "card_id",
+		"foreignField": "_id",
+		"as":           "card",
+	}}
+	unwind := bson.M{"$unwind": bson.M{
+		"path":                       "$card",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": false,
+	}}
+	addFields := bson.M{"$addFields": bson.M{
+		"monthly_payment": bson.M{
+			"$round": bson.A{
+				bson.M{
+					"$multiply": bson.A{
+						bson.M{"$divide": bson.A{30, "$bill_cycle"}},
+						"$price",
+					},
+				}, 1,
+			},
+		},
+		"total_payment": bson.M{
+			"$let": bson.M{
+				"vars": bson.M{
+					"date_diff": bson.M{
+						"$dateDiff": bson.M{
+							"startDate": "$bill_date",
+							"endDate":   time.Now(),
+							"unit":      "day",
+						},
+					},
+				},
+				"in": bson.M{
+					"$round": bson.A{
+						bson.M{
+							"$multiply": bson.A{
+								bson.M{
+									"$sum": bson.A{
+										bson.M{
+											"$floor": bson.M{
+												"$divide": bson.A{
+													bson.M{
+														"$cond": bson.A{
+															bson.M{
+																"$gte": bson.A{
+																	"$$date_diff",
+																	1,
+																},
+															},
+															"$$date_diff",
+															-1,
+														},
+													}, "$bill_cycle",
+												},
+											},
+										},
+										1,
+									},
+								},
+								"$price",
+							},
+						}, 1,
+					},
+				},
+			},
+		},
+	}}
+	sort := bson.M{"$sort": bson.M{
+		"monthly_payment": -1,
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": bson.M{
+			"card_id":  "$card_id",
+			"currency": "$currency",
+		},
+		"currency": bson.M{
+			"$first": "$currency",
+		},
+		"card_name": bson.M{
+			"$first": "$card.name",
+		},
+		"card_last_digit": bson.M{
+			"$first": "$card.last_digit",
+		},
+		"total_monthly_payment": bson.M{
+			"$sum": "$monthly_payment",
+		},
+		"total_payment": bson.M{
+			"$sum": "$total_payment",
+		},
+		"most_expensive": bson.M{
+			"$first": "$monthly_payment",
+		},
+		"most_expensive_name": bson.M{
+			"$first": "$name",
+		},
+	}}
+
+	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
+		match, set, lookup, unwind, addFields, sort, group,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to aggregate subscription: %w", err)
+	}
+
+	var cardStats []responses.CardStatistics
+	if err = cursor.All(context.TODO(), &cardStats); err != nil {
+		return nil, fmt.Errorf("failed to decode subscriptions: %w", err)
+	}
+
+	return cardStats, nil
 }
 
 func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) error {
@@ -277,7 +448,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 		subscription.Currency = *data.Currency
 	}
 
-	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := db.SubscriptionCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectSubscriptionID,
 	}, bson.M{"$set": subscription}); err != nil {
 		return fmt.Errorf("failed to update subscription: %w", err)
@@ -286,30 +457,10 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	return nil
 }
 
-func UpdateCard(data requests.CardUpdate, card Card) error {
-	objectCardID, _ := primitive.ObjectIDFromHex(data.ID)
-
-	if data.Last4Digit != nil {
-		card.Last4Digit = *data.Last4Digit
-	}
-
-	if data.Name != nil {
-		card.Name = *data.Name
-	}
-
-	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{
-		"_id": objectCardID,
-	}, bson.M{"$set": card}); err != nil {
-		return fmt.Errorf("failed to update card: %w", err)
-	}
-
-	return nil
-}
-
 func DeleteSubscriptionBySubscriptionID(subscriptionID string) error {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
-	if _, err := db.CardCollection.DeleteOne(context.TODO(), bson.M{"_id": objectSubscriptionID}); err != nil {
+	if _, err := db.SubscriptionCollection.DeleteOne(context.TODO(), bson.M{"_id": objectSubscriptionID}); err != nil {
 		return fmt.Errorf("failed to delete subscription: %w", err)
 	}
 
@@ -321,26 +472,6 @@ func DeleteAllSubscriptionsByUserID(uid string) error {
 		"user_id": uid,
 	}); err != nil {
 		return fmt.Errorf("failed to delete all subscriptions by user id: %w", err)
-	}
-
-	return nil
-}
-
-func DeleteCardByCardID(cardID string) error {
-	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
-
-	if _, err := db.CardCollection.DeleteOne(context.TODO(), bson.M{"_id": objectCardID}); err != nil {
-		return fmt.Errorf("failed to delete card: %w", err)
-	}
-
-	return nil
-}
-
-func DeleteAllCardsByUserID(uid string) error {
-	if _, err := db.CardCollection.DeleteMany(context.TODO(), bson.M{
-		"user_id": uid,
-	}); err != nil {
-		return fmt.Errorf("failed to delete all cards by user id: %w", err)
 	}
 
 	return nil

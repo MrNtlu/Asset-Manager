@@ -19,3 +19,11 @@ type SubscriptionDetails struct {
 	MonthlyPayment float64            `bson:"monthly_payment" json:"monthly_payment"`
 	TotalPayment   float64            `bson:"total_payment" json:"total_payment"`
 }
+
+type SubscriptionStatistics struct {
+	ID                  string  `bson:"_id" json:"currency"`
+	MEName              string  `bson:"most_expensive_name" json:"most_expensive_name"`
+	ME                  float64 `bson:"most_expensive" json:"most_expensive"`
+	TotalMonthlyPayment float64 `bson:"total_monthly_payment" json:"total_monthly_payment"`
+	TotalPayment        float64 `bson:"total_payment" json:"total_payment"`
+}

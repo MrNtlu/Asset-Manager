@@ -15,6 +15,7 @@ func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		subscription.GET("/card", subscriptionController.GetSubscriptionsByCardID)
 		subscription.GET("", subscriptionController.GetSubscriptionsByUserID)
 		subscription.GET("/details", subscriptionController.GetSubscriptionDetails)
+		subscription.GET("/stats", subscriptionController.GetSubscriptionStatisticsByUserID)
 
 		subscription.Use(jwtToken.MiddlewareFunc())
 		{
@@ -29,6 +30,7 @@ func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		card.PUT("", subscriptionController.UpdateCard)
 		card.POST("", subscriptionController.CreateCard)
 		card.GET("", subscriptionController.GetCardsByUserID)
+		card.GET("/stats", subscriptionController.GetCardStatisticsByUserID)
 
 		card.Use(jwtToken.MiddlewareFunc())
 		{

@@ -26,14 +26,3 @@ type SubscriptionSort struct {
 	Sort     string `json:"sort" binding:"required,oneof=name currency price"`
 	SortType int    `json:"type" binding:"required,oneof=1 -1"`
 }
-
-type Card struct {
-	Name       string `json:"name" binding:"required"`
-	Last4Digit string `json:"last_digit" binding:"required"`
-}
-
-type CardUpdate struct {
-	ID         string  `json:"id" binding:"required"`
-	Name       *string `json:"name"`
-	Last4Digit *string `json:"last_digit"`
-}

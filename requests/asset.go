@@ -6,12 +6,17 @@ type AssetCreate struct {
 	BoughtPrice *float64 `json:"bought_price"`
 	SoldPrice   *float64 `json:"sold_price"`
 	Amount      float64  `json:"amount" binding:"required"`
-	AssetType   string   `json:"asset_type" binding:"required,oneof=crypto currency exchange"`
+	AssetType   string   `json:"asset_type" binding:"required,oneof=crypto stock exchange"`
 	Type        string   `json:"type" binding:"required,oneof=sell buy"`
 }
 
 type AssetSort struct {
 	Sort string `json:"sort" binding:"required,oneof=name worth amount worthless"`
+}
+
+type AssetDetails struct {
+	ToAsset   string `json:"to_asset" binding:"required"`
+	FromAsset string `json:"from_asset" binding:"required"`
 }
 
 type AssetLog struct {

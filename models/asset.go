@@ -14,8 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
-//var assetCollection = db.Database.Collection("assets")
-
 type Asset struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID      string             `bson:"user_id" json:"user_id"`
@@ -27,7 +25,11 @@ type Asset struct {
 	AssetType   string             `bson:"asset_type" json:"asset_type"`
 	Type        string             `bson:"type" json:"type"`
 	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
+	//TODO: CurrencyValue float64
+	// https://docs.mongodb.com/manual/tutorial/model-computed-data/
 }
+
+//TODO: Scheduler crypto/stock/exchange save
 
 func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, amount float64, boughtPrice, soldPrice *float64) *Asset {
 	return &Asset{
@@ -75,6 +77,10 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
+//TODO: Change aggregation
+// Amount calculated wrong. Sold ones should be removed. (remaining )
+// Sort by avg_worth, if number == 0 or somehow below 0 hide them in mobile/desktop
+// Calculate profit/loss
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {
@@ -158,6 +164,21 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	}
 
 	return assets, nil
+}
+
+//TODO:
+// total amount = bought amount
+// remaining amount = total amount - sold amount
+// profit/loss = total amount * avg_bought_price - ((sold amount * avg_sold_price) + (remaining amount * current value))
+func GetAssetDetails(uid string, data requests.AssetLog) error {
+
+	return nil
+}
+
+//TODO: Total Asset, profit/loss if sold etc.
+func GetAllAssetStats() error {
+
+	return nil
 }
 
 func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {

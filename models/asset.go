@@ -15,37 +15,44 @@ import (
 )
 
 type Asset struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserID      string             `bson:"user_id" json:"user_id"`
-	ToAsset     string             `bson:"to_asset" json:"to_asset"`
-	FromAsset   string             `bson:"from_asset" json:"from_asset"`
-	BoughtPrice *float64           `bson:"bought_price" json:"bought_price"`
-	SoldPrice   *float64           `bson:"sold_price" json:"sold_price"`
-	Amount      float64            `bson:"amount" json:"amount"`
-	AssetType   string             `bson:"asset_type" json:"asset_type"`
-	Type        string             `bson:"type" json:"type"`
-	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
-	//TODO: CurrencyValue float64
-	// https://docs.mongodb.com/manual/tutorial/model-computed-data/
+	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	UserID        string             `bson:"user_id" json:"user_id"`
+	ToAsset       string             `bson:"to_asset" json:"to_asset"`
+	FromAsset     string             `bson:"from_asset" json:"from_asset"`
+	BoughtPrice   *float64           `bson:"bought_price" json:"bought_price"`
+	SoldPrice     *float64           `bson:"sold_price" json:"sold_price"`
+	Amount        float64            `bson:"amount" json:"amount"`
+	AssetType     string             `bson:"asset_type" json:"asset_type"`
+	Type          string             `bson:"type" json:"type"`
+	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
+	CurrencyValue float64            `bson:"value" json:"value"`
 }
 
 //TODO: Scheduler crypto/stock/exchange save
 
-func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, amount float64, boughtPrice, soldPrice *float64) *Asset {
+func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, amount, currencyValue float64, boughtPrice, soldPrice *float64) *Asset {
 	return &Asset{
-		UserID:      uid,
-		ToAsset:     toAsset,
-		FromAsset:   fromAsset,
-		BoughtPrice: boughtPrice,
-		SoldPrice:   soldPrice,
-		Amount:      amount,
-		AssetType:   assetType,
-		Type:        tType,
-		CreatedAt:   time.Now().UTC(),
+		UserID:        uid,
+		ToAsset:       toAsset,
+		FromAsset:     fromAsset,
+		BoughtPrice:   boughtPrice,
+		SoldPrice:     soldPrice,
+		Amount:        amount,
+		AssetType:     assetType,
+		Type:          tType,
+		CreatedAt:     time.Now().UTC(),
+		CurrencyValue: currencyValue,
 	}
 }
 
 func CreateAsset(data requests.AssetCreate, uid string) error {
+	var currencyValue float64
+	if data.Type == "buy" {
+		currencyValue = *data.BoughtPrice * data.Amount
+	} else {
+		currencyValue = *data.SoldPrice * data.Amount
+	}
+
 	asset := createAssetObject(
 		uid,
 		strings.ToUpper(data.ToAsset),
@@ -53,6 +60,7 @@ func CreateAsset(data requests.AssetCreate, uid string) error {
 		data.AssetType,
 		data.Type,
 		data.Amount,
+		currencyValue,
 		data.BoughtPrice,
 		data.SoldPrice,
 	)
@@ -77,10 +85,7 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
-//TODO: Change aggregation
-// Amount calculated wrong. Sold ones should be removed. (remaining )
-// Sort by avg_worth, if number == 0 or somehow below 0 hide them in mobile/desktop
-// Calculate profit/loss
+//TODO: Sort by avg_worth, if number == 0 or somehow below 0 hide them in mobile/desktop
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {
@@ -89,15 +94,15 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		}}
 	} else if data.Sort == "amount" {
 		sort = bson.M{"$sort": bson.M{
-			"amount": -1,
+			"remaining_amount": -1,
 		}}
 	} else if data.Sort == "worth" {
 		sort = bson.M{"$sort": bson.M{
-			"avg_worth": -1,
+			"total_value": -1,
 		}}
 	} else {
 		sort = bson.M{"$sort": bson.M{
-			"avg_worth": 1,
+			"total_value": 1,
 		}}
 	}
 
@@ -109,7 +114,25 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"to_asset":   "$to_asset",
 			"from_asset": "$from_asset",
 		},
-		"amount": bson.M{
+		"total_value": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"sold_value": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "sell"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"remaining_amount": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$type", "buy"}},
@@ -118,42 +141,39 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				},
 			},
 		},
-		"avg_price": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "buy"}},
-					bson.M{"$multiply": bson.A{
-						"$bought_price", "$amount",
-					}},
-					0,
-				},
-			},
-		},
 		"asset_type": bson.M{
 			"$first": "$asset_type",
 		},
 	}}
+	//TODO: Check how to implement it
+	// amountMatch := bson.M{"$match": bson.M{
+	// 	"amount": bson.M{
+	// 		"$gt": 0,
+	// 	},
+	// }}
 	project := bson.M{"$project": bson.M{
-		"avg_price": bson.M{
-			"$round": bson.A{
-				bson.M{"$divide": bson.A{"$avg_price", "$amount"}},
-				2,
-			}},
-		"to_asset":   "$_id.to_asset",
-		"from_asset": "$_id.from_asset",
-		"amount":     true,
-		"asset_type": true,
-	}}
-	addAvgWorthField := bson.M{"$addFields": bson.M{
-		"avg_worth": bson.M{
-			"$round": bson.A{
-				bson.M{"$multiply": bson.A{"$avg_price", "$amount"}},
-				2,
+		"to_asset":         "$_id.to_asset",
+		"from_asset":       "$_id.from_asset",
+		"asset_type":       true,
+		"total_value":      true,
+		"sold_value":       true,
+		"remaining_amount": true,
+		"p/l": bson.M{
+			"$subtract": bson.A{
+				"$total_value",
+				bson.M{
+					"$sum": bson.A{
+						"$sold_value",
+						bson.M{
+							"$multiply": bson.A{"$remaining_amount", 2.2}, //TODO: Instead of 2.2 it should be lookup + value of "TO ASSET"
+						},
+					},
+				},
 			},
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, project, addAvgWorthField, sort})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, project, sort})
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate assets: %w", err)
 	}
@@ -170,6 +190,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 // total amount = bought amount
 // remaining amount = total amount - sold amount
 // profit/loss = total amount * avg_bought_price - ((sold amount * avg_sold_price) + (remaining amount * current value))
+// = total value - (sold value + (remaining amount * current value))
 func GetAssetDetails(uid string, data requests.AssetLog) error {
 
 	return nil
@@ -221,23 +242,39 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 	return assets, paginatedData.Pagination, nil
 }
 
-func UpdateAssetLogByAssetID(data requests.AssetUpdate) error {
+func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	objectAssetID, _ := primitive.ObjectIDFromHex(data.ID)
 
-	var update bson.M
+	var (
+		currencyValue float64
+		update        bson.M
+	)
 	if data.BoughtPrice != nil && data.Amount != 0 {
+		currencyValue = *data.BoughtPrice * data.Amount
+
 		update = bson.M{
 			"bought_price": data.BoughtPrice,
 			"amount":       data.Amount,
+			"value":        currencyValue,
 		}
 	} else if data.SoldPrice != nil && data.Amount != 0 {
+		currencyValue = *data.SoldPrice * data.Amount
+
 		update = bson.M{
 			"sold_price": data.SoldPrice,
 			"amount":     data.Amount,
+			"value":      currencyValue,
 		}
 	} else if data.Amount != 0 {
+		if asset.Type == "buy" {
+			currencyValue = *asset.BoughtPrice * data.Amount
+		} else {
+			currencyValue = *asset.SoldPrice * data.Amount
+		}
+
 		update = bson.M{
 			"amount": data.Amount,
+			"value":  currencyValue,
 		}
 	} else {
 		return nil

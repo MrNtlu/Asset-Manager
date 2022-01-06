@@ -87,7 +87,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	if err := models.UpdateAssetLogByAssetID(data); err != nil {
+	if err := models.UpdateAssetLogByAssetID(data, asset); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

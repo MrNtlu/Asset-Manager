@@ -28,8 +28,6 @@ type Asset struct {
 	CurrencyValue float64            `bson:"value" json:"value"`
 }
 
-//TODO: Scheduler crypto/stock/exchange save
-
 func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, amount, currencyValue float64, boughtPrice, soldPrice *float64) *Asset {
 	return &Asset{
 		UserID:        uid,
@@ -191,13 +189,8 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 // remaining amount = total amount - sold amount
 // profit/loss = total amount * avg_bought_price - ((sold amount * avg_sold_price) + (remaining amount * current value))
 // = total value - (sold value + (remaining amount * current value))
-func GetAssetDetails(uid string, data requests.AssetLog) error {
-
-	return nil
-}
-
 //TODO: Total Asset, profit/loss if sold etc.
-func GetAllAssetStats() error {
+func GetAllAssetStats(uid string) error {
 
 	return nil
 }

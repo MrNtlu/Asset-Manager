@@ -1,6 +1,7 @@
 package main
 
 import (
+	"asset_backend/apis"
 	"asset_backend/db"
 	"asset_backend/helpers"
 	"asset_backend/routes"
@@ -29,5 +30,13 @@ func main() {
 
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
+
+	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
+	fmt.Println(scheduler.NextRun())
+
 	router.Run(":8080")
+}
+
+func hourlyTask() {
+	apis.GetCryptocurrencyPrices()
 }

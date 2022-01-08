@@ -9,33 +9,35 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"time"
 )
 
 var (
 	baseURL    = "https://pro-api.coinmarketcap.com/v1/"
-	cryptoURL  = "cryptocurrency/map"
 	listingURL = "cryptocurrency/listings/latest"
 )
 
 type Crypto struct {
-	ID     int     `bson:"id" json:"id"`
-	Name   string  `bson:"name" json:"name"`
-	Symbol string  `bson:"symbol" json:"symbol"`
-	Price  float64 `bson:"price" json:"price"`
+	ID        int       `bson:"_id" json:"_id"`
+	Name      string    `bson:"name" json:"name"`
+	Symbol    string    `bson:"symbol" json:"symbol"`
+	Price     float64   `bson:"price" json:"price"`
+	CreatedAt time.Time `bson:"created_at" json:"created_at"`
 }
 
 //TODO: Find a way to convert Crypto prices from USD to whatever currency.
-// Decide fixed Currencies like USD GBP EUR TRY AUD KRW JPY etc.
+// Decide fixed Currencies like USD GBP EUR KRW JPY
 // https://coinmarketcap.com/api/documentation/v1/#tag/cryptocurrency
 
 //TODO: READ https://medium.com/trendyol-tech/concurrency-and-channels-in-go-bbc4dea75286
 
 func createCryptoObject(id int, name, symbol string, price float64) *Crypto {
 	return &Crypto{
-		ID:     id,
-		Name:   name,
-		Symbol: symbol,
-		Price:  price,
+		ID:        id,
+		Name:      name,
+		Symbol:    symbol,
+		Price:     price,
+		CreatedAt: time.Now(),
 	}
 }
 

@@ -6,8 +6,16 @@
     <li> Gin-Gonic
     <li> Gin-jwt/v2
     <li> Godotenv
+    <li> Gocron
     <li> Mongo-Go-Driver
     <li> Mongo-Go-Pagination
+</ul>
+
+### External API's
+
+<ul>
+    <li> Coinmarketcap
+    <li> Alphavantage
 </ul>
 
 &nbsp;

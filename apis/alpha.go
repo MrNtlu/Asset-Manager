@@ -2,54 +2,40 @@ package apis
 
 import (
 	"asset_backend/apis/responses"
-	"asset_backend/db"
-	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"strconv"
-	"time"
 )
 
 var (
 	baseAlphaURL = "https://www.alphavantage.co/"
 	currencyURL  = "query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency="
-	stockURL     = ""
 
 	exchangeList = []string{"EUR", "JPY", "KRW", "GBP"}
 )
 
 type Exchange struct {
-	ID           string    `bson:"_id" json:"_id"`
-	ExchangeRate float64   `bson:"exchange_rate" json:"exchange_rate"`
-	CreatedAt    time.Time `bson:"created_at" json:"created_at"`
+	ID           string  `bson:"_id" json:"_id"`
+	ExchangeRate float64 `bson:"exchange_rate" json:"exchange_rate"`
+	CreatedAt    string  `bson:"created_at" json:"created_at"`
 }
 
-func createExchangeObject(id string, rate float64) *Exchange {
-	return &Exchange{
-		ID:           id,
-		ExchangeRate: rate,
-		CreatedAt:    time.Now(),
-	}
-}
-
-func createExchange(data []responses.ExchangeData) error {
-	exchangeList := make([]interface{}, len(data))
+func convertExchangeToInvesting(data []responses.ExchangeData, investingList []interface{}, size int) {
 	for i, exchange := range data {
 		exchangeRate, _ := strconv.ParseFloat(exchange.Data.ExchangeRate, 64)
-		exchangeList[i] = createExchangeObject(exchange.Data.ToCurrency, exchangeRate)
-	}
 
-	if _, err := db.ExchangeCollection.InsertMany(context.TODO(), exchangeList); err != nil {
-		return fmt.Errorf("failed to create exchange list: %w", err)
+		investingList[size+i] = createInvestingObject(
+			createInvestingIDObject(exchange.Data.ToCurrency, "exchange"),
+			exchange.Data.ToCurrency,
+			exchangeRate,
+		)
 	}
-
-	return nil
 }
 
-func GetExchangeRates() {
+func GetExchangeRates() []responses.ExchangeData {
 	var exchangeDataList []responses.ExchangeData
 	for _, exchange := range exchangeList {
 		url := baseAlphaURL + currencyURL + exchange + "&apikey=" + os.Getenv("ALPHAAVANTAGE_KEY")
@@ -71,5 +57,5 @@ func GetExchangeRates() {
 		exchangeDataList = append(exchangeDataList, data)
 	}
 
-	createExchange(exchangeDataList)
+	return exchangeDataList
 }

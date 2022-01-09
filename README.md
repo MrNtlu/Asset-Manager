@@ -14,8 +14,9 @@
 ### External API's
 
 <ul>
-    <li> Coinmarketcap
-    <li> Alphavantage
+    <li> Coinmarketcap - Cryptocurrencies
+    <li> Alphavantage - Exchanges
+    <li> FinancialModelingPrep - Stocks
 </ul>
 
 &nbsp;

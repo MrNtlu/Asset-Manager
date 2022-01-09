@@ -14,9 +14,7 @@ var (
 	SubscriptionCollection *mongo.Collection
 	CardCollection         *mongo.Collection
 	UserCollection         *mongo.Collection
-	CryptoCollection       *mongo.Collection
-	ExchangeCollection     *mongo.Collection
-	StockCollection        *mongo.Collection
+	InvestingCollections   *mongo.Collection
 )
 
 func Close(client *mongo.Client, ctx context.Context,
@@ -42,9 +40,7 @@ func Connect(uri string) (*mongo.Client, context.Context,
 	SubscriptionCollection = Database.Collection("subscriptions")
 	CardCollection = Database.Collection("cards")
 	UserCollection = Database.Collection("users")
-	CryptoCollection = Database.Collection("crypto")
-	ExchangeCollection = Database.Collection("exchanges")
-	StockCollection = Database.Collection("stocks")
+	InvestingCollections = Database.Collection("investings")
 
 	return client, ctx, cancel, err
 }

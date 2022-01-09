@@ -8,4 +8,5 @@ type Asset struct {
 	TotalValue      float64 `bson:"total_value" json:"total_value"`
 	SoldValue       float64 `bson:"sold_value" json:"sold_value"`
 	PL              float64 `bson:"p/l" json:"p/l"`
+	CurrentPrice    float64 `bson:"current_price" json:"current_price"`
 }

@@ -11,7 +11,8 @@ type AssetCreate struct {
 }
 
 type AssetSort struct {
-	Sort string `json:"sort" binding:"required,oneof=name worth amount worthless"`
+	Sort     string `json:"sort" binding:"required,oneof=name value amount profit"`
+	SortType int    `json:"type" binding:"required,oneof=1 -1"`
 }
 
 type AssetDetails struct {

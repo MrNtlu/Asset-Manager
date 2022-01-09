@@ -5,7 +5,6 @@ type CryptoData struct {
 }
 
 type CryptoPrice struct {
-	ID     int       `bson:"id" json:"id"`
 	Name   string    `json:"name"`
 	Symbol string    `json:"symbol"`
 	Price  CryptoUSD `json:"quote"`

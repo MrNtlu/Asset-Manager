@@ -88,21 +88,29 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	var sort bson.M
 	if data.Sort == "name" {
 		sort = bson.M{"$sort": bson.M{
-			"to_asset": 1,
+			"to_asset": data.SortType,
 		}}
 	} else if data.Sort == "amount" {
 		sort = bson.M{"$sort": bson.M{
-			"remaining_amount": -1,
+			"remaining_amount": data.SortType,
 		}}
-	} else if data.Sort == "worth" {
+	} else if data.Sort == "value" {
 		sort = bson.M{"$sort": bson.M{
-			"total_value": -1,
+			"total_value": data.SortType,
 		}}
 	} else {
 		sort = bson.M{"$sort": bson.M{
-			"total_value": 1,
+			"p/l": data.SortType,
 		}}
 	}
+
+	js := `function(prices) {
+        var sum = 1;
+        for (var i = 0; i < prices.length; i++) {
+            sum = sum * prices[i];
+        }
+        return sum;
+      }`
 
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
@@ -143,12 +151,46 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"$first": "$asset_type",
 		},
 	}}
-	//TODO: Check how to implement it
-	// amountMatch := bson.M{"$match": bson.M{
-	// 	"amount": bson.M{
-	// 		"$gt": 0,
-	// 	},
-	// }}
+	lookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"asset_type": "$asset_type",
+			"to_asset":   "$_id.to_asset",
+			"from_asset": "$_id.from_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$or": bson.A{
+							bson.M{
+								"$and": bson.A{
+									bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
+									bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+								},
+							},
+							bson.M{
+								"$and": bson.A{
+									bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+									bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing",
+	}}
+	addInvestingField := bson.M{"$addFields": bson.M{
+		"investing_price": bson.M{
+			"$function": bson.M{
+				"body": primitive.JavaScript(js),
+				"args": bson.A{"$investing.price"},
+				"lang": "js",
+			},
+		},
+	}}
 	project := bson.M{"$project": bson.M{
 		"to_asset":         "$_id.to_asset",
 		"from_asset":       "$_id.from_asset",
@@ -156,6 +198,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"total_value":      true,
 		"sold_value":       true,
 		"remaining_amount": true,
+		"current_price":    "$investing_price",
 		"p/l": bson.M{
 			"$subtract": bson.A{
 				"$total_value",
@@ -163,15 +206,21 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 					"$sum": bson.A{
 						"$sold_value",
 						bson.M{
-							"$multiply": bson.A{"$remaining_amount", 2.2}, //TODO: Instead of 2.2 it should be lookup + value of "TO ASSET"
+							"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 						},
 					},
 				},
 			},
 		},
 	}}
+	//TODO: Check how to implement it
+	// amountMatch := bson.M{"$match": bson.M{
+	// 	"amount": bson.M{
+	// 		"$gt": 0,
+	// 	},
+	// }}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, project, sort})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, addInvestingField, project, sort})
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate assets: %w", err)
 	}

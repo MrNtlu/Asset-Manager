@@ -32,19 +32,14 @@ func main() {
 	routes.SetupRoutes(router, jwtHandler)
 
 	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
-	stockScheduler := helpers.CreateHourlySchedule(func() { stockTask() }, 8)
 
-	fmt.Println(scheduler.NextRun())
-	fmt.Println(stockScheduler.NextRun())
+	job, nextRun := scheduler.NextRun()
+	fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
+	fmt.Println("Next Schedule: ", nextRun, "\n ")
 
 	router.Run(":8080")
 }
 
 func hourlyTask() {
-	apis.GetCryptocurrencyPrices()
-	apis.GetExchangeRates()
-}
-
-func stockTask() {
-
+	apis.GetAndCreateInvesting()
 }

@@ -43,7 +43,7 @@ func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, amount,
 	}
 }
 
-func CreateAsset(data requests.AssetCreate, uid string) error {
+func CreateAsset(uid string, data requests.AssetCreate) error {
 	var currencyValue float64
 	if data.Type == "buy" {
 		currencyValue = *data.BoughtPrice * data.Amount
@@ -83,7 +83,12 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
-//TODO: Sort by avg_worth, if number == 0 or somehow below 0 hide them in mobile/desktop
+//TODO:if number == 0 or somehow below 0 hide them in mobile/desktop
+// amountMatch := bson.M{"$match": bson.M{
+// 	"amount": bson.M{
+// 		"$gt": 0,
+// 	},
+// }}
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {
@@ -213,12 +218,6 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			},
 		},
 	}}
-	//TODO: Check how to implement it
-	// amountMatch := bson.M{"$match": bson.M{
-	// 	"amount": bson.M{
-	// 		"$gt": 0,
-	// 	},
-	// }}
 
 	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, addInvestingField, project, sort})
 	if err != nil {
@@ -233,12 +232,9 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	return assets, nil
 }
 
-//TODO:
-// total amount = bought amount
-// remaining amount = total amount - sold amount
+//TODO: Total Asset, profit/loss if sold etc. sum of GetAssetsByUserID
 // profit/loss = total amount * avg_bought_price - ((sold amount * avg_sold_price) + (remaining amount * current value))
 // = total value - (sold value + (remaining amount * current value))
-//TODO: Total Asset, profit/loss if sold etc.
 func GetAllAssetStats(uid string) error {
 
 	return nil

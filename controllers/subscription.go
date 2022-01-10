@@ -5,6 +5,7 @@ import (
 	"asset_backend/requests"
 	"net/http"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,8 +17,8 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.CreateSubscription("1", data); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.CreateSubscription(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -33,8 +34,8 @@ func (s *SubscriptionController) CreateCard(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.CreateCard("1", data); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.CreateCard(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -45,8 +46,8 @@ func (s *SubscriptionController) CreateCard(c *gin.Context) {
 }
 
 func (s *SubscriptionController) GetCardsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	cards, err := models.GetCardsByUserID("1")
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	cards, err := models.GetCardsByUserID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -63,8 +64,8 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	subscriptions, err := models.GetSubscriptionsByCardID("1", data.ID)
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptions, err := models.GetSubscriptionsByCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -81,8 +82,8 @@ func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	subscriptions, err := models.GetSubscriptionsByUserID("1", data)
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptions, err := models.GetSubscriptionsByUserID(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -99,8 +100,8 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	subscription, err := models.GetSubscriptionDetails("1", data.ID)
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscription, err := models.GetSubscriptionDetails(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -112,8 +113,8 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 }
 
 func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID("1")
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -125,8 +126,8 @@ func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Contex
 }
 
 func (s *SubscriptionController) GetCardStatisticsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	cardStats, err := models.GetCardStatisticsByUserID("1")
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	cardStats, err := models.GetCardStatisticsByUserID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -155,8 +156,8 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if "1" != subscription.UserID {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if uid != subscription.UserID {
 		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
 		return
 	}
@@ -189,8 +190,8 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if "1" != card.UserID {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if uid != card.UserID {
 		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
 		return
 	}
@@ -222,8 +223,8 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 }
 
 func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllSubscriptionsByUserID("1"); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.DeleteAllSubscriptionsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -250,8 +251,8 @@ func (s *SubscriptionController) DeleteCardByCardID(c *gin.Context) {
 }
 
 func (s *SubscriptionController) DeleteAllCardsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllCardsByUserID("1"); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.DeleteAllCardsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

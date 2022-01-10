@@ -47,7 +47,7 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 				return "", errors.New("password is empty")
 			}
 
-			if err := utils.CheckPassword([]byte(data.Password), []byte(user.Password)); err != nil {
+			if err := utils.CheckPassword([]byte(user.Password), []byte(data.Password)); err != nil {
 				return "", jwt.ErrFailedAuthentication
 			}
 

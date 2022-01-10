@@ -5,6 +5,7 @@ import (
 	"asset_backend/requests"
 	"net/http"
 
+	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -16,8 +17,8 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.CreateAsset(data, "1"); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.CreateAsset(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -33,8 +34,8 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	assets, err := models.GetAssetsByUserID("1", data)
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	assets, err := models.GetAssetsByUserID(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -51,8 +52,8 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	assets, pagination, err := models.GetAssetLogsByUserID("1", data)
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	assets, pagination, err := models.GetAssetLogsByUserID(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -77,13 +78,13 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	}
 
 	if asset.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"message": "asset not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if "1" != asset.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if uid != asset.UserID {
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
 		return
 	}
 
@@ -119,8 +120,8 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 		return
 	}
 
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAssetLogsByUserID("1", data); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.DeleteAssetLogsByUserID(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -131,8 +132,8 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 }
 
 func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
-	//uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllAssetsByUserID("1"); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	if err := models.DeleteAllAssetsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

@@ -9,6 +9,9 @@
     <li> Gocron
     <li> Mongo-Go-Driver
     <li> Mongo-Go-Pagination
+    <li> Go-Password
+    <li> google/UUID
+    <li> jordan-wright/email
 </ul>
 
 ### External API's

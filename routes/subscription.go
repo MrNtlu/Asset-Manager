@@ -6,7 +6,7 @@ import (
 )
 
 func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
-	subscription := router.Group("/subscription")
+	subscription := router.Group("/subscription").Use(jwtToken.MiddlewareFunc())
 	{
 		subscription.DELETE("/all", subscriptionController.DeleteAllSubscriptionsByUserID)
 		subscription.DELETE("", subscriptionController.DeleteSubscriptionBySubscriptionID)
@@ -16,14 +16,9 @@ func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		subscription.GET("", subscriptionController.GetSubscriptionsByUserID)
 		subscription.GET("/details", subscriptionController.GetSubscriptionDetails)
 		subscription.GET("/stats", subscriptionController.GetSubscriptionStatisticsByUserID)
-
-		subscription.Use(jwtToken.MiddlewareFunc())
-		{
-			//subscription.POST("", subscriptionController.CreateSubscription)
-		}
 	}
 
-	card := router.Group("/card")
+	card := router.Group("/card").Use(jwtToken.MiddlewareFunc())
 	{
 		card.DELETE("/all", subscriptionController.DeleteAllCardsByUserID)
 		card.DELETE("", subscriptionController.DeleteCardByCardID)
@@ -31,10 +26,5 @@ func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		card.POST("", subscriptionController.CreateCard)
 		card.GET("", subscriptionController.GetCardsByUserID)
 		card.GET("/stats", subscriptionController.GetCardStatisticsByUserID)
-
-		card.Use(jwtToken.MiddlewareFunc())
-		{
-			//card.POST("", subscriptionController.CreateCard)
-		}
 	}
 }

@@ -6,9 +6,8 @@ import (
 )
 
 func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
-	asset := router.Group("/asset")
+	asset := router.Group("/asset").Use(jwtToken.MiddlewareFunc())
 	{
-
 		asset.DELETE("/log", assetController.DeleteAssetLogByAssetID)
 		asset.DELETE("/logs", assetController.DeleteAssetLogsByUserID)
 		asset.DELETE("", assetController.DeleteAllAssetsByUserID)
@@ -16,10 +15,5 @@ func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		asset.POST("", assetController.CreateAsset)
 		asset.GET("/logs", assetController.GetAssetLogsByUserID)
 		asset.GET("", assetController.GetAssetsByUserID)
-
-		asset.Use(jwtToken.MiddlewareFunc())
-		{
-			//asset.POST("", assetController.CreateAsset)
-		}
 	}
 }

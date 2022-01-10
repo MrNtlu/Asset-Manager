@@ -72,7 +72,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 
 	asset, err := models.GetAssetByID(data.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
 		return
 	}
@@ -104,14 +104,20 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	if err := models.DeleteAssetLogByAssetID(data.ID); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	isDeleted, err := models.DeleteAssetLogByAssetID(uid, data.ID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "asset deleted successfully"})
+	if isDeleted {
+		c.JSON(http.StatusOK, gin.H{"message": "asset deleted successfully"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
 }
 
 func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {

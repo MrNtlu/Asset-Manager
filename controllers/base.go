@@ -17,3 +17,5 @@ func bindJSONData(data interface{}, c *gin.Context) bool {
 
 	return false
 }
+
+//TODO: Base response -> data, message, error and for pagination

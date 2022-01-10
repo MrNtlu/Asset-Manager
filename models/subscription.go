@@ -457,14 +457,18 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	return nil
 }
 
-func DeleteSubscriptionBySubscriptionID(subscriptionID string) error {
+func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
-	if _, err := db.SubscriptionCollection.DeleteOne(context.TODO(), bson.M{"_id": objectSubscriptionID}); err != nil {
-		return fmt.Errorf("failed to delete subscription: %w", err)
+	count, err := db.SubscriptionCollection.DeleteOne(context.TODO(), bson.M{
+		"_id":     objectSubscriptionID,
+		"user_id": uid,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete subscription: %w", err)
 	}
 
-	return nil
+	return count.DeletedCount > 0, nil
 }
 
 func DeleteAllSubscriptionsByUserID(uid string) error {

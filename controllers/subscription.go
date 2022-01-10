@@ -109,6 +109,11 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 		return
 	}
 
+	if subscription.UserID == "" {
+		c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{"data": subscription})
 }
 
@@ -146,19 +151,19 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 
 	subscription, err := models.GetSubscriptionByID(data.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
 		return
 	}
 
 	if subscription.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"message": "subscription not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
 		return
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != subscription.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
 		return
 	}
 
@@ -180,19 +185,19 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 
 	card, err := models.GetCardByID(data.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 
 		return
 	}
 
 	if card.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"message": "card not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "card not found"})
 		return
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != card.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"message": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
 		return
 	}
 
@@ -212,14 +217,20 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 		return
 	}
 
-	if err := models.DeleteSubscriptionBySubscriptionID(data.ID); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	isDeleted, err := models.DeleteSubscriptionBySubscriptionID(uid, data.ID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "subscription deleted successfully"})
+	if isDeleted {
+		c.JSON(http.StatusOK, gin.H{"message": "subscription deleted successfully"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
 }
 
 func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) {
@@ -240,14 +251,20 @@ func (s *SubscriptionController) DeleteCardByCardID(c *gin.Context) {
 		return
 	}
 
-	if err := models.DeleteCardByCardID(data.ID); err != nil {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	isDeleted, err := models.DeleteCardByCardID(uid, data.ID)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "card deleted successfully"})
+	if isDeleted {
+		c.JSON(http.StatusOK, gin.H{"message": "card deleted successfully"})
+	}
+
+	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
 }
 
 func (s *SubscriptionController) DeleteAllCardsByUserID(c *gin.Context) {

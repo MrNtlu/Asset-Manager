@@ -327,14 +327,18 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	return nil
 }
 
-func DeleteAssetLogByAssetID(assetID string) error {
+func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 	objectAssetID, _ := primitive.ObjectIDFromHex(assetID)
 
-	if _, err := db.AssetCollection.DeleteOne(context.TODO(), bson.M{"_id": objectAssetID}); err != nil {
-		return fmt.Errorf("failed to delete asset: %w", err)
+	count, err := db.AssetCollection.DeleteOne(context.TODO(), bson.M{
+		"_id":     objectAssetID,
+		"user_id": uid,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete asset: %w", err)
 	}
 
-	return nil
+	return count.DeletedCount > 0, nil
 }
 
 func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {

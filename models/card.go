@@ -95,14 +95,18 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 }
 
 //TODO: Update card id of subscriptinos to null
-func DeleteCardByCardID(cardID string) error {
+func DeleteCardByCardID(uid, cardID string) (bool, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
 
-	if _, err := db.CardCollection.DeleteOne(context.TODO(), bson.M{"_id": objectCardID}); err != nil {
-		return fmt.Errorf("failed to delete card: %w", err)
+	count, err := db.CardCollection.DeleteOne(context.TODO(), bson.M{
+		"_id":     objectCardID,
+		"user_id": uid,
+	})
+	if err != nil {
+		return false, fmt.Errorf("failed to delete card: %w", err)
 	}
 
-	return nil
+	return count.DeletedCount > 0, nil
 }
 
 //TODO: Update all card id's of subscriptions to null

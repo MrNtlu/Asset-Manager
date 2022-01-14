@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type Investing struct {
@@ -51,7 +52,7 @@ func GetAndCreateInvesting() {
 
 	deleteInvestings()
 
-	if _, err := db.InvestingCollections.InsertMany(context.TODO(), investingList); err != nil {
+	if _, err := db.InvestingCollections.InsertMany(context.TODO(), investingList, options.InsertMany().SetOrdered(false)); err != nil {
 		fmt.Println("failed to create investing list: %w", err)
 	}
 }

@@ -447,6 +447,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	if data.Currency != nil {
 		subscription.Currency = *data.Currency
 	}
+	subscription.CardID = data.CardID
 
 	if _, err := db.SubscriptionCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectSubscriptionID,
@@ -455,6 +456,27 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	}
 
 	return nil
+}
+
+func UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
+	var match bson.M
+	if cardID != nil {
+		match = bson.M{
+			"card_id": cardID,
+			"user_id": uid,
+		}
+	} else {
+		match = bson.M{
+			"user_id": uid,
+		}
+	}
+
+	if _, err := db.SubscriptionCollection.UpdateMany(context.TODO(), match,
+		bson.M{"$set": bson.M{
+			"card_id": nil,
+		}}); err != nil {
+		return
+	}
 }
 
 func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error) {

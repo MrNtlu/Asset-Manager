@@ -83,12 +83,6 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
-//TODO:if number == 0 or somehow below 0 hide them in mobile/desktop
-// amountMatch := bson.M{"$match": bson.M{
-// 	"amount": bson.M{
-// 		"$gt": 0,
-// 	},
-// }}
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {
@@ -232,12 +226,241 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	return assets, nil
 }
 
-//TODO: Total Asset, profit/loss if sold etc. sum of GetAssetsByUserID
-// profit/loss = total amount * avg_bought_price - ((sold amount * avg_sold_price) + (remaining amount * current value))
-// = total value - (sold value + (remaining amount * current value))
-func GetAllAssetStats(uid string) error {
+func GetAllAssetStats(uid string) (responses.AssetStats, error) {
+	js := `function(prices) {
+        var sum = 1;
+        for (var i = 0; i < prices.length; i++) {
+            sum = sum * prices[i];
+        }
+        return sum;
+      }`
 
-	return nil
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": bson.M{
+			"to_asset":   "$to_asset",
+			"from_asset": "$from_asset",
+		},
+		"total_value": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"sold_value": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "sell"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"remaining_amount": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$amount",
+					bson.M{"$multiply": bson.A{"$amount", -1}},
+				},
+			},
+		},
+		"asset_type": bson.M{
+			"$first": "$asset_type",
+		},
+		"user_id": bson.M{
+			"$first": "$user_id",
+		},
+	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"asset_type": "$asset_type",
+			"to_asset":   "$_id.to_asset",
+			"from_asset": "$_id.from_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$or": bson.A{
+							bson.M{
+								"$and": bson.A{
+									bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
+									bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+								},
+							},
+							bson.M{
+								"$and": bson.A{
+									bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+									bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing",
+	}}
+	addInvestingField := bson.M{"$addFields": bson.M{
+		"investing_price": bson.M{
+			"$function": bson.M{
+				"body": primitive.JavaScript(js),
+				"args": bson.A{"$investing.price"},
+				"lang": "js",
+			},
+		},
+	}}
+	project := bson.M{"$project": bson.M{
+		"user_id":       true,
+		"asset_type":    true,
+		"total_value":   true,
+		"sold_value":    true,
+		"current_price": "$investing_price",
+		"p/l": bson.M{
+			"$subtract": bson.A{
+				"$total_value",
+				bson.M{
+					"$sum": bson.A{
+						"$sold_value",
+						bson.M{
+							"$multiply": bson.A{"$remaining_amount", "$investing_price"},
+						},
+					},
+				},
+			},
+		},
+	}}
+	assetGroup := bson.M{"$group": bson.M{
+		"_id": "$asset_type",
+		"total_assets": bson.M{
+			"$sum": "$total_value",
+		},
+		"total_p/l": bson.M{
+			"$sum": "$p/l",
+		},
+		"user_id": bson.M{
+			"$first": "$user_id",
+		},
+	}}
+	statsGroup := bson.M{"$group": bson.M{
+		"_id": "$user_id",
+		"stock_assets": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "stock"}},
+					"$total_assets",
+					0,
+				},
+			},
+		},
+		"crypto_assets": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "crypto"}},
+					"$total_assets",
+					0,
+				},
+			},
+		},
+		"exchange_assets": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "exchange"}},
+					"$total_assets",
+					0,
+				},
+			},
+		},
+		"total_assets": bson.M{
+			"$sum": "$total_assets",
+		},
+		"stock_p/l": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "stock"}},
+					"$total_p/l",
+					0,
+				},
+			},
+		},
+		"crypto_p/l": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "crypto"}},
+					"$total_p/l",
+					0,
+				},
+			},
+		},
+		"exchange_p/l": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "exchange"}},
+					"$total_p/l",
+					0,
+				},
+			},
+		},
+		"total_p/l": bson.M{
+			"$sum": "$total_p/l",
+		},
+	}}
+	addPercentageFields := bson.M{"$addFields": bson.M{
+		"stock_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{
+						"$stock_assets", "$total_assets",
+					},
+				},
+				100,
+			},
+		},
+		"crypto_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{
+						"$crypto_assets", "$total_assets",
+					},
+				},
+				100,
+			},
+		},
+		"exchange_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{
+						"$exchange_assets", "$total_assets",
+					},
+				},
+				100,
+			},
+		},
+	}}
+
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup,
+		addInvestingField, project, assetGroup, statsGroup, addPercentageFields})
+	if err != nil {
+		return responses.AssetStats{}, fmt.Errorf("failed to aggregate assets: %w", err)
+	}
+
+	var assetStat []responses.AssetStats
+	if err = cursor.All(context.TODO(), &assetStat); err != nil {
+		return responses.AssetStats{}, fmt.Errorf("failed to decode asset: %w", err)
+	}
+
+	if len(assetStat) > 0 {
+		return assetStat[0], nil
+	}
+
+	return responses.AssetStats{}, nil
 }
 
 func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {

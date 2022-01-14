@@ -228,6 +228,7 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 
 	if isDeleted {
 		c.JSON(http.StatusOK, gin.H{"message": "subscription deleted successfully"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
@@ -261,7 +262,10 @@ func (s *SubscriptionController) DeleteCardByCardID(c *gin.Context) {
 	}
 
 	if isDeleted {
+		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
 		c.JSON(http.StatusOK, gin.H{"message": "card deleted successfully"})
+
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
@@ -276,5 +280,6 @@ func (s *SubscriptionController) DeleteAllCardsByUserID(c *gin.Context) {
 		return
 	}
 
+	go models.UpdateSubscriptionCardIDToNull(uid, nil)
 	c.JSON(http.StatusOK, gin.H{"message": "cards deleted successfully by user id"})
 }

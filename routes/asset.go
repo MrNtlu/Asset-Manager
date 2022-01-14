@@ -13,6 +13,7 @@ func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		asset.DELETE("", assetController.DeleteAllAssetsByUserID)
 		asset.PUT("", assetController.UpdateAssetLogByAssetID)
 		asset.POST("", assetController.CreateAsset)
+		asset.GET("/stats", assetController.GetAssetStatsByUserID)
 		asset.GET("/logs", assetController.GetAssetLogsByUserID)
 		asset.GET("", assetController.GetAssetsByUserID)
 	}

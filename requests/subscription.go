@@ -20,6 +20,7 @@ type SubscriptionUpdate struct {
 	BillCycle   *int       `json:"bill_cycle"`
 	Price       *float64   `json:"price"`
 	Currency    *string    `json:"currency"`
+	CardID      *string    `json:"card_id"`
 }
 
 type SubscriptionSort struct {

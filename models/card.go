@@ -94,7 +94,6 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 	return nil
 }
 
-//TODO: Update card id of subscriptinos to null
 func DeleteCardByCardID(uid, cardID string) (bool, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
 
@@ -109,7 +108,6 @@ func DeleteCardByCardID(uid, cardID string) (bool, error) {
 	return count.DeletedCount > 0, nil
 }
 
-//TODO: Update all card id's of subscriptions to null
 func DeleteAllCardsByUserID(uid string) error {
 	if _, err := db.CardCollection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,

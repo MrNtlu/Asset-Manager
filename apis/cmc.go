@@ -22,8 +22,6 @@ type Crypto struct {
 	CreatedAt string  `bson:"created_at" json:"created_at"`
 }
 
-//TODO: READ https://medium.com/trendyol-tech/concurrency-and-channels-in-go-bbc4dea75286
-
 func convertCryptoToInvesting(data []responses.CryptoPrice, investingList []interface{}) {
 	for i, crypto := range data {
 		investingList[i] = createInvestingObject(

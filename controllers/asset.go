@@ -46,6 +46,19 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets})
 }
 
+func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetStat, err := models.GetAllAssetStats(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetStat})
+}
+
 func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLog
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -115,6 +128,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 
 	if isDeleted {
 		c.JSON(http.StatusOK, gin.H{"message": "asset deleted successfully"})
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})

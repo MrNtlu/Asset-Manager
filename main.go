@@ -20,7 +20,7 @@ func main() {
 		log.Fatal("Error loading .env file")
 	}
 
-	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_URI"))
+	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
 	if err != nil {
 		panic(err)
 	}

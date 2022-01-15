@@ -103,14 +103,6 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		}}
 	}
 
-	js := `function(prices) {
-        var sum = 1;
-        for (var i = 0; i < prices.length; i++) {
-            sum = sum * prices[i];
-        }
-        return sum;
-      }`
-
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
@@ -161,19 +153,9 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			bson.M{
 				"$match": bson.M{
 					"$expr": bson.M{
-						"$or": bson.A{
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
-									bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
-								},
-							},
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
-									bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
-								},
-							},
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
 						},
 					},
 				},
@@ -181,12 +163,50 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		},
 		"as": "investing",
 	}}
+	unwindInvesting := bson.M{"$unwind": bson.M{
+		"path":                       "$investing",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	exchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"asset_type": "$asset_type",
+			"to_asset":   "$_id.to_asset",
+			"from_asset": "$_id.from_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing_exchange",
+	}}
+	unwindExchange := bson.M{"$unwind": bson.M{
+		"path":                       "$investing_exchange",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
 	addInvestingField := bson.M{"$addFields": bson.M{
 		"investing_price": bson.M{
-			"$function": bson.M{
-				"body": primitive.JavaScript(js),
-				"args": bson.A{"$investing.price"},
-				"lang": "js",
+			"$cond": bson.A{
+				bson.M{
+					"$ne": bson.A{"$_id.from_asset", "USD"},
+				},
+				bson.M{
+					"$multiply": bson.A{
+						"$investing.price",
+						"$investing_exchange.price",
+					},
+				},
+				"$investing.price",
 			},
 		},
 	}}
@@ -213,7 +233,8 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, addInvestingField, project, sort})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, unwindInvesting, exchangeLookup,
+		unwindExchange, addInvestingField, project, sort})
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate assets: %w", err)
 	}
@@ -227,13 +248,25 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 }
 
 func GetAllAssetStats(uid string) (responses.AssetStats, error) {
-	js := `function(prices) {
-        var sum = 1;
-        for (var i = 0; i < prices.length; i++) {
-            sum = sum * prices[i];
-        }
-        return sum;
-      }`
+	/*
+		js := `function(prices) {
+		    var sum = 1;
+		    for (var i = 0; i < prices.length; i++) {
+		        sum = sum * prices[i];
+		    }
+		    return sum;
+		  }`
+
+		addInvestingField := bson.M{"$addFields": bson.M{
+			"investing_price": bson.M{
+				"$function": bson.M{
+					"body": primitive.JavaScript(js),
+					"args": bson.A{"$investing.price"},
+					"lang": "js",
+				},
+			},
+		}}
+	*/
 
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
@@ -288,19 +321,9 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 			bson.M{
 				"$match": bson.M{
 					"$expr": bson.M{
-						"$or": bson.A{
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
-									bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
-								},
-							},
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
-									bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
-								},
-							},
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
 						},
 					},
 				},
@@ -308,21 +331,58 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 		"as": "investing",
 	}}
+	unwindInvesting := bson.M{"$unwind": bson.M{
+		"path":                       "$investing",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	exchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"asset_type": "$asset_type",
+			"to_asset":   "$_id.to_asset",
+			"from_asset": "$_id.from_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing_exchange",
+	}}
+	unwindExchange := bson.M{"$unwind": bson.M{
+		"path":                       "$investing_exchange",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
 	addInvestingField := bson.M{"$addFields": bson.M{
 		"investing_price": bson.M{
-			"$function": bson.M{
-				"body": primitive.JavaScript(js),
-				"args": bson.A{"$investing.price"},
-				"lang": "js",
+			"$cond": bson.A{
+				bson.M{
+					"$ne": bson.A{"$_id.from_asset", "USD"},
+				},
+				bson.M{
+					"$multiply": bson.A{
+						"$investing.price",
+						"$investing_exchange.price",
+					},
+				},
+				"$investing.price",
 			},
 		},
 	}}
 	project := bson.M{"$project": bson.M{
-		"user_id":       true,
-		"asset_type":    true,
-		"total_value":   true,
-		"sold_value":    true,
-		"current_price": "$investing_price",
+		"user_id":     true,
+		"asset_type":  true,
+		"total_value": true,
+		"sold_value":  true,
 		"p/l": bson.M{
 			"$subtract": bson.A{
 				"$total_value",
@@ -445,8 +505,8 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup,
-		addInvestingField, project, assetGroup, statsGroup, addPercentageFields})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, unwindInvesting, exchangeLookup,
+		unwindExchange, addInvestingField, project, assetGroup, statsGroup, addPercentageFields})
 	if err != nil {
 		return responses.AssetStats{}, fmt.Errorf("failed to aggregate assets: %w", err)
 	}

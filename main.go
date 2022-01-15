@@ -31,11 +31,13 @@ func main() {
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
 
-	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
+	//TODO: Change on Production
+	/*scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 
 	job, nextRun := scheduler.NextRun()
 	fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
 	fmt.Println("Next Schedule: ", nextRun, "\n ")
+	*/
 
 	router.Run(":8080")
 }

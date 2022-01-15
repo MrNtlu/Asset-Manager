@@ -148,10 +148,13 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			"$let": bson.M{
 				"vars": bson.M{
 					"date_diff": bson.M{
-						"$dateDiff": bson.M{
-							"startDate": "$bill_date",
-							"endDate":   time.Now(),
-							"unit":      "day",
+						"$round": bson.M{
+							"$divide": bson.A{
+								bson.M{
+									"$subtract": bson.A{time.Now(), "$bill_date"},
+								},
+								86400000,
+							},
 						},
 					},
 				},
@@ -227,10 +230,13 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 			"$let": bson.M{
 				"vars": bson.M{
 					"date_diff": bson.M{
-						"$dateDiff": bson.M{
-							"startDate": "$bill_date",
-							"endDate":   time.Now(),
-							"unit":      "day",
+						"$round": bson.M{
+							"$divide": bson.A{
+								bson.M{
+									"$subtract": bson.A{time.Now(), "$bill_date"},
+								},
+								86400000,
+							},
 						},
 					},
 				},
@@ -338,10 +344,13 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 			"$let": bson.M{
 				"vars": bson.M{
 					"date_diff": bson.M{
-						"$dateDiff": bson.M{
-							"startDate": "$bill_date",
-							"endDate":   time.Now(),
-							"unit":      "day",
+						"$round": bson.M{
+							"$divide": bson.A{
+								bson.M{
+									"$subtract": bson.A{time.Now(), "$bill_date"},
+								},
+								86400000,
+							},
 						},
 					},
 				},

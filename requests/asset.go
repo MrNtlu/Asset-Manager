@@ -11,8 +11,8 @@ type AssetCreate struct {
 }
 
 type AssetSort struct {
-	Sort     string `json:"sort" binding:"required,oneof=name value amount profit"`
-	SortType int    `json:"type" binding:"required,oneof=1 -1"`
+	Sort     string `form:"sort" binding:"required,oneof=name value amount profit"`
+	SortType int    `form:"type" binding:"required,number,oneof=1 -1"`
 }
 
 type AssetDetails struct {
@@ -21,11 +21,11 @@ type AssetDetails struct {
 }
 
 type AssetLog struct {
-	ToAsset   string  `json:"to_asset" binding:"required"`
-	FromAsset string  `json:"from_asset" binding:"required"`
-	Type      *string `json:"type" binding:"oneof=sell buy"`
-	Sort      string  `json:"sort" binding:"required,oneof=newest oldest amount"`
-	Page      int64   `json:"page" binding:"required,number,min=1"`
+	ToAsset   string  `form:"to_asset" binding:"required"`
+	FromAsset string  `form:"from_asset" binding:"required"`
+	Type      *string `form:"type" binding:"oneof=sell buy"`
+	Sort      string  `form:"sort" binding:"required,oneof=newest oldest amount"`
+	Page      int64   `form:"page" binding:"required,number,min=1"`
 }
 
 type AssetUpdate struct {

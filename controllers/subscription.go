@@ -60,7 +60,11 @@ func (s *SubscriptionController) GetCardsByUserID(c *gin.Context) {
 
 func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 	var data requests.ID
-	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
 		return
 	}
 
@@ -78,7 +82,11 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 
 func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 	var data requests.SubscriptionSort
-	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
 		return
 	}
 
@@ -96,7 +104,11 @@ func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 
 func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 	var data requests.ID
-	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
 		return
 	}
 

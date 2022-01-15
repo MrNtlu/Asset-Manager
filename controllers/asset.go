@@ -30,7 +30,11 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 
 func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 	var data requests.AssetSort
-	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
 		return
 	}
 
@@ -61,7 +65,11 @@ func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
 
 func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLog
-	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
 		return
 	}
 

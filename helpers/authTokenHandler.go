@@ -67,13 +67,12 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 				"message": message,
 			})
 		},
-		//TODO: Localhost should be replaced
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.SetCookie("access_token", token, 3600, "/", "localhost", true, true)
+			c.SetCookie("access_token", token, 3600, "/", os.Getenv("BASE_URI"), true, true)
 			c.JSON(http.StatusOK, gin.H{"access_token": token})
 		},
 		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.SetCookie("access_token", token, 3600, "/", "localhost", true, true)
+			c.SetCookie("access_token", token, 3600, "/", os.Getenv("BASE_URI"), true, true)
 			c.JSON(http.StatusOK, gin.H{"access_token": token})
 		},
 		TokenLookup:    "header: Authorization, cookie: jwt_token",

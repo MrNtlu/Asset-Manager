@@ -14,18 +14,18 @@ import (
 
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	Username           string             `bson:"username" json:"username"`
 	EmailAddress       string             `bson:"email_address" json:"email_address"`
+	Currency           string             `bson:"currency" json:"currency"`
 	Password           string             `bson:"password" json:"-"`
 	PasswordResetToken string             `bson:"reset_token" json:"-"`
 	CreatedAt          time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
 }
 
-func createUserObject(username, emailAddress, password string) *User {
+func createUserObject(emailAddress, currency, password string) *User {
 	return &User{
-		Username:     username,
 		EmailAddress: emailAddress,
+		Currency:     currency,
 		Password:     utils.HashPassword(password),
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
@@ -33,7 +33,7 @@ func createUserObject(username, emailAddress, password string) *User {
 }
 
 func CreateUser(data requests.Register) error {
-	user := createUserObject(data.Username, data.EmailAddress, data.Password)
+	user := createUserObject(data.EmailAddress, data.Currency, data.Password)
 
 	if _, err := db.UserCollection.InsertOne(context.TODO(), user); err != nil {
 		return fmt.Errorf("failed to create new user: %w", err)

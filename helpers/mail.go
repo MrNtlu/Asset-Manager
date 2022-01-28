@@ -8,7 +8,7 @@ import (
 )
 
 func SendForgotPasswordEmail(token, mail string) error {
-	url := (os.Getenv("BASE_URL") + "/auth/confirm-password-reset?token=" + token + "&mail=" + mail)
+	url := (os.Getenv("BASE_URI") + "/auth/confirm-password-reset?token=" + token + "&mail=" + mail)
 
 	e := email.NewEmail()
 	e.From = "Asset Manager <" + os.Getenv("FROM_MAIL") + ">"

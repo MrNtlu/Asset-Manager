@@ -213,6 +213,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	project := bson.M{"$project": bson.M{
 		"to_asset":         "$_id.to_asset",
 		"from_asset":       "$_id.from_asset",
+		"name":             "$investing.name",
 		"asset_type":       true,
 		"total_value":      true,
 		"sold_value":       true,
@@ -247,6 +248,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	return assets, nil
 }
 
+//TODO: User set default Currency and convert GBP EUR etc to default Currency
 func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	/*
 		js := `function(prices) {

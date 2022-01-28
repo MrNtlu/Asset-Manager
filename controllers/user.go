@@ -42,6 +42,32 @@ func (u *UserController) Register(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "registered successfully"})
 }
 
+func (u *UserController) ChangeCurrency(c *gin.Context) {
+	var data requests.ChangeCurrency
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	user, err := models.FindUserByID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	user.Currency = data.Currency
+	if err = models.UpdateUser(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "successfully changed currency"})
+}
+
 func (u *UserController) ChangePassword(c *gin.Context) {
 	var data requests.ChangePassword
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -134,7 +160,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 
 	generatedPass, err := password.Generate(10, 4, 1, true, false)
 	if err != nil {
-		generatedPass = user.Username + "_Password"
+		generatedPass = user.EmailAddress + "_Password"
 	}
 
 	user.Password = utils.HashPassword(generatedPass)

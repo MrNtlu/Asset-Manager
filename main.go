@@ -28,6 +28,8 @@ func main() {
 
 	jwtHandler := helpers.SetupJWTHandler()
 
+	//TODO: Production
+	//gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
 
@@ -39,6 +41,7 @@ func main() {
 	fmt.Println("Next Schedule: ", nextRun, "\n ")
 	*/
 
+	//TODO: Search new port for app engine
 	router.Run(":8080")
 }
 

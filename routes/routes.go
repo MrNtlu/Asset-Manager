@@ -20,6 +20,6 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	subscriptionRouter(router, jwtToken)
 
 	router.NoRoute(func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "route not found"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "all routes lead to rome"})
 	})
 }

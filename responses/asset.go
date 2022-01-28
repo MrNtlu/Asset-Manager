@@ -3,6 +3,7 @@ package responses
 type Asset struct {
 	ToAsset         string  `bson:"to_asset" json:"to_asset"`
 	FromAsset       string  `bson:"from_asset" json:"from_asset"`
+	Name            string  `bson:"name" json:"name"`
 	RemainingAmount float64 `bson:"remaining_amount" json:"remaining_amount"`
 	AssetType       string  `bson:"asset_type" json:"asset_type"`
 	TotalValue      float64 `bson:"total_value" json:"total_value"`

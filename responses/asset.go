@@ -13,6 +13,7 @@ type Asset struct {
 }
 
 type AssetStats struct {
+	Currency           string  `bson:"currency" json:"currency"`
 	StockAssets        float64 `bson:"stock_assets" json:"stock_assets"`
 	CryptoAssets       float64 `bson:"crypto_assets" json:"crypto_assets"`
 	ExchangeAssets     float64 `bson:"exchange_assets" json:"exchange_assets"`

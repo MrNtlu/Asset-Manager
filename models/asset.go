@@ -248,8 +248,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	return assets, nil
 }
 
-//TODO: User set default Currency and convert GBP EUR etc to default Currency
-func GetAllAssetStats(uid string) (responses.AssetStats, error) {
+func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 	/*
 		js := `function(prices) {
 		    var sum = 1;
@@ -381,7 +380,9 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 	project := bson.M{"$project": bson.M{
-		"user_id":     true,
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
 		"asset_type":  true,
 		"total_value": true,
 		"sold_value":  true,
@@ -411,8 +412,56 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 			"$first": "$user_id",
 		},
 	}}
+	userLookup := bson.M{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "user_id",
+		"foreignField": "_id",
+		"as":           "user",
+	}}
+	unwindUser := bson.M{"$unwind": bson.M{
+		"path":                       "$user",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"user_currency": "$user.currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "user_exchange_rate",
+	}}
+	unwindUserCurrency := bson.M{"$unwind": bson.M{
+		"path":                       "$user_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyProject := bson.M{"$project": bson.M{
+		"user_id":  true,
+		"currency": "$user.currency",
+		"total_assets": bson.M{
+			"$multiply": bson.A{"$total_assets", "$user_exchange_rate.price"},
+		},
+		"total_p/l": bson.M{
+			"$multiply": bson.A{"$total_p/l", "$user_exchange_rate.price"},
+		},
+	}}
 	statsGroup := bson.M{"$group": bson.M{
 		"_id": "$user_id",
+		"currency": bson.M{
+			"$first": "$currency",
+		},
 		"stock_assets": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
@@ -507,8 +556,21 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, unwindInvesting, exchangeLookup,
-		unwindExchange, addInvestingField, project, assetGroup, statsGroup, addPercentageFields})
+	var aggregationList bson.A
+	if currency == "USD" {
+		aggregationList = bson.A{
+			match, group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
+			addInvestingField, project, assetGroup, statsGroup, addPercentageFields,
+		}
+	} else {
+		aggregationList = bson.A{
+			match, group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
+			addInvestingField, project, assetGroup, userLookup, unwindUser, userCurrencyExchangeLookup,
+			unwindUserCurrency, userCurrencyProject, statsGroup, addPercentageFields,
+		}
+	}
+
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), aggregationList)
 	if err != nil {
 		return responses.AssetStats{}, fmt.Errorf("failed to aggregate assets: %w", err)
 	}

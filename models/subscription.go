@@ -23,10 +23,12 @@ type Subscription struct {
 	BillCycle   *int               `bson:"bill_cycle" json:"bill_cycle"`
 	Price       float64            `bson:"price" json:"price"`
 	Currency    string             `bson:"currency" json:"currency"`
+	Color       string             `bson:"color" json:"color"`
+	Image       *string            `bson:"image" json:"image"`
 	CreatedAt   time.Time          `bson:"created_at" json:"-"`
 }
 
-func createSubscriptionObject(uid, name, currency string, cardID, description *string, price float64, billDate time.Time, billCycle *int) *Subscription {
+func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle *int) *Subscription {
 	return &Subscription{
 		UserID:      uid,
 		CardID:      cardID,
@@ -36,6 +38,8 @@ func createSubscriptionObject(uid, name, currency string, cardID, description *s
 		BillCycle:   billCycle,
 		Price:       price,
 		Currency:    currency,
+		Color:       color,
+		Image:       image,
 		CreatedAt:   time.Now().UTC(),
 	}
 }
@@ -45,8 +49,10 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 		uid,
 		data.Name,
 		data.Currency,
+		data.Color,
 		data.CardID,
 		data.Description,
+		data.Image,
 		data.Price,
 		data.BillDate,
 		data.BillCycle,
@@ -443,6 +449,12 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	}
 	if data.Description != nil {
 		subscription.Description = data.Description
+	}
+	if data.Color != nil {
+		subscription.Color = *data.Color
+	}
+	if data.Image != nil {
+		subscription.Image = data.Image
 	}
 	if data.BillDate != nil {
 		subscription.BillDate = *data.BillDate

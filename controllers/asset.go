@@ -52,7 +52,15 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 
 func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	assetStat, err := models.GetAllAssetStats(uid)
+	user, err := models.FindUserByID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	assetStat, err := models.GetAllAssetStats(uid, user.Currency)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

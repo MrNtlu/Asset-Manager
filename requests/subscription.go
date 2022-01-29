@@ -10,6 +10,8 @@ type Subscription struct {
 	BillCycle   *int      `json:"bill_cycle"`
 	Price       float64   `json:"price" binding:"required"`
 	Currency    string    `json:"currency" binding:"required"`
+	Color       string    `json:"color" binding:"required"`
+	Image       *string   `json:"image"`
 }
 
 type SubscriptionUpdate struct {
@@ -21,6 +23,8 @@ type SubscriptionUpdate struct {
 	Price       *float64   `json:"price"`
 	Currency    *string    `json:"currency"`
 	CardID      *string    `json:"card_id"`
+	Color       *string    `json:"color"`
+	Image       *string    `json:"image"`
 }
 
 type SubscriptionSort struct {

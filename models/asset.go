@@ -111,7 +111,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"to_asset":   "$to_asset",
 			"from_asset": "$from_asset",
 		},
-		"total_value": bson.M{
+		"total_bought": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$type", "buy"}},
@@ -120,7 +120,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				},
 			},
 		},
-		"sold_value": bson.M{
+		"total_sold": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$type", "sell"}},
@@ -215,16 +215,18 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"from_asset":       "$_id.from_asset",
 		"name":             "$investing.name",
 		"asset_type":       true,
-		"total_value":      true,
-		"sold_value":       true,
+		"total_bought":     true,
+		"total_sold":       true,
 		"remaining_amount": true,
-		"current_price":    "$investing_price",
+		"current_total_value": bson.M{
+			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
+		},
 		"p/l": bson.M{
 			"$subtract": bson.A{
-				"$total_value",
+				"$total_bought",
 				bson.M{
 					"$sum": bson.A{
-						"$sold_value",
+						"$total_sold",
 						bson.M{
 							"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 						},
@@ -246,6 +248,26 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	}
 
 	return assets, nil
+}
+
+func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.AssetDetails, error) {
+	//TODO: Aggregation - Consider removing asset logs from it because we need pagination
+
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{})
+	if err != nil {
+		return responses.AssetDetails{}, fmt.Errorf("failed to aggregate asset details: %w", err)
+	}
+
+	var assetDetails []responses.AssetDetails
+	if err = cursor.All(context.TODO(), &assetDetails); err != nil {
+		return responses.AssetDetails{}, fmt.Errorf("failed to decode asset details: %w", err)
+	}
+
+	if len(assetDetails) > 0 {
+		return assetDetails[0], nil
+	}
+
+	return responses.AssetDetails{}, nil
 }
 
 func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
@@ -277,7 +299,7 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 			"to_asset":   "$to_asset",
 			"from_asset": "$from_asset",
 		},
-		"total_value": bson.M{
+		"total_bought": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$type", "buy"}},
@@ -286,7 +308,7 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 				},
 			},
 		},
-		"sold_value": bson.M{
+		"total_sold": bson.M{
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$type", "sell"}},
@@ -383,15 +405,18 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 		"user_id": bson.M{
 			"$toObjectId": "$user_id",
 		},
-		"asset_type":  true,
-		"total_value": true,
-		"sold_value":  true,
+		"asset_type":   true,
+		"total_bought": true,
+		"total_sold":   true,
+		"current_total_value": bson.M{
+			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
+		},
 		"p/l": bson.M{
 			"$subtract": bson.A{
-				"$total_value",
+				"$total_bought",
 				bson.M{
 					"$sum": bson.A{
-						"$sold_value",
+						"$total_sold",
 						bson.M{
 							"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 						},
@@ -402,8 +427,14 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 	}}
 	assetGroup := bson.M{"$group": bson.M{
 		"_id": "$asset_type",
-		"total_assets": bson.M{
-			"$sum": "$total_value",
+		"total_bought": bson.M{
+			"$sum": "$total_bought",
+		},
+		"total_sold": bson.M{
+			"$sum": "$total_sold",
+		},
+		"total_current": bson.M{
+			"$sum": "$current_total_value",
 		},
 		"total_p/l": bson.M{
 			"$sum": "$p/l",
@@ -451,16 +482,28 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 		"user_id":  true,
 		"currency": "$user.currency",
 		"total_assets": bson.M{
-			"$multiply": bson.A{"$total_assets", "$user_exchange_rate.price"},
+			"$multiply": bson.A{"$total_current", "$user_exchange_rate.price"},
 		},
 		"total_p/l": bson.M{
 			"$multiply": bson.A{"$total_p/l", "$user_exchange_rate.price"},
+		},
+		"total_bought": bson.M{
+			"$multiply": bson.A{"$total_bought", "$user_exchange_rate.price"},
+		},
+		"total_sold": bson.M{
+			"$multiply": bson.A{"$total_sold", "$user_exchange_rate.price"},
 		},
 	}}
 	statsGroup := bson.M{"$group": bson.M{
 		"_id": "$user_id",
 		"currency": bson.M{
 			"$first": "$currency",
+		},
+		"total_bought": bson.M{
+			"$first": "$total_bought",
+		},
+		"total_sold": bson.M{
+			"$first": "$total_sold",
 		},
 		"stock_assets": bson.M{
 			"$sum": bson.M{

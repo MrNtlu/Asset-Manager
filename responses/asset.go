@@ -1,19 +1,45 @@
 package responses
 
+import "time"
+
 type Asset struct {
 	ToAsset         string  `bson:"to_asset" json:"to_asset"`
 	FromAsset       string  `bson:"from_asset" json:"from_asset"`
 	Name            string  `bson:"name" json:"name"`
 	RemainingAmount float64 `bson:"remaining_amount" json:"remaining_amount"`
 	AssetType       string  `bson:"asset_type" json:"asset_type"`
-	TotalValue      float64 `bson:"total_value" json:"total_value"`
-	SoldValue       float64 `bson:"sold_value" json:"sold_value"`
+	TotalBought     float64 `bson:"total_bought" json:"total_bought"`
+	TotalSold       float64 `bson:"total_sold" json:"total_sold"`
 	PL              float64 `bson:"p/l" json:"p/l"`
-	CurrentPrice    float64 `bson:"current_price" json:"current_price"`
+	CurrentTotal    float64 `bson:"current_total_value" json:"current_total_value"`
+}
+
+type AssetDetails struct {
+	ToAsset         string     `bson:"to_asset" json:"to_asset"`
+	FromAsset       string     `bson:"from_asset" json:"from_asset"`
+	RemainingAmount float64    `bson:"remaining_amount" json:"remaining_amount"`
+	TotalBought     float64    `bson:"total_bought" json:"total_bought"`
+	TotalSold       float64    `bson:"total_sold" json:"total_sold"`
+	CurrentTotal    float64    `bson:"current_total_value" json:"current_total_value"`
+	PL              float64    `bson:"p/l" json:"p/l"`
+	Assets          []AssetLog `bson:"assets" json:"assets"`
+}
+
+type AssetLog struct {
+	ToAsset       string    `bson:"to_asset" json:"to_asset"`
+	FromAsset     string    `bson:"from_asset" json:"from_asset"`
+	BoughtPrice   *float64  `bson:"bought_price" json:"bought_price"`
+	SoldPrice     *float64  `bson:"sold_price" json:"sold_price"`
+	Amount        float64   `bson:"amount" json:"amount"`
+	Type          string    `bson:"type" json:"type"`
+	CreatedAt     time.Time `bson:"created_at" json:"created_at"`
+	CurrencyValue float64   `bson:"value" json:"value"`
 }
 
 type AssetStats struct {
 	Currency           string  `bson:"currency" json:"currency"`
+	TotalBought        string  `bson:"total_bought" json:"total_bought"`
+	TotalSold          string  `bson:"total_sold" json:"total_sold"`
 	StockAssets        float64 `bson:"stock_assets" json:"stock_assets"`
 	CryptoAssets       float64 `bson:"crypto_assets" json:"crypto_assets"`
 	ExchangeAssets     float64 `bson:"exchange_assets" json:"exchange_assets"`

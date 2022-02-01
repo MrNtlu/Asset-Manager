@@ -50,6 +50,28 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets})
 }
 
+func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
+	var data requests.AssetDetails
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+	uid := jwt.ExtractClaims(c)["id"].(string)
+
+	assetDetails, err := models.GetAssetStatsByAssetAndUserID(uid, data.ToAsset, data.FromAsset)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetDetails})
+}
+
 func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	user, err := models.FindUserByID(uid)

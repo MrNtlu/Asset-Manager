@@ -252,8 +252,143 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 
 func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.AssetDetails, error) {
 	//TODO: Aggregation - Consider removing asset logs from it because we need pagination
+	match := bson.M{"$match": bson.M{
+		"user_id":    uid,
+		"to_asset":   toAsset,
+		"from_asset": fromAsset,
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": bson.M{
+			"to_asset":   "$to_asset",
+			"from_asset": "$from_asset",
+		},
+		"total_bought": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"total_sold": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "sell"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"remaining_amount": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$amount",
+					bson.M{"$multiply": bson.A{"$amount", -1}},
+				},
+			},
+		},
+		"asset_type": bson.M{
+			"$first": "$asset_type",
+		},
+		"user_id": bson.M{
+			"$first": "$user_id",
+		},
+	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"asset_type": "$asset_type",
+			"to_asset":   "$_id.to_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing",
+	}}
+	unwindInvesting := bson.M{"$unwind": bson.M{
+		"path":                       "$investing",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	exchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"from_asset": "$_id.from_asset",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing_exchange",
+	}}
+	unwindExchange := bson.M{"$unwind": bson.M{
+		"path":                       "$investing_exchange",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	addInvestingField := bson.M{"$addFields": bson.M{
+		"investing_price": bson.M{
+			"$cond": bson.A{
+				bson.M{
+					"$ne": bson.A{"$_id.from_asset", "USD"},
+				},
+				bson.M{
+					"$multiply": bson.A{
+						"$investing.price",
+						"$investing_exchange.price",
+					},
+				},
+				"$investing.price",
+			},
+		},
+	}}
+	project := bson.M{"$project": bson.M{
+		"to_asset":         "$_id.to_asset",
+		"from_asset":       "$_id.from_asset",
+		"total_bought":     true,
+		"total_sold":       true,
+		"remaining_amount": true,
+		"current_total_value": bson.M{
+			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
+		},
+		"p/l": bson.M{
+			"$subtract": bson.A{
+				"$total_bought",
+				bson.M{
+					"$sum": bson.A{
+						"$total_sold",
+						bson.M{
+							"$multiply": bson.A{"$remaining_amount", "$investing_price"},
+						},
+					},
+				},
+			},
+		},
+	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+		match, group, lookup, unwindInvesting, exchangeLookup,
+		unwindExchange, addInvestingField, project,
+	})
 	if err != nil {
 		return responses.AssetDetails{}, fmt.Errorf("failed to aggregate asset details: %w", err)
 	}

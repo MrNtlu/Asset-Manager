@@ -20,7 +20,7 @@ type Subscription struct {
 	Name        string             `bson:"name" json:"name"`
 	Description *string            `bson:"description" json:"description"`
 	BillDate    time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle   *int               `bson:"bill_cycle" json:"bill_cycle"`
+	BillCycle   *BillCycle         `bson:"bill_cycle" json:"bill_cycle"`
 	Price       float64            `bson:"price" json:"price"`
 	Currency    string             `bson:"currency" json:"currency"`
 	Color       string             `bson:"color" json:"color"`
@@ -28,7 +28,13 @@ type Subscription struct {
 	CreatedAt   time.Time          `bson:"created_at" json:"-"`
 }
 
-func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle *int) *Subscription {
+type BillCycle struct {
+	Day   int `bson:"day" json:"day"`
+	Month int `bson:"month" json:"month"`
+	Year  int `bson:"year" json:"year"`
+}
+
+func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle *BillCycle) *Subscription {
 	return &Subscription{
 		UserID:      uid,
 		CardID:      cardID,
@@ -44,6 +50,14 @@ func createSubscriptionObject(uid, name, currency, color string, cardID, descrip
 	}
 }
 
+func createBillCycle(billCycle requests.BillCycle) *BillCycle {
+	return &BillCycle{
+		Day:   billCycle.Day,
+		Month: billCycle.Month,
+		Year:  billCycle.Year,
+	}
+}
+
 func CreateSubscription(uid string, data requests.Subscription) error {
 	subscription := createSubscriptionObject(
 		uid,
@@ -55,7 +69,7 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 		data.Image,
 		data.Price,
 		data.BillDate,
-		data.BillCycle,
+		createBillCycle(*data.BillCycle),
 	)
 
 	if _, err := db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
@@ -143,11 +157,47 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 		"monthly_payment": bson.M{
 			"$round": bson.A{
 				bson.M{
-					"$multiply": bson.A{
-						bson.M{"$divide": bson.A{30, "$bill_cycle"}},
-						"$price",
+					"$switch": bson.M{
+						"branches": bson.A{
+							//Day case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+								"then": bson.M{
+									"$multiply": bson.A{
+										bson.M{
+											"$divide": bson.A{30, "$bill_cycle.day"},
+										},
+										"$price",
+									},
+								},
+							},
+							//Month Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 1}},
+								"then": bson.M{
+									"$divide": bson.A{"$price", "$bill_cycle.month"},
+								},
+							},
+							//Year Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+								"then": bson.M{
+									"$divide": bson.A{
+										bson.M{
+											"$multiply": bson.A{
+												12,
+												"$bill_cycle.year",
+											},
+										},
+										"$price",
+									},
+								},
+							},
+						},
+						"default": "$price",
 					},
-				}, 1,
+				},
+				2,
 			},
 		},
 		"total_payment": bson.M{
@@ -167,33 +217,77 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 				"in": bson.M{
 					"$round": bson.A{
 						bson.M{
-							"$multiply": bson.A{
+							"$cond": bson.A{
 								bson.M{
-									"$sum": bson.A{
-										bson.M{
-											"$floor": bson.M{
-												"$divide": bson.A{
-													bson.M{
-														"$cond": bson.A{
-															bson.M{
-																"$gte": bson.A{
-																	"$$date_diff",
-																	1,
+									"$gte": bson.A{"$$date_diff", 1},
+								},
+								bson.M{
+									"$switch": bson.M{
+										"branches": bson.A{
+											//Day case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{"$$date_diff", "$bill_cycle.day"},
+															},
+														},
+														"$price",
+													},
+												},
+											},
+											//Month Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 30},
+																		},
+																	},
+																	"$bill_cycle.month",
 																},
 															},
-															"$$date_diff",
-															-1,
 														},
-													}, "$bill_cycle",
+														"$price",
+													},
+												},
+											},
+											//Year Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 365},
+																		},
+																	},
+																	"$bill_cycle.year",
+																},
+															},
+														},
+														"$price",
+													},
 												},
 											},
 										},
-										1,
+										"default": "$price",
 									},
 								},
-								"$price",
+								0,
 							},
-						}, 1,
+						},
+						2,
 					},
 				},
 			},
@@ -225,11 +319,47 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		"monthly_payment": bson.M{
 			"$round": bson.A{
 				bson.M{
-					"$multiply": bson.A{
-						bson.M{"$divide": bson.A{30, "$bill_cycle"}},
-						"$price",
+					"$switch": bson.M{
+						"branches": bson.A{
+							//Day case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+								"then": bson.M{
+									"$multiply": bson.A{
+										bson.M{
+											"$divide": bson.A{30, "$bill_cycle.day"},
+										},
+										"$price",
+									},
+								},
+							},
+							//Month Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 1}},
+								"then": bson.M{
+									"$divide": bson.A{"$price", "$bill_cycle.month"},
+								},
+							},
+							//Year Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+								"then": bson.M{
+									"$divide": bson.A{
+										bson.M{
+											"$multiply": bson.A{
+												12,
+												"$bill_cycle.year",
+											},
+										},
+										"$price",
+									},
+								},
+							},
+						},
+						"default": "$price",
 					},
-				}, 1,
+				},
+				2,
 			},
 		},
 		"total_payment": bson.M{
@@ -249,40 +379,81 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 				"in": bson.M{
 					"$round": bson.A{
 						bson.M{
-							"$multiply": bson.A{
+							"$cond": bson.A{
 								bson.M{
-									"$sum": bson.A{
-										bson.M{
-											"$floor": bson.M{
-												"$divide": bson.A{
-													bson.M{
-														"$cond": bson.A{
-															bson.M{
-																"$gte": bson.A{
-																	"$$date_diff",
-																	1,
+									"$gte": bson.A{"$$date_diff", 1},
+								},
+								bson.M{
+									"$switch": bson.M{
+										"branches": bson.A{
+											//Day case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{"$$date_diff", "$bill_cycle.day"},
+															},
+														},
+														"$price",
+													},
+												},
+											},
+											//Month Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 30},
+																		},
+																	},
+																	"$bill_cycle.month",
 																},
 															},
-															"$$date_diff",
-															-1,
 														},
-													}, "$bill_cycle",
+														"$price",
+													},
+												},
+											},
+											//Year Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 365},
+																		},
+																	},
+																	"$bill_cycle.year",
+																},
+															},
+														},
+														"$price",
+													},
 												},
 											},
 										},
-										1,
+										"default": "$price",
 									},
 								},
-								"$price",
+								0,
 							},
-						}, 1,
+						},
+						2,
 					},
 				},
 			},
 		},
-	}}
-	sort := bson.M{"$sort": bson.M{
-		"monthly_payment": -1,
 	}}
 	group := bson.M{"$group": bson.M{
 		"_id": "$currency",
@@ -292,16 +463,10 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		"total_payment": bson.M{
 			"$sum": "$total_payment",
 		},
-		"most_expensive": bson.M{
-			"$first": "$monthly_payment",
-		},
-		"most_expensive_name": bson.M{
-			"$first": "$name",
-		},
 	}}
 
 	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
-		match, addFields, sort, group,
+		match, addFields, group,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to aggregate subscription: %w", err)
@@ -339,11 +504,47 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 		"monthly_payment": bson.M{
 			"$round": bson.A{
 				bson.M{
-					"$multiply": bson.A{
-						bson.M{"$divide": bson.A{30, "$bill_cycle"}},
-						"$price",
+					"$switch": bson.M{
+						"branches": bson.A{
+							//Day case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+								"then": bson.M{
+									"$multiply": bson.A{
+										bson.M{
+											"$divide": bson.A{30, "$bill_cycle.day"},
+										},
+										"$price",
+									},
+								},
+							},
+							//Month Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 1}},
+								"then": bson.M{
+									"$divide": bson.A{"$price", "$bill_cycle.month"},
+								},
+							},
+							//Year Case
+							bson.M{
+								"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+								"then": bson.M{
+									"$divide": bson.A{
+										bson.M{
+											"$multiply": bson.A{
+												12,
+												"$bill_cycle.year",
+											},
+										},
+										"$price",
+									},
+								},
+							},
+						},
+						"default": "$price",
 					},
-				}, 1,
+				},
+				2,
 			},
 		},
 		"total_payment": bson.M{
@@ -363,33 +564,77 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 				"in": bson.M{
 					"$round": bson.A{
 						bson.M{
-							"$multiply": bson.A{
+							"$cond": bson.A{
 								bson.M{
-									"$sum": bson.A{
-										bson.M{
-											"$floor": bson.M{
-												"$divide": bson.A{
-													bson.M{
-														"$cond": bson.A{
-															bson.M{
-																"$gte": bson.A{
-																	"$$date_diff",
-																	1,
+									"$gte": bson.A{"$$date_diff", 1},
+								},
+								bson.M{
+									"$switch": bson.M{
+										"branches": bson.A{
+											//Day case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{"$$date_diff", "$bill_cycle.day"},
+															},
+														},
+														"$price",
+													},
+												},
+											},
+											//Month Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 30},
+																		},
+																	},
+																	"$bill_cycle.month",
 																},
 															},
-															"$$date_diff",
-															-1,
 														},
-													}, "$bill_cycle",
+														"$price",
+													},
+												},
+											},
+											//Year Case
+											bson.M{
+												"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
+												"then": bson.M{
+													"$multiply": bson.A{
+														bson.M{
+															"$ceil": bson.M{
+																"$divide": bson.A{
+																	bson.M{
+																		"$ceil": bson.M{
+																			"$divide": bson.A{"$$date_diff", 365},
+																		},
+																	},
+																	"$bill_cycle.year",
+																},
+															},
+														},
+														"$price",
+													},
 												},
 											},
 										},
-										1,
+										"default": "$price",
 									},
 								},
-								"$price",
+								0,
 							},
-						}, 1,
+						},
+						2,
 					},
 				},
 			},
@@ -460,7 +705,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 		subscription.BillDate = *data.BillDate
 	}
 	if data.BillCycle != nil {
-		subscription.BillCycle = data.BillCycle
+		subscription.BillCycle = createBillCycle(*data.BillCycle)
 	}
 	if data.Price != nil {
 		subscription.Price = *data.Price

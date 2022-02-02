@@ -13,17 +13,21 @@ type SubscriptionDetails struct {
 	Name           string             `bson:"name" json:"name"`
 	Description    *string            `bson:"description" json:"description"`
 	BillDate       time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle      *int               `bson:"bill_cycle" json:"bill_cycle"`
+	BillCycle      *BillCycle         `bson:"bill_cycle" json:"bill_cycle"`
 	Price          float64            `bson:"price" json:"price"`
 	Currency       string             `bson:"currency" json:"currency"`
 	MonthlyPayment float64            `bson:"monthly_payment" json:"monthly_payment"`
 	TotalPayment   float64            `bson:"total_payment" json:"total_payment"`
 }
 
+type BillCycle struct {
+	Day   int `json:"day"`
+	Month int `json:"month"`
+	Year  int `json:"year"`
+}
+
 type SubscriptionStatistics struct {
 	ID                  string  `bson:"_id" json:"currency"`
-	MEName              string  `bson:"most_expensive_name" json:"most_expensive_name"`
-	ME                  float64 `bson:"most_expensive" json:"most_expensive"`
 	TotalMonthlyPayment float64 `bson:"total_monthly_payment" json:"total_monthly_payment"`
 	TotalPayment        float64 `bson:"total_payment" json:"total_payment"`
 }

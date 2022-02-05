@@ -24,9 +24,7 @@
 
 &nbsp;
 
-Windows/Mac: Soon :pray:
-
-Android: Soon :pray:
+Flutter (Android/Mac/Windows): [Asset Manager Flutter](https://github.com/MrNtlu/Asset-Manager-Flutter)
 
 iOS: Soon :pray:
 

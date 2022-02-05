@@ -13,7 +13,7 @@ type SubscriptionDetails struct {
 	Name           string             `bson:"name" json:"name"`
 	Description    *string            `bson:"description" json:"description"`
 	BillDate       time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle      *BillCycle         `bson:"bill_cycle" json:"bill_cycle"`
+	BillCycle      BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
 	Price          float64            `bson:"price" json:"price"`
 	Currency       string             `bson:"currency" json:"currency"`
 	MonthlyPayment float64            `bson:"monthly_payment" json:"monthly_payment"`

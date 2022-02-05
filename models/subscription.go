@@ -20,7 +20,7 @@ type Subscription struct {
 	Name        string             `bson:"name" json:"name"`
 	Description *string            `bson:"description" json:"description"`
 	BillDate    time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle   *BillCycle         `bson:"bill_cycle" json:"bill_cycle"`
+	BillCycle   BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
 	Price       float64            `bson:"price" json:"price"`
 	Currency    string             `bson:"currency" json:"currency"`
 	Color       string             `bson:"color" json:"color"`
@@ -34,7 +34,7 @@ type BillCycle struct {
 	Year  int `bson:"year" json:"year"`
 }
 
-func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle *BillCycle) *Subscription {
+func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle BillCycle) *Subscription {
 	return &Subscription{
 		UserID:      uid,
 		CardID:      cardID,
@@ -58,6 +58,7 @@ func createBillCycle(billCycle requests.BillCycle) *BillCycle {
 	}
 }
 
+//TODO: Test
 func CreateSubscription(uid string, data requests.Subscription) error {
 	subscription := createSubscriptionObject(
 		uid,
@@ -69,7 +70,7 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 		data.Image,
 		data.Price,
 		data.BillDate,
-		createBillCycle(*data.BillCycle),
+		*createBillCycle(data.BillCycle),
 	)
 
 	if _, err := db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
@@ -705,7 +706,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 		subscription.BillDate = *data.BillDate
 	}
 	if data.BillCycle != nil {
-		subscription.BillCycle = createBillCycle(*data.BillCycle)
+		subscription.BillCycle = *createBillCycle(*data.BillCycle)
 	}
 	if data.Price != nil {
 		subscription.Price = *data.Price

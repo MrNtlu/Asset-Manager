@@ -58,7 +58,6 @@ func createBillCycle(billCycle requests.BillCycle) *BillCycle {
 	}
 }
 
-//TODO: Test
 func CreateSubscription(uid string, data requests.Subscription) error {
 	subscription := createSubscriptionObject(
 		uid,

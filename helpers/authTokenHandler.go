@@ -27,7 +27,7 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 	}
 
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "asset manager",
+		Realm:       "asset-manager",
 		Key:         []byte(os.Getenv("JWT_SECRET_KEY")),
 		Timeout:     time.Hour,
 		MaxRefresh:  time.Hour * 8760,
@@ -35,12 +35,12 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var data requests.Login
 			if err := c.Bind(&data); err != nil {
-				return "", jwt.ErrMissingLoginValues
+				return "", errors.New("missing Email or Password")
 			}
 
 			user, err := models.FindUserByEmail(data.EmailAddress)
 			if err != nil {
-				return "", jwt.ErrFailedAuthentication
+				return "", errors.New("incorrect Email or Password")
 			}
 
 			if user.Password == "" {

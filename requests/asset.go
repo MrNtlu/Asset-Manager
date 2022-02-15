@@ -16,8 +16,8 @@ type AssetSort struct {
 }
 
 type AssetDetails struct {
-	ToAsset   string `json:"to_asset" binding:"required"`
-	FromAsset string `json:"from_asset" binding:"required"`
+	ToAsset   string `form:"to_asset" binding:"required"`
+	FromAsset string `form:"from_asset" binding:"required"`
 }
 
 type AssetLog struct {

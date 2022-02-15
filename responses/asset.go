@@ -38,8 +38,8 @@ type AssetLog struct {
 
 type AssetStats struct {
 	Currency           string  `bson:"currency" json:"currency"`
-	TotalBought        string  `bson:"total_bought" json:"total_bought"`
-	TotalSold          string  `bson:"total_sold" json:"total_sold"`
+	TotalBought        float64 `bson:"total_bought" json:"total_bought"`
+	TotalSold          float64 `bson:"total_sold" json:"total_sold"`
 	StockAssets        float64 `bson:"stock_assets" json:"stock_assets"`
 	CryptoAssets       float64 `bson:"crypto_assets" json:"crypto_assets"`
 	ExchangeAssets     float64 `bson:"exchange_assets" json:"exchange_assets"`

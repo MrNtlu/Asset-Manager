@@ -55,7 +55,7 @@ func (s *SubscriptionController) GetCardsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": cards})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cards})
 }
 
 func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
@@ -77,7 +77,7 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": subscriptions})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
 }
 
 func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
@@ -99,7 +99,7 @@ func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": subscriptions})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
 }
 
 func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
@@ -126,7 +126,7 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": subscription})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscription})
 }
 
 func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Context) {
@@ -139,7 +139,7 @@ func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Contex
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": subscriptionStats})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptionStats})
 }
 
 func (s *SubscriptionController) GetCardStatisticsByUserID(c *gin.Context) {
@@ -152,7 +152,7 @@ func (s *SubscriptionController) GetCardStatisticsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"data": cardStats})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cardStats})
 }
 
 func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {

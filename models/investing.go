@@ -15,7 +15,6 @@ func GetInvestingsByType(tType string) ([]responses.InvestingResponse, error) {
 	}}
 	project := bson.M{"$project": bson.M{
 		"name":   "$name",
-		"price":  "$price",
 		"symbol": "$_id.symbol",
 	}}
 

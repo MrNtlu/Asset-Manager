@@ -12,6 +12,7 @@ var (
 	userController         = new(controllers.UserController)
 	assetController        = new(controllers.AssetController)
 	subscriptionController = new(controllers.SubscriptionController)
+	investingController    = new(controllers.InvestingController)
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {

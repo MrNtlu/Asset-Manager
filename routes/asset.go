@@ -18,4 +18,9 @@ func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		asset.GET("/logs", assetController.GetAssetLogsByUserID)
 		asset.GET("", assetController.GetAssetsByUserID)
 	}
+
+	investing := router.Group("/investings")
+	{
+		investing.GET("", investingController.GetInvestingsByType)
+	}
 }

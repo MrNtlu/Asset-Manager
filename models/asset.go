@@ -209,6 +209,15 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				"$investing.price",
 			},
 		},
+		"remaining_amount": bson.M{
+			"$cond": bson.A{
+				bson.M{
+					"$gt": bson.A{"$remaining_amount", 0},
+				},
+				"$remaining_amount",
+				0,
+			},
+		},
 	}}
 	project := bson.M{"$project": bson.M{
 		"to_asset":         "$_id.to_asset",
@@ -358,6 +367,15 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 					},
 				},
 				"$investing.price",
+			},
+		},
+		"remaining_amount": bson.M{
+			"$cond": bson.A{
+				bson.M{
+					"$gt": bson.A{"$remaining_amount", 0},
+				},
+				"$remaining_amount",
+				0,
 			},
 		},
 	}}
@@ -533,6 +551,15 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 					},
 				},
 				"$investing.price",
+			},
+		},
+		"remaining_amount": bson.M{
+			"$cond": bson.A{
+				bson.M{
+					"$gt": bson.A{"$remaining_amount", 0},
+				},
+				"$remaining_amount",
+				0,
 			},
 		},
 	}}

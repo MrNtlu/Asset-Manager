@@ -22,7 +22,6 @@ func (i *InvestingController) GetInvestingsByType(c *gin.Context) {
 
 	investings, err := models.GetInvestingsByType(data.AssetType)
 	if err != nil {
-		print("error is ", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

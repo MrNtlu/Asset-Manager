@@ -17,6 +17,7 @@ type Asset struct {
 type AssetDetails struct {
 	ToAsset         string     `bson:"to_asset" json:"to_asset"`
 	FromAsset       string     `bson:"from_asset" json:"from_asset"`
+	Name            string     `bson:"name" json:"name"`
 	RemainingAmount float64    `bson:"remaining_amount" json:"remaining_amount"`
 	TotalBought     float64    `bson:"total_bought" json:"total_bought"`
 	TotalSold       float64    `bson:"total_sold" json:"total_sold"`

@@ -382,6 +382,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 	project := bson.M{"$project": bson.M{
 		"to_asset":         "$_id.to_asset",
 		"from_asset":       "$_id.from_asset",
+		"name":             "$investing.name",
 		"total_bought":     true,
 		"total_sold":       true,
 		"remaining_amount": true,
@@ -793,20 +794,10 @@ func GetAllAssetStats(uid, currency string) (responses.AssetStats, error) {
 }
 
 func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {
-	var match bson.M
-	if data.Type == nil {
-		match = bson.M{
-			"user_id":    uid,
-			"to_asset":   data.ToAsset,
-			"from_asset": data.FromAsset,
-		}
-	} else {
-		match = bson.M{
-			"user_id":    uid,
-			"to_asset":   data.ToAsset,
-			"from_asset": data.FromAsset,
-			"type":       data.Type,
-		}
+	match := bson.M{
+		"user_id":    uid,
+		"to_asset":   data.ToAsset,
+		"from_asset": data.FromAsset,
 	}
 
 	var sortType string

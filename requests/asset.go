@@ -21,11 +21,10 @@ type AssetDetails struct {
 }
 
 type AssetLog struct {
-	ToAsset   string  `form:"to_asset" binding:"required"`
-	FromAsset string  `form:"from_asset" binding:"required"`
-	Type      *string `form:"type" binding:"oneof=sell buy"`
-	Sort      string  `form:"sort" binding:"required,oneof=newest oldest amount"`
-	Page      int64   `form:"page" binding:"required,number,min=1"`
+	ToAsset   string `form:"to_asset" binding:"required"`
+	FromAsset string `form:"from_asset" binding:"required"`
+	Sort      string `form:"sort" binding:"required,oneof=newest oldest amount"`
+	Page      int64  `form:"page" binding:"required,number,min=1"`
 }
 
 type AssetUpdate struct {

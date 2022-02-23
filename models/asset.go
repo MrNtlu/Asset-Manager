@@ -386,6 +386,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 		"total_bought":     true,
 		"total_sold":       true,
 		"remaining_amount": true,
+		"asset_type":       true,
 		"current_total_value": bson.M{
 			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 		},
@@ -826,44 +827,62 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	objectAssetID, _ := primitive.ObjectIDFromHex(data.ID)
 
-	var (
-		currencyValue float64
-		update        bson.M
-	)
-	if data.BoughtPrice != nil && data.Amount != 0 {
-		currencyValue = *data.BoughtPrice * data.Amount
-
-		update = bson.M{
-			"bought_price": data.BoughtPrice,
-			"amount":       data.Amount,
-			"value":        currencyValue,
-		}
-	} else if data.SoldPrice != nil && data.Amount != 0 {
-		currencyValue = *data.SoldPrice * data.Amount
-
-		update = bson.M{
-			"sold_price": data.SoldPrice,
-			"amount":     data.Amount,
-			"value":      currencyValue,
-		}
-	} else if data.Amount != 0 {
-		if asset.Type == "buy" {
-			currencyValue = *asset.BoughtPrice * data.Amount
+	if data.Type != nil {
+		var price float64
+		if data.BoughtPrice == nil && data.SoldPrice == nil {
+			if asset.BoughtPrice != nil {
+				price = *asset.BoughtPrice
+			} else {
+				price = *asset.SoldPrice
+			}
 		} else {
-			currencyValue = *asset.SoldPrice * data.Amount
+			if data.BoughtPrice != nil {
+				price = *data.BoughtPrice
+			} else {
+				price = *data.SoldPrice
+			}
 		}
 
-		update = bson.M{
-			"amount": data.Amount,
-			"value":  currencyValue,
+		asset.Type = *data.Type
+		if *data.Type == "buy" {
+			asset.BoughtPrice = &price
+			asset.SoldPrice = nil
+		} else {
+			asset.SoldPrice = &price
+			asset.BoughtPrice = nil
 		}
-	} else {
-		return nil
+	}
+
+	if data.Type == nil && (data.BoughtPrice != nil || data.SoldPrice != nil) {
+		var price float64
+		if data.BoughtPrice != nil {
+			price = *data.BoughtPrice
+		} else {
+			price = *data.SoldPrice
+		}
+
+		if asset.BoughtPrice != nil {
+			asset.BoughtPrice = &price
+		} else {
+			asset.SoldPrice = &price
+		}
+	}
+
+	if data.Amount != nil {
+		asset.Amount = *data.Amount
+	}
+
+	if data.Amount != nil || data.BoughtPrice != nil || data.SoldPrice != nil {
+		if asset.Type == "buy" {
+			asset.CurrencyValue = *asset.BoughtPrice * asset.Amount
+		} else {
+			asset.CurrencyValue = *asset.SoldPrice * asset.Amount
+		}
 	}
 
 	if _, err := db.AssetCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectAssetID,
-	}, bson.M{"$set": update}); err != nil {
+	}, bson.M{"$set": asset}); err != nil {
 		return fmt.Errorf("failed to update asset: %w", err)
 	}
 

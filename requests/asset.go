@@ -29,9 +29,10 @@ type AssetLog struct {
 
 type AssetUpdate struct {
 	ID          string   `json:"id" binding:"required"`
+	Type        *string  `json:"type"`
 	BoughtPrice *float64 `json:"bought_price"`
 	SoldPrice   *float64 `json:"sold_price"`
-	Amount      float64  `json:"amount"`
+	Amount      *float64 `json:"amount"`
 }
 
 type AssetLogsDelete struct {

@@ -23,6 +23,7 @@ type AssetDetails struct {
 	TotalSold       float64    `bson:"total_sold" json:"total_sold"`
 	CurrentTotal    float64    `bson:"current_total_value" json:"current_total_value"`
 	PL              float64    `bson:"p/l" json:"p/l"`
+	AssetType       string     `bson:"asset_type" json:"asset_type"`
 	Assets          []AssetLog `bson:"assets" json:"assets"`
 }
 

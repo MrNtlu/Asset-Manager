@@ -14,7 +14,7 @@ var (
 	baseAlphaURL = "https://www.alphavantage.co/"
 	currencyURL  = "query?function=CURRENCY_EXCHANGE_RATE&from_currency=USD&to_currency="
 
-	exchangeList = []string{"EUR", "JPY", "KRW", "GBP"}
+	exchangeList = []string{"EUR", "JPY", "KRW", "GBP", "USD"}
 )
 
 type Exchange struct {

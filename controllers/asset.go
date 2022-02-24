@@ -74,15 +74,8 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 
 func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	user, err := models.FindUserByID(uid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
 
-	assetStat, err := models.GetAllAssetStats(uid, user.Currency)
+	assetStat, err := models.GetAllAssetStats(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

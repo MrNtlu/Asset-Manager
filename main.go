@@ -40,10 +40,12 @@ func main() {
 	fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
 	fmt.Println("Next Schedule: ", nextRun, "\n ")
 	*/
-
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
 	//TODO: Search new port for app engine
-	println("Port is ", os.Getenv("PORT"))
-	router.Run(":8080")
+	router.Run(":" + port)
 }
 
 func hourlyTask() {

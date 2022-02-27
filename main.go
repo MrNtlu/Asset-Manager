@@ -42,6 +42,7 @@ func main() {
 	*/
 
 	//TODO: Search new port for app engine
+	println("Port is ", os.Getenv("PORT"))
 	router.Run(":8080")
 }
 

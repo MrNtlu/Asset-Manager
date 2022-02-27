@@ -16,12 +16,13 @@ import (
 func main() {
 	fmt.Println("Running")
 
-	if err := godotenv.Load(".env"); err != nil {
-		log.Fatal("Error loading .env file")
+	if os.Getenv("ENV") != "Production" {
+		if err := godotenv.Load(".env"); err != nil {
+			log.Default().Println(os.Getenv("ENV"))
+			log.Fatal("Error loading .env file")
+		}
 	}
 
-	log.Fatal("Atlas ", os.Getenv("MONGO_ATLAS_URI"))
-	log.Fatal("Atlas ", os.Getenv("PORT"))
 	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
 	if err != nil {
 		panic(err)

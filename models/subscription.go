@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -73,7 +74,11 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 	)
 
 	if _, err := db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
-		return fmt.Errorf("failed to create new subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"data": data,
+		}).Error("failed to create new subscription: ", err)
+		return fmt.Errorf("failed to create new subscription")
 	}
 
 	return nil
@@ -86,7 +91,10 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 
 	var subscription Subscription
 	if err := result.Decode(&subscription); err != nil {
-		return Subscription{}, fmt.Errorf("failed to find subscription by subscription id: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"subscription_id": subscriptionID,
+		}).Error("failed to create new subscription: ", err)
+		return Subscription{}, fmt.Errorf("failed to find subscription by subscription id")
 	}
 
 	return subscription, nil
@@ -104,12 +112,20 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]Subscription, error) {
 
 	cursor, err := db.SubscriptionCollection.Find(context.TODO(), match, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":     uid,
+			"card_id": cardID,
+		}).Error("failed to find subscription: ", err)
+		return nil, fmt.Errorf("failed to find subscription")
 	}
 
 	var subscriptions []Subscription
 	if err := cursor.All(context.TODO(), &subscriptions); err != nil {
-		return nil, fmt.Errorf("failed to decode subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":     uid,
+			"card_id": cardID,
+		}).Error("failed to decode subscriptions: ", err)
+		return nil, fmt.Errorf("failed to decode subscriptions")
 	}
 
 	return subscriptions, nil
@@ -135,12 +151,22 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]Sub
 
 	cursor, err := db.SubscriptionCollection.Find(context.TODO(), match, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":       uid,
+			"sort":      data.Sort,
+			"sort_type": data.SortType,
+		}).Error("failed to find subscription: ", err)
+		return nil, fmt.Errorf("failed to find subscription")
 	}
 
 	var subscriptions []Subscription
 	if err := cursor.All(context.TODO(), &subscriptions); err != nil {
-		return nil, fmt.Errorf("failed to decode subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":       uid,
+			"sort":      data.Sort,
+			"sort_type": data.SortType,
+		}).Error("failed to decode subscription: ", err)
+		return nil, fmt.Errorf("failed to decode subscription")
 	}
 
 	return subscriptions, nil
@@ -296,12 +322,20 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 
 	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{match, addFields})
 	if err != nil {
-		return responses.SubscriptionDetails{}, fmt.Errorf("failed to aggregate subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":             uid,
+			"subscription_id": subscriptionID,
+		}).Error("failed to aggregate subscription details: ", err)
+		return responses.SubscriptionDetails{}, fmt.Errorf("failed to aggregate subscription details")
 	}
 
 	var subscriptions []responses.SubscriptionDetails
 	if err = cursor.All(context.TODO(), &subscriptions); err != nil {
-		return responses.SubscriptionDetails{}, fmt.Errorf("failed to decode subscriptions: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":             uid,
+			"subscription_id": subscriptionID,
+		}).Error("failed to decode subscription details: ", err)
+		return responses.SubscriptionDetails{}, fmt.Errorf("failed to decode subscription details")
 	}
 
 	if len(subscriptions) > 0 {
@@ -469,12 +503,18 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		match, addFields, group,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to aggregate subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to aggregate subscription statistics: ", err)
+		return nil, fmt.Errorf("failed to aggregate subscription statistics")
 	}
 
 	var subscriptionStats []responses.SubscriptionStatistics
 	if err = cursor.All(context.TODO(), &subscriptionStats); err != nil {
-		return nil, fmt.Errorf("failed to decode subscriptions: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode subscription statistics: ", err)
+		return nil, fmt.Errorf("failed to decode subscription statistics")
 	}
 
 	return subscriptionStats, nil
@@ -675,12 +715,18 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 		match, set, lookup, unwind, addFields, sort, group,
 	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to aggregate subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to aggregate card statistics: ", err)
+		return nil, fmt.Errorf("failed to aggregate card statistics: %w", err)
 	}
 
 	var cardStats []responses.CardStatistics
 	if err = cursor.All(context.TODO(), &cardStats); err != nil {
-		return nil, fmt.Errorf("failed to decode subscriptions: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode card statistics: ", err)
+		return nil, fmt.Errorf("failed to decode card statistics: %w", err)
 	}
 
 	return cardStats, nil
@@ -718,7 +764,11 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	if _, err := db.SubscriptionCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectSubscriptionID,
 	}, bson.M{"$set": subscription}); err != nil {
-		return fmt.Errorf("failed to update subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"subscription_id": data.ID,
+			"data":            data,
+		}).Error("failed to update subscription: ", err)
+		return fmt.Errorf("failed to update subscription")
 	}
 
 	return nil
@@ -753,7 +803,11 @@ func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error
 		"user_id": uid,
 	})
 	if err != nil {
-		return false, fmt.Errorf("failed to delete subscription: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":             uid,
+			"subscription_id": subscriptionID,
+		}).Error("failed to delete subscription: ", err)
+		return false, fmt.Errorf("failed to delete subscription")
 	}
 
 	return count.DeletedCount > 0, nil
@@ -763,7 +817,10 @@ func DeleteAllSubscriptionsByUserID(uid string) error {
 	if _, err := db.SubscriptionCollection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
-		return fmt.Errorf("failed to delete all subscriptions by user id: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all subscriptions by user id: ", err)
+		return fmt.Errorf("failed to delete all subscriptions by user id")
 	}
 
 	return nil

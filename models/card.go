@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -33,7 +34,10 @@ func CreateCard(uid string, data requests.Card) error {
 	card := createCardObject(uid, data.Name, data.Last4Digit)
 
 	if _, err := db.CardCollection.InsertOne(context.TODO(), card); err != nil {
-		return fmt.Errorf("failed to create new card: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to create new card: ", err)
+		return fmt.Errorf("failed to create new card")
 	}
 
 	return nil
@@ -46,7 +50,10 @@ func GetCardByID(cardID string) (Card, error) {
 
 	var card Card
 	if err := result.Decode(&card); err != nil {
-		return Card{}, fmt.Errorf("failed to find card by card id: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"card_id": cardID,
+		}).Error("failed to find card by card id: ", err)
+		return Card{}, fmt.Errorf("failed to find card by card id")
 	}
 
 	return card, nil
@@ -63,12 +70,18 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 
 	cursor, err := db.CardCollection.Find(context.TODO(), match, options)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find card: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to find card by user id: ", err)
+		return nil, fmt.Errorf("failed to find card by user id")
 	}
 
 	var cards []Card
 	if err := cursor.All(context.TODO(), &cards); err != nil {
-		return nil, fmt.Errorf("failed to decode card: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode card: ", err)
+		return nil, fmt.Errorf("failed to decode card")
 	}
 
 	return cards, nil
@@ -88,7 +101,11 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectCardID,
 	}, bson.M{"$set": card}); err != nil {
-		return fmt.Errorf("failed to update card: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"card_id": data.ID,
+			"data":    data,
+		}).Error("failed to update card: ", err)
+		return fmt.Errorf("failed to update card")
 	}
 
 	return nil
@@ -102,7 +119,11 @@ func DeleteCardByCardID(uid, cardID string) (bool, error) {
 		"user_id": uid,
 	})
 	if err != nil {
-		return false, fmt.Errorf("failed to delete card: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":     uid,
+			"card_id": cardID,
+		}).Error("failed to delete card by card id: ", err)
+		return false, fmt.Errorf("failed to delete card by card id")
 	}
 
 	return count.DeletedCount > 0, nil
@@ -112,7 +133,10 @@ func DeleteAllCardsByUserID(uid string) error {
 	if _, err := db.CardCollection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
-		return fmt.Errorf("failed to delete all cards by user id: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all cards by user id: ", err)
+		return fmt.Errorf("failed to delete all cards by user id")
 	}
 
 	return nil

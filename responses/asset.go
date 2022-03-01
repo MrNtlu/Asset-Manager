@@ -30,8 +30,7 @@ type AssetDetails struct {
 type AssetLog struct {
 	ToAsset       string    `bson:"to_asset" json:"to_asset"`
 	FromAsset     string    `bson:"from_asset" json:"from_asset"`
-	BoughtPrice   *float64  `bson:"bought_price" json:"bought_price"`
-	SoldPrice     *float64  `bson:"sold_price" json:"sold_price"`
+	Price         float64   `bson:"price" json:"price"`
 	Amount        float64   `bson:"amount" json:"amount"`
 	Type          string    `bson:"type" json:"type"`
 	CreatedAt     time.Time `bson:"created_at" json:"created_at"`

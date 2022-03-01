@@ -37,12 +37,12 @@ func main() {
 	routes.SetupRoutes(router, jwtHandler)
 
 	//TODO: Change on Production
-	/*scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
+	//scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 
-	job, nextRun := scheduler.NextRun()
-	fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
-	fmt.Println("Next Schedule: ", nextRun, "\n ")
-	*/
+	//job, nextRun := scheduler.NextRun()
+	//fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
+	//fmt.Println("Next Schedule: ", nextRun, "\n ")
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -52,5 +52,6 @@ func main() {
 }
 
 func hourlyTask() {
-	apis.GetAndCreateInvesting()
+	go apis.GetAndCreateInvesting()
+	go apis.GetExchangeRates()
 }

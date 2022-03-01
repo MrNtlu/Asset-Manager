@@ -11,6 +11,8 @@ import (
 
 type AssetController struct{}
 
+var errAssetNotFound = "asset not found"
+
 func (a *AssetController) CreateAsset(c *gin.Context) {
 	var data requests.AssetCreate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -122,13 +124,13 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	}
 
 	if asset.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": errAssetNotFound})
 		return
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != asset.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": ErrUnauthorized})
 		return
 	}
 
@@ -162,7 +164,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
+	c.JSON(http.StatusOK, gin.H{"error": ErrUnauthorized})
 }
 
 func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {

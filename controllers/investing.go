@@ -28,6 +28,5 @@ func (i *InvestingController) GetInvestingsByType(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings.Data, "pagination": investings.Pagination})
-	//c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
 }

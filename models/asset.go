@@ -146,7 +146,6 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"let": bson.M{
 			"asset_type": "$asset_type",
 			"to_asset":   "$_id.to_asset",
-			"from_asset": "$_id.from_asset",
 		},
 		"pipeline": bson.A{
 			bson.M{
@@ -168,10 +167,8 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"preserveNullAndEmptyArrays": true,
 	}}
 	exchangeLookup := bson.M{"$lookup": bson.M{
-		"from": "investings",
+		"from": "exchanges",
 		"let": bson.M{
-			"asset_type": "$asset_type",
-			"to_asset":   "$_id.to_asset",
 			"from_asset": "$_id.from_asset",
 		},
 		"pipeline": bson.A{
@@ -179,8 +176,9 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$and": bson.A{
-							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
-							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+							bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 						},
 					},
 				},
@@ -202,7 +200,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				bson.M{
 					"$multiply": bson.A{
 						"$investing.price",
-						"$investing_exchange.price",
+						"$investing_exchange.exchange_rate",
 					},
 				},
 				"$investing.price",
@@ -271,7 +269,6 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.AssetDetails, error) {
 	//TODO: Aggregation - Consider removing asset logs from it because we need pagination
 	match := bson.M{"$match": bson.M{
-		"user_id":    uid,
 		"to_asset":   toAsset,
 		"from_asset": fromAsset,
 	}}
@@ -340,7 +337,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 		"preserveNullAndEmptyArrays": true,
 	}}
 	exchangeLookup := bson.M{"$lookup": bson.M{
-		"from": "investings",
+		"from": "exchanges",
 		"let": bson.M{
 			"from_asset": "$_id.from_asset",
 		},
@@ -349,8 +346,9 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$and": bson.A{
-							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
-							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+							bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 						},
 					},
 				},
@@ -372,7 +370,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 				bson.M{
 					"$multiply": bson.A{
 						"$investing.price",
-						"$investing_exchange.price",
+						"$investing_exchange.exchange_rate",
 					},
 				},
 				"$investing.price",
@@ -445,26 +443,6 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 }
 
 func GetAllAssetStats(uid string) (responses.AssetStats, error) {
-	/*
-		js := `function(prices) {
-		    var sum = 1;
-		    for (var i = 0; i < prices.length; i++) {
-		        sum = sum * prices[i];
-		    }
-		    return sum;
-		  }`
-
-		addInvestingField := bson.M{"$addFields": bson.M{
-			"investing_price": bson.M{
-				"$function": bson.M{
-					"body": primitive.JavaScript(js),
-					"args": bson.A{"$investing.price"},
-					"lang": "js",
-				},
-			},
-		}}
-	*/
-
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
@@ -512,7 +490,6 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"let": bson.M{
 			"asset_type": "$asset_type",
 			"to_asset":   "$_id.to_asset",
-			"from_asset": "$_id.from_asset",
 		},
 		"pipeline": bson.A{
 			bson.M{
@@ -534,10 +511,8 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"preserveNullAndEmptyArrays": true,
 	}}
 	exchangeLookup := bson.M{"$lookup": bson.M{
-		"from": "investings",
+		"from": "exchanges",
 		"let": bson.M{
-			"asset_type": "$asset_type",
-			"to_asset":   "$_id.to_asset",
 			"from_asset": "$_id.from_asset",
 		},
 		"pipeline": bson.A{
@@ -545,7 +520,8 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$and": bson.A{
-							bson.M{"$eq": bson.A{"$_id.symbol", "$$from_asset"}},
+							bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
+							bson.M{"$eq": bson.A{"$_id.symbol", "USD"}},
 							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
 						},
 					},
@@ -568,7 +544,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				bson.M{
 					"$multiply": bson.A{
 						"$investing.price",
-						"$investing_exchange.price",
+						"$investing_exchange.exchange_rate",
 					},
 				},
 				"$investing.price",
@@ -620,17 +596,19 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"preserveNullAndEmptyArrays": true,
 	}}
 	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
-		"from": "investings",
+		"from": "exchanges",
 		"let": bson.M{
 			"user_currency": "$user.currency",
+			"from_asset":    "$_id.from_asset",
 		},
 		"pipeline": bson.A{
 			bson.M{
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$and": bson.A{
-							bson.M{"$eq": bson.A{"$_id.symbol", "$$user_currency"}},
-							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+							bson.M{"$ne": bson.A{"$$from_asset", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "$$from_asset"}},
 						},
 					},
 				},
@@ -648,16 +626,36 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"asset_type": true,
 		"currency":   "$user.currency",
 		"total_assets": bson.M{
-			"$multiply": bson.A{"$current_total_value", "$user_exchange_rate.price"},
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$current_total_value", "$user_exchange_rate.exchange_rate"},
+				},
+				"$current_total_value",
+			},
 		},
 		"total_p/l": bson.M{
-			"$multiply": bson.A{"$p/l", "$user_exchange_rate.price"},
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$p/l", "$user_exchange_rate.exchange_rate"},
+				},
+				"$current_total_value",
+			},
 		},
 		"total_bought": bson.M{
-			"$multiply": bson.A{"$total_bought", "$user_exchange_rate.price"},
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$total_bought", "$user_exchange_rate.exchange_rate"},
+				},
+				"$current_total_value",
+			},
 		},
 		"total_sold": bson.M{
-			"$multiply": bson.A{"$total_sold", "$user_exchange_rate.price"},
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$total_sold", "$user_exchange_rate.exchange_rate"},
+				},
+				"$current_total_value",
+			},
 		},
 	}}
 	assetGroup := bson.M{"$group": bson.M{

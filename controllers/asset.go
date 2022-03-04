@@ -30,7 +30,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
-func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
+func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	var data requests.AssetSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -49,7 +49,15 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets})
+	assetStat, err := models.GetAllAssetStats(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets, "stats": assetStat})
 }
 
 func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
@@ -74,7 +82,7 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetDetails})
 }
 
-func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
+func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
 	assetStat, err := models.GetAllAssetStats(uid)

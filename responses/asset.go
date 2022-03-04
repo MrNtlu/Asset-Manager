@@ -15,16 +15,15 @@ type Asset struct {
 }
 
 type AssetDetails struct {
-	ToAsset         string     `bson:"to_asset" json:"to_asset"`
-	FromAsset       string     `bson:"from_asset" json:"from_asset"`
-	Name            string     `bson:"name" json:"name"`
-	RemainingAmount float64    `bson:"remaining_amount" json:"remaining_amount"`
-	TotalBought     float64    `bson:"total_bought" json:"total_bought"`
-	TotalSold       float64    `bson:"total_sold" json:"total_sold"`
-	CurrentTotal    float64    `bson:"current_total_value" json:"current_total_value"`
-	PL              float64    `bson:"p/l" json:"p/l"`
-	AssetType       string     `bson:"asset_type" json:"asset_type"`
-	Assets          []AssetLog `bson:"assets" json:"assets"`
+	ToAsset         string  `bson:"to_asset" json:"to_asset"`
+	FromAsset       string  `bson:"from_asset" json:"from_asset"`
+	Name            string  `bson:"name" json:"name"`
+	RemainingAmount float64 `bson:"remaining_amount" json:"remaining_amount"`
+	TotalBought     float64 `bson:"total_bought" json:"total_bought"`
+	TotalSold       float64 `bson:"total_sold" json:"total_sold"`
+	CurrentTotal    float64 `bson:"current_total_value" json:"current_total_value"`
+	PL              float64 `bson:"p/l" json:"p/l"`
+	AssetType       string  `bson:"asset_type" json:"asset_type"`
 }
 
 type AssetLog struct {

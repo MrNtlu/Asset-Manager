@@ -267,7 +267,6 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 }
 
 func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.AssetDetails, error) {
-	//TODO: Aggregation - Consider removing asset logs from it because we need pagination
 	match := bson.M{"$match": bson.M{
 		"to_asset":   toAsset,
 		"from_asset": fromAsset,

@@ -82,7 +82,7 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
 }
 
-func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
+func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context) {
 	var data requests.SubscriptionSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -101,7 +101,15 @@ func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
+	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions, "stats": subscriptionStats})
 }
 
 func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {

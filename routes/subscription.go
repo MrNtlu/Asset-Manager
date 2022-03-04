@@ -13,7 +13,7 @@ func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		subscription.PUT("", subscriptionController.UpdateSubscription)
 		subscription.POST("", subscriptionController.CreateSubscription)
 		subscription.GET("/card", subscriptionController.GetSubscriptionsByCardID)
-		subscription.GET("", subscriptionController.GetSubscriptionsByUserID)
+		subscription.GET("", subscriptionController.GetSubscriptionsAndStatsByUserID)
 		subscription.GET("/details", subscriptionController.GetSubscriptionDetails)
 		subscription.GET("/stats", subscriptionController.GetSubscriptionStatisticsByUserID)
 	}

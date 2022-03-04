@@ -11,6 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -31,26 +32,28 @@ func main() {
 
 	jwtHandler := helpers.SetupJWTHandler()
 
-	//TODO: Production
-	//gin.SetMode(gin.ReleaseMode)
+	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
 
-	//TODO: Change on Production
-	/*scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
+	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 
 	job, nextRun := scheduler.NextRun()
-	fmt.Println("\nJob Last Run: ", job.LastRun(), "\nJob Run Count: ", job.RunCount())
-	fmt.Println("Next Schedule: ", nextRun, "\n ")
-	*/
+	logrus.WithFields(logrus.Fields{
+		"Job Last Run":  job.LastRun(),
+		"Job Run Count": job.RunCount(),
+		"Next Schedule": nextRun,
+	}).Info("Schedule Info")
+
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
-	//TODO: Search new port for app engine
+
 	router.Run(":" + port)
 }
 
 func hourlyTask() {
-	apis.GetAndCreateInvesting()
+	go apis.GetAndCreateInvesting()
+	go apis.GetExchangeRates()
 }

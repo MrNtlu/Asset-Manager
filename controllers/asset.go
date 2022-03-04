@@ -11,6 +11,8 @@ import (
 
 type AssetController struct{}
 
+var errAssetNotFound = "asset not found"
+
 func (a *AssetController) CreateAsset(c *gin.Context) {
 	var data requests.AssetCreate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -28,7 +30,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
-func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
+func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	var data requests.AssetSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -47,7 +49,15 @@ func (a *AssetController) GetAssetsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets})
+	assetStat, err := models.GetAllAssetStats(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets, "stats": assetStat})
 }
 
 func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
@@ -72,7 +82,7 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetDetails})
 }
 
-func (a *AssetController) GetAssetStatsByUserID(c *gin.Context) {
+func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
 	assetStat, err := models.GetAllAssetStats(uid)
@@ -122,13 +132,13 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	}
 
 	if asset.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "asset not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": errAssetNotFound})
 		return
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != asset.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": ErrUnauthorized})
 		return
 	}
 
@@ -162,7 +172,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
+	c.JSON(http.StatusOK, gin.H{"error": ErrUnauthorized})
 }
 
 func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {

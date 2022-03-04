@@ -15,6 +15,12 @@ import (
 
 type UserController struct{}
 
+var (
+	errAlreadyRegistered = "user already registered"
+	errPasswordNoMatch   = "passwords do not match"
+	errNoUser            = "couldn't find user"
+)
+
 func (u *UserController) Register(c *gin.Context) {
 	var data requests.Register
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -25,7 +31,7 @@ func (u *UserController) Register(c *gin.Context) {
 
 	if user.EmailAddress != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "user already registered",
+			"error": errAlreadyRegistered,
 		})
 
 		return
@@ -86,7 +92,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 
 	if err = utils.CheckPassword([]byte(user.Password), []byte(data.OldPassword)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": gin.H{"error": "passwords do not match"},
+			"error": gin.H{"error": errPasswordNoMatch},
 		})
 		return
 	}
@@ -152,7 +158,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 
 	if user.EmailAddress == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "couldn't find user",
+			"error": errNoUser,
 		})
 
 		return

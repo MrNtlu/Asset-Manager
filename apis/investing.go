@@ -3,9 +3,9 @@ package apis
 import (
 	"asset_backend/db"
 	"context"
-	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
@@ -40,26 +40,24 @@ func createInvestingIDObject(symbol, tType string) InvestingID {
 
 func GetAndCreateInvesting() {
 	cryptoList := GetCryptocurrencyPrices()
-	exchangeList := GetExchangeRates()
 	stockList := GetStockPrices()
 
 	arraySize := len(cryptoList) + len(exchangeList) + len(stockList)
 	investingList := make([]interface{}, arraySize)
 
 	convertCryptoToInvesting(cryptoList, investingList)
-	convertExchangeToInvesting(exchangeList, investingList, len(cryptoList))
+	convertExchangeToInvesting(investingList, len(cryptoList))
 	convertStockToInvesting(stockList, investingList, (len(cryptoList) + len(exchangeList)))
 
 	deleteInvestings()
 
-	if _, err := db.InvestingCollections.InsertMany(context.TODO(), investingList, options.InsertMany().SetOrdered(false)); err != nil {
-		fmt.Println("failed to create investing list: %w", err)
+	if _, err := db.InvestingCollection.InsertMany(context.TODO(), investingList, options.InsertMany().SetOrdered(false)); err != nil {
+		logrus.Error("failed to create investing list: ", err)
 	}
 }
 
 func deleteInvestings() {
-	_, err := db.InvestingCollections.DeleteMany(context.TODO(), bson.M{})
-	if err != nil {
-		fmt.Println("error: %w", err)
+	if _, err := db.InvestingCollection.DeleteMany(context.TODO(), bson.M{}); err != nil {
+		logrus.Error("failed to delete investings: ", err)
 	}
 }

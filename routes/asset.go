@@ -14,9 +14,9 @@ func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 		asset.PUT("", assetController.UpdateAssetLogByAssetID)
 		asset.POST("", assetController.CreateAsset)
 		asset.GET("/details", assetController.GetAssetStatsByAssetAndUserID)
-		asset.GET("/stats", assetController.GetAssetStatsByUserID)
+		asset.GET("/stats", assetController.GetAllAssetStatsByUserID)
 		asset.GET("/logs", assetController.GetAssetLogsByUserID)
-		asset.GET("", assetController.GetAssetsByUserID)
+		asset.GET("", assetController.GetAssetsAndStatsByUserID)
 	}
 
 	investing := router.Group("/investings")

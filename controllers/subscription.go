@@ -11,6 +11,8 @@ import (
 
 type SubscriptionController struct{}
 
+var errSubscriptionNotFound = "subscription not found"
+
 func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	var data requests.Subscription
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -80,7 +82,7 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
 }
 
-func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
+func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context) {
 	var data requests.SubscriptionSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -99,7 +101,15 @@ func (s *SubscriptionController) GetSubscriptionsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions})
+	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": subscriptions, "stats": subscriptionStats})
 }
 
 func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
@@ -122,7 +132,7 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 	}
 
 	if subscription.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": errSubscriptionNotFound})
 		return
 	}
 
@@ -169,13 +179,13 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 	}
 
 	if subscription.UserID == "" {
-		c.JSON(http.StatusNotFound, gin.H{"error": "subscription not found"})
+		c.JSON(http.StatusNotFound, gin.H{"error": errSubscriptionNotFound})
 		return
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != subscription.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": ErrUnauthorized})
 		return
 	}
 
@@ -209,7 +219,7 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != card.UserID {
-		c.JSON(http.StatusForbidden, gin.H{"error": "unauthorized access"})
+		c.JSON(http.StatusForbidden, gin.H{"error": ErrUnauthorized})
 		return
 	}
 
@@ -243,7 +253,7 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
+	c.JSON(http.StatusOK, gin.H{"error": ErrUnauthorized})
 }
 
 func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) {

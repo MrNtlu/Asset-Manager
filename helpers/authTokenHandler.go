@@ -15,6 +15,11 @@ import (
 )
 
 var identityKey = "id"
+var (
+	errMissingAuth   = errors.New("missing Email or Password")
+	errIncorrectAuth = errors.New("incorrect Email or Password")
+	errEmptyPassword = errors.New("password is empty")
+)
 
 func SetupJWTHandler() *jwt.GinJWTMiddleware {
 	port := os.Getenv("PORT")
@@ -29,26 +34,25 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "asset-manager",
 		Key:         []byte(os.Getenv("JWT_SECRET_KEY")),
-		Timeout:     time.Hour,
-		MaxRefresh:  time.Hour * 8760,
+		Timeout:     time.Hour * 72,
 		IdentityKey: identityKey,
 		Authenticator: func(c *gin.Context) (interface{}, error) {
 			var data requests.Login
 			if err := c.Bind(&data); err != nil {
-				return "", errors.New("missing Email or Password")
+				return "", errMissingAuth
 			}
 
 			user, err := models.FindUserByEmail(data.EmailAddress)
 			if err != nil {
-				return "", errors.New("incorrect Email or Password")
+				return "", errIncorrectAuth
 			}
 
 			if user.Password == "" {
-				return "", errors.New("password is empty")
+				return "", errEmptyPassword
 			}
 
 			if err := utils.CheckPassword([]byte(user.Password), []byte(data.Password)); err != nil {
-				return "", jwt.ErrFailedAuthentication
+				return "", errIncorrectAuth
 			}
 
 			return user, nil
@@ -68,11 +72,11 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 			})
 		},
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.SetCookie("access_token", token, 3600, "/", os.Getenv("BASE_URI"), true, true)
+			c.SetCookie("access_token", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
 			c.JSON(http.StatusOK, gin.H{"access_token": token})
 		},
 		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.SetCookie("access_token", token, 3600, "/", os.Getenv("BASE_URI"), true, true)
+			c.SetCookie("access_token", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
 			c.JSON(http.StatusOK, gin.H{"access_token": token})
 		},
 		TokenLookup:    "header: Authorization, cookie: jwt_token",

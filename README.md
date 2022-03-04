@@ -12,6 +12,7 @@
     <li> Go-Password
     <li> google/UUID
     <li> jordan-wright/email
+    <li> logrus
 </ul>
 
 ### External API's

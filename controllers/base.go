@@ -6,6 +6,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+var ErrUnauthorized = "unauthorized access"
+
 func bindJSONData(data interface{}, c *gin.Context) bool {
 	if err := c.ShouldBindJSON(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{

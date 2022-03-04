@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
@@ -36,7 +37,10 @@ func CreateUser(data requests.Register) error {
 	user := createUserObject(data.EmailAddress, data.Currency, data.Password)
 
 	if _, err := db.UserCollection.InsertOne(context.TODO(), user); err != nil {
-		return fmt.Errorf("failed to create new user: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"email": data.EmailAddress,
+		}).Error("failed to create new user: ", err)
+		return fmt.Errorf("failed to create new user")
 	}
 
 	return nil
@@ -46,7 +50,10 @@ func UpdateUser(user User) error {
 	user.UpdatedAt = time.Now().UTC()
 
 	if _, err := db.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": user.ID}, bson.M{"$set": user}); err != nil {
-		return fmt.Errorf("failed to update user: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": user.ID,
+		}).Error("failed to update user: ", err)
+		return fmt.Errorf("failed to update user")
 	}
 
 	return nil
@@ -61,7 +68,10 @@ func FindUserByID(uid string) (User, error) {
 
 	var user User
 	if err := result.Decode(&user); err != nil {
-		return User{}, fmt.Errorf("failed to find user by uid: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": user.ID,
+		}).Error("failed to find user by uid: ", err)
+		return User{}, fmt.Errorf("failed to find user by id")
 	}
 
 	return user, nil
@@ -75,7 +85,11 @@ func FindUserByResetTokenAndEmail(token, email string) (User, error) {
 
 	var user User
 	if err := result.Decode(&user); err != nil {
-		return User{}, fmt.Errorf("failed to find user by reset token: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid":   user.ID,
+			"token": token,
+		}).Error("failed to find user by reset token: ", err)
+		return User{}, fmt.Errorf("failed to find user by reset token")
 	}
 
 	return user, nil
@@ -88,7 +102,10 @@ func FindUserByEmail(email string) (User, error) {
 
 	var user User
 	if err := result.Decode(&user); err != nil {
-		return User{}, fmt.Errorf("failed to find user by email: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"email": email,
+		}).Error("failed to find user by email: ", err)
+		return User{}, fmt.Errorf("failed to find user by email")
 	}
 
 	return user, nil
@@ -98,7 +115,10 @@ func DeleteUserByID(uid string) error {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
 	if _, err := db.UserCollection.DeleteOne(context.TODO(), bson.M{"_id": objectUID}); err != nil {
-		return fmt.Errorf("failed to delete user: %w", err)
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete user: ", err)
+		return fmt.Errorf("failed to delete user")
 	}
 
 	return nil

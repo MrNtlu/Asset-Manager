@@ -520,8 +520,8 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 					"$expr": bson.M{
 						"$and": bson.A{
 							bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
-							bson.M{"$eq": bson.A{"$_id.symbol", "USD"}},
-							bson.M{"$eq": bson.A{"$_id.type", "exchange"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 						},
 					},
 				},
@@ -563,9 +563,9 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"user_id": bson.M{
 			"$toObjectId": "$user_id",
 		},
-		"asset_type":   true,
 		"total_bought": true,
 		"total_sold":   true,
+		"asset_type":   true,
 		"current_total_value": bson.M{
 			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 		},
@@ -637,7 +637,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				bson.M{
 					"$multiply": bson.A{"$p/l", "$user_exchange_rate.exchange_rate"},
 				},
-				"$current_total_value",
+				"$p/l",
 			},
 		},
 		"total_bought": bson.M{
@@ -645,7 +645,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				bson.M{
 					"$multiply": bson.A{"$total_bought", "$user_exchange_rate.exchange_rate"},
 				},
-				"$current_total_value",
+				"$total_bought",
 			},
 		},
 		"total_sold": bson.M{
@@ -653,7 +653,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				bson.M{
 					"$multiply": bson.A{"$total_sold", "$user_exchange_rate.exchange_rate"},
 				},
-				"$current_total_value",
+				"$total_sold",
 			},
 		},
 	}}
@@ -684,10 +684,10 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 			"$first": "$currency",
 		},
 		"total_bought": bson.M{
-			"$first": "$total_bought",
+			"$sum": "$total_bought",
 		},
 		"total_sold": bson.M{
-			"$first": "$total_sold",
+			"$sum": "$total_sold",
 		},
 		"stock_assets": bson.M{
 			"$sum": bson.M{

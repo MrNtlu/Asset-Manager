@@ -25,8 +25,8 @@
 
 &nbsp;
 
-Flutter (Android/Mac/Windows): [Asset Manager Flutter](https://github.com/MrNtlu/Asset-Manager-Flutter)
+Flutter (Android/Mac/Windows/iOS): [Asset Manager Flutter](https://github.com/MrNtlu/Asset-Manager-Flutter)
 
-iOS: Soon :pray:
+Scraper: [Asset Scraper](https://github.com/MrNtlu/Asset-Scraper)
 
 

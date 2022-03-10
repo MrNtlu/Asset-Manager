@@ -55,5 +55,4 @@ func main() {
 
 func hourlyTask() {
 	go apis.GetAndCreateInvesting()
-	go apis.GetExchangeRates()
 }

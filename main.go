@@ -59,6 +59,7 @@ func main() {
 	router.Run(":" + port)
 }
 
+//TODO: DELETE
 func handleHome(c *gin.Context) {
 	var htmlIndex = `<html>
 <body>

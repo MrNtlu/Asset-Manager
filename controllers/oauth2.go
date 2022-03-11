@@ -64,12 +64,14 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 			user = *oAuthUser
 		}
 
-		token, timeout, err := jwt.TokenGenerator(user)
-		fmt.Println(token, timeout, err)
+		token, _, err := jwt.TokenGenerator(user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
 
-		//TODO check if user already exists, if not create new user
-		// After user created/checked create token
-		fmt.Fprintf(c.Writer, "Content: %s\n", content)
+		c.SetCookie("access_token", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
+		c.JSON(http.StatusOK, gin.H{"access_token": token})
 	}
 }
 

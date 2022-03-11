@@ -2,11 +2,13 @@ package main
 
 import (
 	"asset_backend/apis"
+	"asset_backend/controllers"
 	"asset_backend/db"
 	"asset_backend/helpers"
 	"asset_backend/routes"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -24,6 +26,8 @@ func main() {
 		}
 	}
 
+	controllers.SetOAuth2()
+
 	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
 	if err != nil {
 		panic(err)
@@ -35,6 +39,8 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
+
+	router.Handle(http.MethodGet, "/", handleHome)
 
 	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 
@@ -51,6 +57,16 @@ func main() {
 	}
 
 	router.Run(":" + port)
+}
+
+func handleHome(c *gin.Context) {
+	var htmlIndex = `<html>
+<body>
+	<a href="/login">Google Log In</a>
+</body>
+</html>`
+
+	fmt.Fprintf(c.Writer, htmlIndex)
 }
 
 func hourlyTask() {

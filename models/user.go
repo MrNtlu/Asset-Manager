@@ -21,6 +21,7 @@ type User struct {
 	PasswordResetToken string             `bson:"reset_token" json:"-"`
 	CreatedAt          time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
+	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
 }
 
 func createUserObject(emailAddress, currency, password string) *User {
@@ -30,6 +31,17 @@ func createUserObject(emailAddress, currency, password string) *User {
 		Password:     utils.HashPassword(password),
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
+		IsPremium:    false,
+	}
+}
+
+func createOAuthUserObject(emailAddress string) *User {
+	return &User{
+		EmailAddress: emailAddress,
+		Currency:     "USD",
+		CreatedAt:    time.Now().UTC(),
+		UpdatedAt:    time.Now().UTC(),
+		IsPremium:    false,
 	}
 }
 
@@ -44,6 +56,21 @@ func CreateUser(data requests.Register) error {
 	}
 
 	return nil
+}
+
+func CreateOAuthUser(email string) (*User, error) {
+	user := createOAuthUserObject(email)
+
+	result, err := db.UserCollection.InsertOne(context.TODO(), user)
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"email": email,
+		}).Error("failed to create new oauth user: ", err)
+		return nil, fmt.Errorf("failed to create new oauth user")
+	}
+
+	user.ID = result.InsertedID.(primitive.ObjectID)
+	return user, nil
 }
 
 func UpdateUser(user User) error {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"asset_backend/apis"
+	"asset_backend/controllers"
 	"asset_backend/db"
 	"asset_backend/helpers"
 	"asset_backend/routes"
@@ -23,6 +24,8 @@ func main() {
 			log.Fatal("Error loading .env file")
 		}
 	}
+
+	controllers.SetOAuth2()
 
 	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
 	if err != nil {

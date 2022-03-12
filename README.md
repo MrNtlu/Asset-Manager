@@ -13,6 +13,7 @@
     <li> google/UUID
     <li> jordan-wright/email
     <li> logrus
+    <li> OAuth2
 </ul>
 
 ### External API's

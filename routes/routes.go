@@ -13,14 +13,27 @@ var (
 	assetController        = new(controllers.AssetController)
 	subscriptionController = new(controllers.SubscriptionController)
 	investingController    = new(controllers.InvestingController)
+	OAuth2Controller       = new(controllers.OAuth2Controller)
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	userRouter(router, jwtToken)
 	assetRouter(router, jwtToken)
 	subscriptionRouter(router, jwtToken)
+	oauth2Router(router, jwtToken)
+
+	router.GET("/privacy", privacyPolicy)
+	router.GET("/terms", termsConditions)
 
 	router.NoRoute(func(c *gin.Context) {
 		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "all routes lead to rome"})
 	})
+}
+
+func privacyPolicy(c *gin.Context) {
+	http.ServeFile(c.Writer, c.Request, "assets/privacy_policy.html")
+}
+
+func termsConditions(c *gin.Context) {
+	http.ServeFile(c.Writer, c.Request, "assets/terms_conditions.html")
 }

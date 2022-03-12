@@ -8,7 +8,6 @@ import (
 	"asset_backend/routes"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
 	"github.com/gin-gonic/gin"
@@ -40,8 +39,6 @@ func main() {
 	router := gin.Default()
 	routes.SetupRoutes(router, jwtHandler)
 
-	router.Handle(http.MethodGet, "/", handleHome)
-
 	scheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 
 	job, nextRun := scheduler.NextRun()
@@ -57,17 +54,6 @@ func main() {
 	}
 
 	router.Run(":" + port)
-}
-
-//TODO: DELETE
-func handleHome(c *gin.Context) {
-	var htmlIndex = `<html>
-<body>
-	<a href="/login">Google Log In</a>
-</body>
-</html>`
-
-	fmt.Fprintf(c.Writer, htmlIndex)
 }
 
 func hourlyTask() {

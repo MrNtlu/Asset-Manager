@@ -30,8 +30,6 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	})
 }
 
-//TODO: https://search.google.com/search-console/welcome?utm_source=wmx&utm_medium=deprecation-pane&utm_content=home
-// Verify page ownership
 func privacyPolicy(c *gin.Context) {
 	http.ServeFile(c.Writer, c.Request, "assets/privacy_policy.html")
 }

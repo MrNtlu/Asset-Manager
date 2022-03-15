@@ -40,24 +40,26 @@ func createInvestingIDObject(symbol, tType string) InvestingID {
 
 func GetAndCreateInvesting() {
 	cryptoList := GetCryptocurrencyPrices()
-	stockList := GetStockPrices()
 
-	arraySize := len(cryptoList) + len(exchangeList) + len(stockList)
+	arraySize := len(cryptoList) + len(exchangeList)
 	investingList := make([]interface{}, arraySize)
 
 	convertCryptoToInvesting(cryptoList, investingList)
 	convertExchangeToInvesting(investingList, len(cryptoList))
-	convertStockToInvesting(stockList, investingList, (len(cryptoList) + len(exchangeList)))
 
-	deleteInvestings()
+	deleteCryptoAndExchange()
 
 	if _, err := db.InvestingCollection.InsertMany(context.TODO(), investingList, options.InsertMany().SetOrdered(false)); err != nil {
 		logrus.Error("failed to create investing list: ", err)
 	}
 }
 
-func deleteInvestings() {
-	if _, err := db.InvestingCollection.DeleteMany(context.TODO(), bson.M{}); err != nil {
-		logrus.Error("failed to delete investings: ", err)
+func deleteCryptoAndExchange() {
+	if _, err := db.InvestingCollection.DeleteMany(context.TODO(), bson.M{
+		"_id.type": bson.M{
+			"$in": bson.A{"crypto", "exchange"},
+		},
+	}); err != nil {
+		logrus.Error("failed to delete exchange and crypto: ", err)
 	}
 }

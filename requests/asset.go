@@ -1,12 +1,13 @@
 package requests
 
 type AssetCreate struct {
-	ToAsset   string  `json:"to_asset" binding:"required"`
-	FromAsset string  `json:"from_asset" binding:"required"`
-	Price     float64 `json:"price"`
-	Amount    float64 `json:"amount" binding:"required"`
-	AssetType string  `json:"asset_type" binding:"required,oneof=crypto stock exchange"`
-	Type      string  `json:"type" binding:"required,oneof=sell buy"`
+	ToAsset     string  `json:"to_asset" binding:"required"`
+	FromAsset   string  `json:"from_asset" binding:"required"`
+	Price       float64 `json:"price"`
+	Amount      float64 `json:"amount" binding:"required"`
+	AssetType   string  `json:"asset_type" binding:"required,oneof=crypto stock exchange"`
+	AssetMarket string  `json:"asset_market"`
+	Type        string  `json:"type" binding:"required,oneof=sell buy"`
 }
 
 type AssetSort struct {

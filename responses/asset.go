@@ -8,6 +8,7 @@ type Asset struct {
 	Name            string  `bson:"name" json:"name"`
 	RemainingAmount float64 `bson:"remaining_amount" json:"remaining_amount"`
 	AssetType       string  `bson:"asset_type" json:"asset_type"`
+	AssetMarket     string  `bson:"asset_market" json:"asset_market"`
 	TotalBought     float64 `bson:"total_bought" json:"total_bought"`
 	TotalSold       float64 `bson:"total_sold" json:"total_sold"`
 	PL              float64 `bson:"p/l" json:"p/l"`

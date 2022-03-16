@@ -22,13 +22,14 @@ type Asset struct {
 	FromAsset     string             `bson:"from_asset" json:"from_asset"`
 	Price         float64            `bson:"price" json:"price"`
 	Amount        float64            `bson:"amount" json:"amount"`
-	AssetType     string             `bson:"asset_type" json:"asset_type"`
-	Type          string             `bson:"type" json:"type"`
+	AssetType     string             `bson:"asset_type" json:"asset_type"`     //stock, crypto etc.
+	AssetMarket   string             `bson:"asset_market" json:"asset_market"` //if stock the market else if crypto CMC else exchange
+	Type          string             `bson:"type" json:"type"`                 //sell buy
+	CurrencyValue float64            `bson:"value" json:"value"`               //value in from asset currency
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
-	CurrencyValue float64            `bson:"value" json:"value"`
 }
 
-func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, price, amount, currencyValue float64) *Asset {
+func createAssetObject(uid, toAsset, fromAsset, assetType, assetMarket, tType string, price, amount, currencyValue float64) *Asset {
 	return &Asset{
 		UserID:        uid,
 		ToAsset:       toAsset,
@@ -36,6 +37,7 @@ func createAssetObject(uid, toAsset, fromAsset, assetType, tType string, price, 
 		Price:         price,
 		Amount:        amount,
 		AssetType:     assetType,
+		AssetMarket:   assetMarket,
 		Type:          tType,
 		CreatedAt:     time.Now().UTC(),
 		CurrencyValue: currencyValue,
@@ -50,6 +52,7 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 		strings.ToUpper(data.ToAsset),
 		strings.ToUpper(data.FromAsset),
 		data.AssetType,
+		data.AssetMarket,
 		data.Type,
 		data.Price,
 		data.Amount,

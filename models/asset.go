@@ -49,7 +49,7 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 
 	asset := createAssetObject(
 		uid,
-		strings.ToUpper(data.ToAsset),
+		data.ToAsset,
 		strings.ToUpper(data.FromAsset),
 		data.AssetType,
 		data.AssetMarket,

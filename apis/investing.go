@@ -20,6 +20,7 @@ type Investing struct {
 type InvestingID struct {
 	Symbol string `bson:"symbol" json:"symbol"`
 	Type   string `bson:"type" json:"type"`
+	Market string `bson:"market" json:"market"`
 }
 
 func createInvestingObject(id InvestingID, name string, price float64) *Investing {
@@ -35,31 +36,29 @@ func createInvestingIDObject(symbol, tType string) InvestingID {
 	return InvestingID{
 		Symbol: symbol,
 		Type:   tType,
+		Market: "CoinMarketCap",
 	}
 }
 
 func GetAndCreateInvesting() {
 	cryptoList := GetCryptocurrencyPrices()
 
-	arraySize := len(cryptoList) + len(exchangeList)
+	arraySize := len(cryptoList)
 	investingList := make([]interface{}, arraySize)
 
 	convertCryptoToInvesting(cryptoList, investingList)
-	convertExchangeToInvesting(investingList, len(cryptoList))
 
-	deleteCryptoAndExchange()
+	deleteCrypto()
 
 	if _, err := db.InvestingCollection.InsertMany(context.TODO(), investingList, options.InsertMany().SetOrdered(false)); err != nil {
 		logrus.Error("failed to create investing list: ", err)
 	}
 }
 
-func deleteCryptoAndExchange() {
+func deleteCrypto() {
 	if _, err := db.InvestingCollection.DeleteMany(context.TODO(), bson.M{
-		"_id.type": bson.M{
-			"$in": bson.A{"crypto", "exchange"},
-		},
+		"_id.type": "crypto",
 	}); err != nil {
-		logrus.Error("failed to delete exchange and crypto: ", err)
+		logrus.Error("failed to delete crypto: ", err)
 	}
 }

@@ -3,9 +3,9 @@ package requests
 type AssetCreate struct {
 	ToAsset     string  `json:"to_asset" binding:"required"`
 	FromAsset   string  `json:"from_asset" binding:"required"`
-	Price       float64 `json:"price"`
+	Price       float64 `json:"price" binding:"required"`
 	Amount      float64 `json:"amount" binding:"required"`
-	AssetType   string  `json:"asset_type" binding:"required,oneof=crypto stock exchange"`
+	AssetType   string  `json:"asset_type" binding:"required,oneof=crypto stock exchange commodity"`
 	AssetMarket string  `json:"asset_market"`
 	Type        string  `json:"type" binding:"required,oneof=sell buy"`
 }

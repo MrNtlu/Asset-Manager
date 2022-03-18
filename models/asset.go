@@ -143,12 +143,16 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"asset_type": bson.M{
 			"$first": "$asset_type",
 		},
+		"asset_market": bson.M{
+			"$first": "$asset_market",
+		},
 	}}
 	lookup := bson.M{"$lookup": bson.M{
 		"from": "investings",
 		"let": bson.M{
-			"asset_type": "$asset_type",
 			"to_asset":   "$_id.to_asset",
+			"asset_type": "$asset_type",
+			"market":     "$asset_market",
 		},
 		"pipeline": bson.A{
 			bson.M{
@@ -157,6 +161,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 						"$and": bson.A{
 							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
 							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+							bson.M{"$eq": bson.A{"$_id.market", "$$market"}},
 						},
 					},
 				},
@@ -181,20 +186,14 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$cond": bson.A{
-							bson.M{"$ne": bson.A{"$$asset_type", "exchange"}},
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
-									bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
-									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
-								},
-							},
+							bson.M{"$eq": bson.A{"$$asset_type", "exchange"}},
 							bson.M{
 								"$and": bson.A{
 									bson.M{"$eq": bson.A{"$from_exchange", "$$to_asset"}},
 									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 								},
 							},
+							nil,
 						},
 					},
 				},
@@ -211,7 +210,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"investing_price": bson.M{
 			"$cond": bson.A{
 				bson.M{
-					"$ne": bson.A{"$_id.from_asset", "USD"},
+					"$eq": bson.A{"$asset_type", "exchange"},
 				},
 				bson.M{
 					"$multiply": bson.A{
@@ -237,6 +236,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		"from_asset":       "$_id.from_asset",
 		"name":             "$investing.name",
 		"asset_type":       true,
+		"asset_market":     true,
 		"total_bought":     true,
 		"total_sold":       true,
 		"remaining_amount": true,
@@ -282,11 +282,12 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 	return assets, nil
 }
 
-func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.AssetDetails, error) {
+func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (responses.AssetDetails, error) {
 	match := bson.M{"$match": bson.M{
-		"user_id":    uid,
-		"to_asset":   toAsset,
-		"from_asset": fromAsset,
+		"to_asset":     toAsset,
+		"from_asset":   fromAsset,
+		"asset_market": market,
+		"user_id":      uid,
 	}}
 	group := bson.M{"$group": bson.M{
 		"_id": bson.M{
@@ -323,6 +324,9 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 		"asset_type": bson.M{
 			"$first": "$asset_type",
 		},
+		"asset_market": bson.M{
+			"$first": "$asset_market",
+		},
 		"user_id": bson.M{
 			"$first": "$user_id",
 		},
@@ -330,8 +334,9 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 	lookup := bson.M{"$lookup": bson.M{
 		"from": "investings",
 		"let": bson.M{
-			"asset_type": "$asset_type",
 			"to_asset":   "$_id.to_asset",
+			"asset_type": "$asset_type",
+			"market":     "$asset_market",
 		},
 		"pipeline": bson.A{
 			bson.M{
@@ -340,6 +345,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 						"$and": bson.A{
 							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
 							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+							bson.M{"$eq": bson.A{"$_id.market", "$$market"}},
 						},
 					},
 				},
@@ -364,20 +370,14 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$cond": bson.A{
-							bson.M{"$ne": bson.A{"$$asset_type", "exchange"}},
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
-									bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
-									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
-								},
-							},
+							bson.M{"$eq": bson.A{"$$asset_type", "exchange"}},
 							bson.M{
 								"$and": bson.A{
 									bson.M{"$eq": bson.A{"$from_exchange", "$$to_asset"}},
 									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 								},
 							},
+							nil,
 						},
 					},
 				},
@@ -394,7 +394,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset string) (responses.As
 		"investing_price": bson.M{
 			"$cond": bson.A{
 				bson.M{
-					"$ne": bson.A{"$_id.from_asset", "USD"},
+					"$eq": bson.A{"$asset_type", "exchange"},
 				},
 				bson.M{
 					"$multiply": bson.A{
@@ -510,6 +510,9 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"asset_type": bson.M{
 			"$first": "$asset_type",
 		},
+		"asset_market": bson.M{
+			"$first": "$asset_market",
+		},
 		"user_id": bson.M{
 			"$first": "$user_id",
 		},
@@ -517,8 +520,9 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	lookup := bson.M{"$lookup": bson.M{
 		"from": "investings",
 		"let": bson.M{
-			"asset_type": "$asset_type",
 			"to_asset":   "$_id.to_asset",
+			"asset_type": "$asset_type",
+			"market":     "$asset_market",
 		},
 		"pipeline": bson.A{
 			bson.M{
@@ -527,6 +531,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 						"$and": bson.A{
 							bson.M{"$eq": bson.A{"$_id.symbol", "$$to_asset"}},
 							bson.M{"$eq": bson.A{"$_id.type", "$$asset_type"}},
+							bson.M{"$eq": bson.A{"$_id.market", "$$market"}},
 						},
 					},
 				},
@@ -551,20 +556,14 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$cond": bson.A{
-							bson.M{"$ne": bson.A{"$$asset_type", "exchange"}},
-							bson.M{
-								"$and": bson.A{
-									bson.M{"$ne": bson.A{"$$from_asset", "USD"}},
-									bson.M{"$eq": bson.A{"$from_exchange", "USD"}},
-									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
-								},
-							},
+							bson.M{"$eq": bson.A{"$$asset_type", "exchange"}},
 							bson.M{
 								"$and": bson.A{
 									bson.M{"$eq": bson.A{"$from_exchange", "$$to_asset"}},
 									bson.M{"$eq": bson.A{"$to_exchange", "$$from_asset"}},
 								},
 							},
+							nil,
 						},
 					},
 				},
@@ -581,7 +580,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		"investing_price": bson.M{
 			"$cond": bson.A{
 				bson.M{
-					"$ne": bson.A{"$_id.from_asset", "USD"},
+					"$eq": bson.A{"$asset_type", "exchange"},
 				},
 				bson.M{
 					"$multiply": bson.A{
@@ -759,6 +758,15 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				},
 			},
 		},
+		"commodity_assets": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "commodity"}},
+					"$total_assets",
+					0,
+				},
+			},
+		},
 		"total_assets": bson.M{
 			"$sum": "$total_assets",
 		},
@@ -784,6 +792,15 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 			"$sum": bson.M{
 				"$cond": bson.A{
 					bson.M{"$eq": bson.A{"$_id", "exchange"}},
+					"$total_p/l",
+					0,
+				},
+			},
+		},
+		"commodity_p/l": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$_id", "commodity"}},
 					"$total_p/l",
 					0,
 				},
@@ -824,6 +841,16 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 				100,
 			},
 		},
+		"commodity_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{
+						"$commodity_assets", "$total_assets",
+					},
+				},
+				100,
+			},
+		},
 	}}
 
 	var aggregationList = bson.A{
@@ -857,9 +884,10 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 
 func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {
 	match := bson.M{
-		"user_id":    uid,
-		"to_asset":   data.ToAsset,
-		"from_asset": data.FromAsset,
+		"to_asset":     data.ToAsset,
+		"from_asset":   data.FromAsset,
+		"asset_market": data.AssetMarket,
+		"user_id":      uid,
 	}
 
 	var sortType string
@@ -941,9 +969,10 @@ func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 
 func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
 	if _, err := db.AssetCollection.DeleteMany(context.TODO(), bson.M{
-		"user_id":    uid,
-		"to_asset":   data.ToAsset,
-		"from_asset": data.FromAsset,
+		"to_asset":     data.ToAsset,
+		"from_asset":   data.FromAsset,
+		"asset_market": data.AssetMarket,
+		"user_id":      uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":        uid,

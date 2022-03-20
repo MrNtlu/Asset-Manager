@@ -24,6 +24,8 @@ type User struct {
 	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
 }
 
+//TODO: Return user info premium etc. if necessary.
+
 func createUserObject(emailAddress, currency, password string) *User {
 	return &User{
 		EmailAddress: emailAddress,

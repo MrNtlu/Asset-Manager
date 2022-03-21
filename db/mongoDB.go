@@ -9,13 +9,14 @@ import (
 )
 
 var (
-	Database               *mongo.Database
-	AssetCollection        *mongo.Collection
-	SubscriptionCollection *mongo.Collection
-	CardCollection         *mongo.Collection
-	UserCollection         *mongo.Collection
-	InvestingCollection    *mongo.Collection
-	ExchangeCollection     *mongo.Collection
+	Database                 *mongo.Database
+	AssetCollection          *mongo.Collection
+	SubscriptionCollection   *mongo.Collection
+	CardCollection           *mongo.Collection
+	UserCollection           *mongo.Collection
+	InvestingCollection      *mongo.Collection
+	ExchangeCollection       *mongo.Collection
+	DailyAssetStatCollection *mongo.Collection
 )
 
 func Close(client *mongo.Client, ctx context.Context,
@@ -43,6 +44,7 @@ func Connect(uri string) (*mongo.Client, context.Context,
 	UserCollection = Database.Collection("users")
 	InvestingCollection = Database.Collection("investings")
 	ExchangeCollection = Database.Collection("exchanges")
+	DailyAssetStatCollection = Database.Collection("daily-asset-stats")
 
 	return client, ctx, cancel, err
 }

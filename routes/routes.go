@@ -9,11 +9,12 @@ import (
 )
 
 var (
-	userController         = new(controllers.UserController)
-	assetController        = new(controllers.AssetController)
-	subscriptionController = new(controllers.SubscriptionController)
-	investingController    = new(controllers.InvestingController)
-	OAuth2Controller       = new(controllers.OAuth2Controller)
+	userController            = new(controllers.UserController)
+	assetController           = new(controllers.AssetController)
+	dailyAssetStatsController = new(controllers.DailyAssetStatsController)
+	subscriptionController    = new(controllers.SubscriptionController)
+	investingController       = new(controllers.InvestingController)
+	OAuth2Controller          = new(controllers.OAuth2Controller)
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {

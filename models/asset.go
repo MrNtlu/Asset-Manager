@@ -85,6 +85,54 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
+func GetUserAssetCount(uid string) int64 {
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+	}}
+	facet := bson.M{"$facet": bson.M{
+		"document_count": bson.A{
+			bson.M{
+				"$group": bson.M{
+					"_id": bson.M{
+						"to_asset":   "$to_asset",
+						"from_asset": "$from_asset",
+					},
+				},
+			},
+			bson.M{
+				"$group": bson.M{
+					"_id": nil,
+					"n": bson.M{
+						"$sum": 1,
+					},
+				},
+			},
+		},
+	}}
+
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, facet})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to aggregate assets while counting: ", err)
+		return 10
+	}
+
+	var dcArray []responses.AssetDocumentCount
+	if err = cursor.All(context.TODO(), &dcArray); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode assets while counting: ", err)
+		return 10
+	}
+
+	if len(dcArray) > 0 && len(dcArray[0].DocumentCount) > 0 {
+		return dcArray[0].DocumentCount[0].N
+	}
+
+	return 10
+}
+
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
 	if data.Sort == "name" {

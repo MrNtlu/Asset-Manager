@@ -37,6 +37,14 @@ type AssetLog struct {
 	CurrencyValue float64   `bson:"value" json:"value"`
 }
 
+type AssetDocumentCount struct {
+	DocumentCount []AssetCount `bson:"document_count" json:"document_count"`
+}
+
+type AssetCount struct {
+	N int64 `bson:"n" json:"n"`
+}
+
 type AssetStats struct {
 	Currency            string  `bson:"currency" json:"currency"`
 	TotalBought         float64 `bson:"total_bought" json:"total_bought"`

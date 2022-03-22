@@ -22,6 +22,16 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	isPremium := models.IsUserPremium(uid)
+
+	if !isPremium && data.Interval != "weekly" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errPremiumFeature,
+		})
+
+		return
+	}
+
 	dailyAssetStats, err := models.GetAssetStatsByUserID(uid, data.Interval)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

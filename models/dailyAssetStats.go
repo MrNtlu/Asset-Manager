@@ -14,11 +14,23 @@ import (
 )
 
 func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetStats, error) {
-	//TODO: Return weekly, monthly or yearly. Weekly can be free but others should be premium
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
+
+	var intervalDate time.Time
+	switch interval {
+	case "weekly":
+		time.Now().AddDate(0, 0, -7)
+	case "monthly":
+		time.Now().AddDate(0, -1, 0)
+	case "yearly":
+		time.Now().AddDate(-1, 0, 0)
+	}
 
 	match := bson.M{"$match": bson.M{
 		"user_id": objectUID,
+		"created_at": bson.M{
+			"$gte": intervalDate,
+		},
 	}}
 	userLookup := bson.M{"$lookup": bson.M{
 		"from":         "users",

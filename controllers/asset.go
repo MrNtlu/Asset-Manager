@@ -11,7 +11,10 @@ import (
 
 type AssetController struct{}
 
-var errAssetNotFound = "asset not found"
+var (
+	errAssetNotFound = "asset not found"
+	errAssetPremium  = "free members can add up to 10, you can get premium membership for unlimited access"
+)
 
 func (a *AssetController) CreateAsset(c *gin.Context) {
 	var data requests.AssetCreate
@@ -20,10 +23,21 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	isPremium := models.IsUserPremium(uid)
+	assetCount := models.GetUserAssetCount(uid)
+
+	if !isPremium && assetCount >= 10 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errAssetPremium,
+		})
+		return
+	}
+
 	if err := models.CreateAsset(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 

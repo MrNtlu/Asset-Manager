@@ -19,6 +19,7 @@ var (
 	errAlreadyRegistered = "user already registered"
 	errPasswordNoMatch   = "passwords do not match"
 	errNoUser            = "couldn't find user"
+	errPremiumFeature    = "this feature requires premium membership"
 )
 
 func (u *UserController) Register(c *gin.Context) {

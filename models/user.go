@@ -3,6 +3,7 @@ package models
 import (
 	"asset_backend/db"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"asset_backend/utils"
 	"context"
 	"fmt"
@@ -13,6 +14,18 @@ import (
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
+/**
+* !Premium Features
+* *General
+*	?Can only select default currency
+* *Asset
+* 	- Max 10 asset
+*	- Only weekly stats
+* *Subscription
+*	- Max 5 subscription
+**/
+
+//TODO: Implement Premium restrictions for subscription & currency(?)
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	EmailAddress       string             `bson:"email_address" json:"email_address"`
@@ -23,8 +36,6 @@ type User struct {
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
 	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
 }
-
-//TODO: Return user info premium etc. if necessary.
 
 func createUserObject(emailAddress, currency, password string) *User {
 	return &User{
@@ -86,6 +97,24 @@ func UpdateUser(user User) error {
 	}
 
 	return nil
+}
+
+func IsUserPremium(uid string) bool {
+	objectUID, _ := primitive.ObjectIDFromHex(uid)
+
+	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+		"_id": objectUID,
+	})
+
+	var isUserPremium responses.IsUserPremium
+	if err := result.Decode(&isUserPremium); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to find user by uid: ", err)
+		return false
+	}
+
+	return isUserPremium.IsPremium
 }
 
 func FindUserByID(uid string) (User, error) {

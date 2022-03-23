@@ -24,9 +24,8 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	isPremium := models.IsUserPremium(uid)
-	assetCount := models.GetUserAssetCount(uid)
 
-	if !isPremium && assetCount >= 10 {
+	if !isPremium && models.GetUserAssetCount(uid) > 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errAssetPremium,
 		})

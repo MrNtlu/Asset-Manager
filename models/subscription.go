@@ -84,6 +84,18 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 	return nil
 }
 
+func GetUserSubscriptionCount(uid string) int64 {
+	count, err := db.SubscriptionCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to count user subscriptions: ", err)
+		return 5
+	}
+
+	return count
+}
+
 func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 

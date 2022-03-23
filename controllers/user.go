@@ -4,7 +4,9 @@ import (
 	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"asset_backend/utils"
+	"fmt"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -182,6 +184,31 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 	helpers.SendPasswordChangedEmail(generatedPass, user.EmailAddress)
 
 	c.JSON(http.StatusOK, gin.H{"message": "new password sent via email"})
+}
+
+func (u *UserController) GetUserInfo(c *gin.Context) {
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	isPremium := models.IsUserPremium(uid)
+	assetCount := models.GetUserAssetCount(uid)
+	subscritionCount := models.GetUserSubscriptionCount(uid)
+
+	var investingLimit string
+	var subscriptionLimit string
+	if !isPremium {
+		investingLimit = fmt.Sprintf("%v", assetCount) + "/unlimited"
+		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/unlimited"
+	} else {
+		investingLimit = fmt.Sprintf("%v", assetCount) + "/10"
+		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/5"
+	}
+
+	userInfo := responses.UserInfo{
+		IsPremium:         isPremium,
+		InvestingLimit:    investingLimit,
+		SubscriptionLimit: subscriptionLimit,
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "successfully fetched user info", "data": userInfo})
 }
 
 func (u *UserController) DeleteUser(c *gin.Context) {

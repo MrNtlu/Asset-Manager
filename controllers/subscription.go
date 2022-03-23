@@ -11,7 +11,10 @@ import (
 
 type SubscriptionController struct{}
 
-var errSubscriptionNotFound = "subscription not found"
+var (
+	errSubscriptionNotFound = "subscription not found"
+	errSubscriptionPremium  = "free members can add up to 5 subscriptions, you can get premium membership for unlimited access"
+)
 
 func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	var data requests.Subscription
@@ -20,6 +23,15 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	isPremium := models.IsUserPremium(uid)
+
+	if !isPremium && models.GetUserSubscriptionCount(uid) > 5 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errSubscriptionPremium,
+		})
+		return
+	}
+
 	if err := models.CreateSubscription(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

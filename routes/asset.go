@@ -22,6 +22,7 @@ func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 
 	investing := router.Group("/investings")
 	{
-		investing.GET("", investingController.GetInvestingsByType)
+		investing.GET("", investingController.GetInvestingsByTypeAndMarket)
+		investing.GET("/prices", investingController.GetInvestingPriceTableByTypeAndMarket)
 	}
 }

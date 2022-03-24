@@ -38,6 +38,15 @@ func (o *OAuth2Controller) GoogleLogin(c *gin.Context) {
 	http.Redirect(c.Writer, c.Request, url, http.StatusTemporaryRedirect)
 }
 
+// Google Callback
+// @Summary Callback from Google OAuth
+// @Description Callback from google auth
+// @Tags oauth2
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {string} string "Token"
+// @Failure 500 {string} string
+// @Router /callback [get]
 func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		content, err := getUserInfo(c.Request.FormValue("state"), c.Request.FormValue("code"))

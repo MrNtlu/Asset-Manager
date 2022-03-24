@@ -3,6 +3,8 @@
 ### Backend of Asset Manager (Golang + MongoDB)
 
 <ul>
+    <li> Swaggo/Swag
+    <li> Swaggo/Gin-Swagger
     <li> Gin-Gonic
     <li> Gin-jwt/v2
     <li> Godotenv

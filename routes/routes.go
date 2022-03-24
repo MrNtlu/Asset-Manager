@@ -31,10 +31,22 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	})
 }
 
+// Privacy Policy
+// @Summary Privacy Policy for App
+// @Description Returns Privacy Policy .html
+// @Tags app
+// @Produce html
+// @Router /privacy [get]
 func privacyPolicy(c *gin.Context) {
 	http.ServeFile(c.Writer, c.Request, "assets/privacy_policy.html")
 }
 
+// Terms & Conditions
+// @Summary Terms & Conditions for App
+// @Description Returns Terms & Conditions .html
+// @Tags app
+// @Produce html
+// @Router /terms [get]
 func termsConditions(c *gin.Context) {
 	http.ServeFile(c.Writer, c.Request, "assets/terms_conditions.html")
 }

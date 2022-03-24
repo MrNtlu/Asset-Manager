@@ -4,6 +4,7 @@ import (
 	"asset_backend/apis"
 	"asset_backend/controllers"
 	"asset_backend/db"
+	"asset_backend/docs"
 	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/routes"
@@ -16,8 +17,28 @@ import (
 	"github.com/go-co-op/gocron"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
+	swaggerfiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
+// @title Kantan Investment Manager API
+// @version 1.0
+// @description REST Api of Kantan.
+// @termsOfService  https://rocky-reaches-65250.herokuapp.com/terms/
+
+// @contact.name Burak Fidan
+// @contact.email mrntlu@gmail.com
+
+// @license.name Apache 2.0
+// @license.url http://www.apache.org/licenses/LICENSE-2.0.html
+
+// @host rocky-reaches-65250.herokuapp.com/
+// @BasePath /
+// @schemes http https
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
 func main() {
 	fmt.Println("Running")
 
@@ -45,6 +66,8 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
+	docs.SwaggerInfo.BasePath = ""
+
 	routes.SetupRoutes(router, jwtHandler)
 
 	hourlyScheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
@@ -58,6 +81,7 @@ func main() {
 		port = "8080"
 	}
 
+	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	router.Run(":" + port)
 }
 

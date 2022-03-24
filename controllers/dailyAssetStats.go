@@ -11,6 +11,19 @@ import (
 
 type DailyAssetStatsController struct{}
 
+// Daily Asset Stats
+// @Summary Get Daily Asset Stats by User ID
+// @Description Returns daily asset stats by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param dailyassetstatsinterval query requests.DailyAssetStatsInterval true "Daily Asset Stats Interval"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.DailyAssetStats
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/daily-stats [get]
 func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 	var data requests.DailyAssetStatsInterval
 	if err := c.ShouldBindQuery(&data); err != nil {

@@ -3,6 +3,7 @@ package controllers
 import (
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -16,6 +17,18 @@ var (
 	errAssetPremium  = "free members can add up to 10, you can get premium membership for unlimited access"
 )
 
+// Create Asset Log
+// @Summary Create Asset Log
+// @Description Creates asset log
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetcreate body requests.AssetCreate true "Asset Create"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 201 {string} string
+// @Failure 500 {string} string
+// @Router /asset [post]
 func (a *AssetController) CreateAsset(c *gin.Context) {
 	var data requests.AssetCreate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -43,6 +56,19 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
+// Assets & Stats by User ID
+// @Summary Get Assets & Stats by User ID
+// @Description Returns assets and stats by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetsort query requests.AssetSort true "Asset Sort"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.AssetAndStats
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset [get]
 func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	var data requests.AssetSort
 	if err := c.ShouldBindQuery(&data); err != nil {
@@ -70,9 +96,27 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assets, "stats": assetStat})
+	var assetAndStats = responses.AssetAndStats{
+		Data:  assets,
+		Stats: assetStat,
+	}
+
+	c.JSON(http.StatusOK, assetAndStats)
 }
 
+// Asset Stats
+// @Summary Get Asset Stats by Asset and User ID
+// @Description Returns asset stats by asset and user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetdetails query requests.AssetDetails true "Asset Details"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.AssetDetails
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/details [get]
 func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	var data requests.AssetDetails
 	if err := c.ShouldBindQuery(&data); err != nil {
@@ -95,6 +139,18 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetDetails})
 }
 
+// All Asset Stats
+// @Summary Get Asset Stats by User ID
+// @Description Returns asset stats by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.AssetStats
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/stats [get]
 func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
@@ -109,6 +165,19 @@ func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": assetStat})
 }
 
+// Asset Logs
+// @Summary Get Asset Logs by User ID
+// @Description Returns asset logs by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetlog query requests.AssetLog true "Asset Log"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {array} models.Asset
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/logs [get]
 func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLog
 	if err := c.ShouldBindQuery(&data); err != nil {
@@ -131,6 +200,21 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"data": assets, "pagination": pagination})
 }
 
+// Update Asset Log
+// @Summary Update Asset Log by AssetID
+// @Description Updates asset log by id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetupdate body requests.AssetUpdate true "Asset Update"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 403 {string} string "Unauthorized update"
+// @Failure 404 {string} string "Couldn't find user"
+// @Failure 500 {string} string
+// @Router /asset [put]
 func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	var data requests.AssetUpdate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -165,6 +249,19 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "asset updated"})
 }
 
+// Delete Asset Log
+// @Summary Delete Asset Log by AssetID
+// @Description Deletes asset log by id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param ID body requests.ID true "Asset ID"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/log [delete]
 func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	var data requests.ID
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -188,6 +285,19 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"error": ErrUnauthorized})
 }
 
+// Delete Asset Logs
+// @Summary Delete Asset Logs by User ID
+// @Description Deletes all asset logs by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetlogsdelete body requests.AssetLogsDelete true "Asset Logs Delete"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /asset/logs [delete]
 func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLogsDelete
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {
@@ -205,6 +315,17 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "assets deleted successfully"})
 }
 
+// Delete All Assets
+// @Summary Delete All Assets by User ID
+// @Description Deletes all assets by user id
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 500 {string} string
+// @Router /asset [delete]
 func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if err := models.DeleteAllAssetsByUserID(uid); err != nil {

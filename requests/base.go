@@ -5,5 +5,5 @@ type ID struct {
 }
 
 type Type struct {
-	AssetType string `form:"type" binding:"required"`
+	Type string `form:"type" binding:"required"`
 }

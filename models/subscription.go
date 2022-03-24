@@ -143,7 +143,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]Subscription, error) {
 	return subscriptions, nil
 }
 
-func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]Subscription, error) {
+func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]responses.Subscription, error) {
 	match := bson.M{
 		"user_id": uid,
 	}
@@ -171,7 +171,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]Sub
 		return nil, fmt.Errorf("failed to find subscription")
 	}
 
-	var subscriptions []Subscription
+	var subscriptions []responses.Subscription
 	if err := cursor.All(context.TODO(), &subscriptions); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":       uid,

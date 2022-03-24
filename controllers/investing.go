@@ -10,6 +10,17 @@ import (
 
 type InvestingController struct{}
 
+// Investings
+// @Summary Get Investings by Type and Market
+// @Description Returns investing list by type and market
+// @Tags investing
+// @Accept application/json
+// @Produce application/json
+// @Param investings query requests.Investings true "Investings"
+// @Success 200 {array} responses.InvestingResponse
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /investings [get]
 func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 	var data requests.Investings
 	if err := c.ShouldBindQuery(&data); err != nil {
@@ -31,6 +42,17 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
 }
 
+// Investing Price Table
+// @Summary Get Investing Price Table by Type and Market
+// @Description Returns investing price table by type and market
+// @Tags investing
+// @Accept application/json
+// @Produce application/json
+// @Param investings query requests.Investings true "Investings"
+// @Success 200 {array} responses.InvestingTableResponse
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /investings/prices [get]
 func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Context) {
 	var data requests.Investings
 	if err := c.ShouldBindQuery(&data); err != nil {

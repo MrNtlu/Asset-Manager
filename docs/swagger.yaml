@@ -1,0 +1,1726 @@
+basePath: /
+definitions:
+  models.Asset:
+    properties:
+      _id:
+        type: string
+      amount:
+        type: number
+      asset_market:
+        description: if stock the market else if crypto CMC else exchange
+        type: string
+      asset_type:
+        description: stock, crypto etc.
+        type: string
+      created_at:
+        type: string
+      from_asset:
+        type: string
+      price:
+        type: number
+      to_asset:
+        type: string
+      type:
+        description: sell buy
+        type: string
+      user_id:
+        type: string
+      value:
+        description: value in from asset currency
+        type: number
+    type: object
+  models.BillCycle:
+    properties:
+      day:
+        type: integer
+      month:
+        type: integer
+      year:
+        type: integer
+    type: object
+  models.Card:
+    properties:
+      _id:
+        type: string
+      last_digit:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.Subscription:
+    properties:
+      _id:
+        type: string
+      bill_cycle:
+        $ref: '#/definitions/models.BillCycle'
+      bill_date:
+        type: string
+      card_id:
+        type: string
+      color:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      user_id:
+        type: string
+    type: object
+  requests.AssetCreate:
+    properties:
+      amount:
+        type: number
+      asset_market:
+        type: string
+      asset_type:
+        enum:
+        - crypto
+        - stock
+        - exchange
+        - commodity
+        type: string
+      from_asset:
+        type: string
+      price:
+        type: number
+      to_asset:
+        type: string
+      type:
+        enum:
+        - sell
+        - buy
+        type: string
+    required:
+    - amount
+    - asset_type
+    - from_asset
+    - price
+    - to_asset
+    - type
+    type: object
+  requests.AssetLogsDelete:
+    properties:
+      asset_market:
+        type: string
+      from_asset:
+        type: string
+      to_asset:
+        type: string
+    required:
+    - asset_market
+    - from_asset
+    - to_asset
+    type: object
+  requests.AssetUpdate:
+    properties:
+      amount:
+        type: number
+      id:
+        type: string
+      price:
+        type: number
+      type:
+        type: string
+    required:
+    - id
+    type: object
+  requests.BillCycle:
+    properties:
+      day:
+        type: integer
+      month:
+        type: integer
+      year:
+        type: integer
+    type: object
+  requests.Card:
+    properties:
+      last_digit:
+        type: string
+      name:
+        type: string
+    required:
+    - last_digit
+    - name
+    type: object
+  requests.CardUpdate:
+    properties:
+      id:
+        type: string
+      last_digit:
+        type: string
+      name:
+        type: string
+    required:
+    - id
+    type: object
+  requests.ChangeCurrency:
+    properties:
+      currency:
+        enum:
+        - USD
+        - EUR
+        - JPY
+        - KRW
+        - GBP
+        type: string
+    required:
+    - currency
+    type: object
+  requests.ChangePassword:
+    properties:
+      new_password:
+        minLength: 6
+        type: string
+      old_password:
+        minLength: 6
+        type: string
+    required:
+    - new_password
+    - old_password
+    type: object
+  requests.ForgotPassword:
+    properties:
+      email_address:
+        type: string
+    required:
+    - email_address
+    type: object
+  requests.ID:
+    properties:
+      id:
+        type: string
+    required:
+    - id
+    type: object
+  requests.Register:
+    properties:
+      currency:
+        enum:
+        - USD
+        - EUR
+        - JPY
+        - KRW
+        - GBP
+        type: string
+      email_address:
+        type: string
+      password:
+        minLength: 6
+        type: string
+    required:
+    - currency
+    - email_address
+    - password
+    type: object
+  requests.Subscription:
+    properties:
+      bill_cycle:
+        $ref: '#/definitions/requests.BillCycle'
+      bill_date:
+        type: string
+      card_id:
+        type: string
+      color:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+    required:
+    - bill_cycle
+    - bill_date
+    - color
+    - currency
+    - name
+    - price
+    type: object
+  requests.SubscriptionUpdate:
+    properties:
+      bill_cycle:
+        $ref: '#/definitions/requests.BillCycle'
+      bill_date:
+        type: string
+      card_id:
+        type: string
+      color:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+    required:
+    - id
+    type: object
+  responses.Asset:
+    properties:
+      asset_market:
+        type: string
+      asset_type:
+        type: string
+      current_total_value:
+        type: number
+      from_asset:
+        type: string
+      name:
+        type: string
+      p/l:
+        type: number
+      remaining_amount:
+        type: number
+      to_asset:
+        type: string
+      total_bought:
+        type: number
+      total_sold:
+        type: number
+    type: object
+  responses.AssetAndStats:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/responses.Asset'
+        type: array
+      stats:
+        $ref: '#/definitions/responses.AssetStats'
+    type: object
+  responses.AssetDetails:
+    properties:
+      asset_type:
+        type: string
+      current_total_value:
+        type: number
+      from_asset:
+        type: string
+      name:
+        type: string
+      p/l:
+        type: number
+      remaining_amount:
+        type: number
+      to_asset:
+        type: string
+      total_bought:
+        type: number
+      total_sold:
+        type: number
+    type: object
+  responses.AssetStats:
+    properties:
+      commodity_assets:
+        type: number
+      commodity_p/l:
+        type: number
+      commodity_percentage:
+        type: number
+      crypto_assets:
+        type: number
+      crypto_p/l:
+        type: number
+      crypto_percentage:
+        type: number
+      currency:
+        type: string
+      exchange_assets:
+        type: number
+      exchange_p/l:
+        type: number
+      exchange_percentage:
+        type: number
+      stock_assets:
+        type: number
+      stock_p/l:
+        type: number
+      stock_percentage:
+        type: number
+      total_assets:
+        type: number
+      total_bought:
+        type: number
+      total_p/l:
+        type: number
+      total_sold:
+        type: number
+    type: object
+  responses.BillCycle:
+    properties:
+      day:
+        type: integer
+      month:
+        type: integer
+      year:
+        type: integer
+    type: object
+  responses.CardStatistics:
+    properties:
+      card_last_digit:
+        type: string
+      card_name:
+        type: string
+      currency:
+        type: string
+      most_expensive:
+        type: number
+      most_expensive_name:
+        type: string
+      total_monthly_payment:
+        type: number
+      total_payment:
+        type: number
+    type: object
+  responses.DailyAssetStats:
+    properties:
+      commodity_p/l:
+        items:
+          type: number
+        type: array
+      crypto_p/l:
+        items:
+          type: number
+        type: array
+      currency:
+        type: string
+      exchange_p/l:
+        items:
+          type: number
+        type: array
+      stock_p/l:
+        items:
+          type: number
+        type: array
+      total_assets:
+        items:
+          type: number
+        type: array
+      total_p/l:
+        items:
+          type: number
+        type: array
+    type: object
+  responses.InvestingResponse:
+    properties:
+      name:
+        type: string
+      symbol:
+        type: string
+    type: object
+  responses.InvestingTableResponse:
+    properties:
+      currency:
+        type: string
+      market:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      symbol:
+        type: string
+    type: object
+  responses.Subscription:
+    properties:
+      _id:
+        type: string
+      bill_cycle:
+        $ref: '#/definitions/responses.BillCycle'
+      bill_date:
+        type: string
+      card_id:
+        type: string
+      color:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      image:
+        type: string
+      name:
+        type: string
+      price:
+        type: number
+      user_id:
+        type: string
+    type: object
+  responses.SubscriptionAndStats:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/responses.Subscription'
+        type: array
+      stats:
+        items:
+          $ref: '#/definitions/responses.SubscriptionStatistics'
+        type: array
+    type: object
+  responses.SubscriptionDetails:
+    properties:
+      _id:
+        type: string
+      bill_cycle:
+        $ref: '#/definitions/responses.BillCycle'
+      bill_date:
+        type: string
+      card_id:
+        type: string
+      currency:
+        type: string
+      description:
+        type: string
+      monthly_payment:
+        type: number
+      name:
+        type: string
+      price:
+        type: number
+      total_payment:
+        type: number
+      user_id:
+        type: string
+    type: object
+  responses.SubscriptionStatistics:
+    properties:
+      currency:
+        type: string
+      total_monthly_payment:
+        type: number
+      total_payment:
+        type: number
+    type: object
+  responses.UserInfo:
+    properties:
+      investing_limit:
+        type: string
+      is_premium:
+        type: boolean
+      subscription_limit:
+        type: string
+    type: object
+host: rocky-reaches-65250.herokuapp.com/
+info:
+  contact:
+    email: mrntlu@gmail.com
+    name: Burak Fidan
+  description: REST Api of Kantan.
+  license:
+    name: Apache 2.0
+    url: http://www.apache.org/licenses/LICENSE-2.0.html
+  termsOfService: https://rocky-reaches-65250.herokuapp.com/terms/
+  title: Kantan Investment Manager API
+  version: "1.0"
+paths:
+  /asset:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all assets by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete All Assets by User ID
+      tags:
+      - asset
+    get:
+      consumes:
+      - application/json
+      description: Returns assets and stats by user id
+      parameters:
+      - enum:
+        - name
+        - value
+        - amount
+        - profit
+        in: query
+        name: sort
+        required: true
+        type: string
+      - enum:
+        - 1
+        - -1
+        in: query
+        name: type
+        required: true
+        type: integer
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.AssetAndStats'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Assets & Stats by User ID
+      tags:
+      - asset
+    post:
+      consumes:
+      - application/json
+      description: Creates asset log
+      parameters:
+      - description: Asset Create
+        in: body
+        name: assetcreate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.AssetCreate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Asset Log
+      tags:
+      - asset
+    put:
+      consumes:
+      - application/json
+      description: Updates asset log by id
+      parameters:
+      - description: Asset Update
+        in: body
+        name: assetupdate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.AssetUpdate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Unauthorized update
+          schema:
+            type: string
+        "404":
+          description: Couldn't find user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update Asset Log by AssetID
+      tags:
+      - asset
+  /asset/daily-stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns daily asset stats by user id
+      parameters:
+      - enum:
+        - weekly
+        - monthly
+        - yearly
+        in: query
+        name: interval
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.DailyAssetStats'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Daily Asset Stats by User ID
+      tags:
+      - asset
+  /asset/details:
+    get:
+      consumes:
+      - application/json
+      description: Returns asset stats by asset and user id
+      parameters:
+      - in: query
+        name: asset_market
+        required: true
+        type: string
+      - in: query
+        name: from_asset
+        required: true
+        type: string
+      - in: query
+        name: to_asset
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.AssetDetails'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Asset Stats by Asset and User ID
+      tags:
+      - asset
+  /asset/log:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes asset log by id
+      parameters:
+      - description: Asset ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete Asset Log by AssetID
+      tags:
+      - asset
+  /asset/logs:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all asset logs by user id
+      parameters:
+      - description: Asset Logs Delete
+        in: body
+        name: assetlogsdelete
+        required: true
+        schema:
+          $ref: '#/definitions/requests.AssetLogsDelete'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete Asset Logs by User ID
+      tags:
+      - asset
+    get:
+      consumes:
+      - application/json
+      description: Returns asset logs by user id
+      parameters:
+      - in: query
+        name: asset_market
+        required: true
+        type: string
+      - in: query
+        name: from_asset
+        required: true
+        type: string
+      - in: query
+        minimum: 1
+        name: page
+        required: true
+        type: integer
+      - enum:
+        - newest
+        - oldest
+        - amount
+        in: query
+        name: sort
+        required: true
+        type: string
+      - in: query
+        name: to_asset
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Asset'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Asset Logs by User ID
+      tags:
+      - asset
+  /asset/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns asset stats by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.AssetStats'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Asset Stats by User ID
+      tags:
+      - asset
+  /auth/confirm-password-reset:
+    get:
+      consumes:
+      - application/json
+      description: After user confirmed password reset from their email
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: No user found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Confirm Password Reset
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Allows users to register
+      parameters:
+      - description: User registration info
+        in: body
+        name: register
+        required: true
+        schema:
+          $ref: '#/definitions/requests.Register'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: User Registration
+      tags:
+      - auth
+  /callback:
+    get:
+      consumes:
+      - application/json
+      description: Callback from google auth
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Callback from Google OAuth
+      tags:
+      - oauth2
+  /card:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes card by id
+      parameters:
+      - description: ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete card by card id
+      tags:
+      - card
+    get:
+      consumes:
+      - application/json
+      description: Returns cards by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Card'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Cards by User ID
+      tags:
+      - card
+    post:
+      consumes:
+      - application/json
+      description: Creates card
+      parameters:
+      - description: Card Create
+        in: body
+        name: card
+        required: true
+        schema:
+          $ref: '#/definitions/requests.Card'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Card
+      tags:
+      - card
+    put:
+      consumes:
+      - application/json
+      description: Updates card
+      parameters:
+      - description: Card Update
+        in: body
+        name: cardupdate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.CardUpdate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Unauthorized update
+          schema:
+            type: string
+        "404":
+          description: Couldn't find user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update Card
+      tags:
+      - card
+  /card/all:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all cards by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete all cards by user id
+      tags:
+      - card
+  /card/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns card statistics
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.CardStatistics'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Card Statistics by User ID
+      tags:
+      - card
+  /investings:
+    get:
+      consumes:
+      - application/json
+      description: Returns investing list by type and market
+      parameters:
+      - in: query
+        name: market
+        required: true
+        type: string
+      - in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.InvestingResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get Investings by Type and Market
+      tags:
+      - investing
+  /investings/prices:
+    get:
+      consumes:
+      - application/json
+      description: Returns investing price table by type and market
+      parameters:
+      - in: query
+        name: market
+        required: true
+        type: string
+      - in: query
+        name: type
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.InvestingTableResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Get Investing Price Table by Type and Market
+      tags:
+      - investing
+  /privacy:
+    get:
+      description: Returns Privacy Policy .html
+      produces:
+      - text/html
+      responses: {}
+      summary: Privacy Policy for App
+      tags:
+      - app
+  /subscription:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes subscription by id
+      parameters:
+      - description: ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete subscription by subscription id
+      tags:
+      - subscription
+    get:
+      consumes:
+      - application/json
+      description: Returns subscriptions and stats by user id
+      parameters:
+      - enum:
+        - name
+        - currency
+        - price
+        in: query
+        name: sort
+        required: true
+        type: string
+      - enum:
+        - 1
+        - -1
+        in: query
+        name: type
+        required: true
+        type: integer
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SubscriptionAndStats'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Subscriptions and Stats by User ID
+      tags:
+      - subscription
+    post:
+      consumes:
+      - application/json
+      description: Creates subscription
+      parameters:
+      - description: Subscription Create
+        in: body
+        name: subscription
+        required: true
+        schema:
+          $ref: '#/definitions/requests.Subscription'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Subscription
+      tags:
+      - subscription
+    put:
+      consumes:
+      - application/json
+      description: Updates subscription
+      parameters:
+      - description: Subscription Update
+        in: body
+        name: subscriptionupdate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.SubscriptionUpdate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Unauthorized update
+          schema:
+            type: string
+        "404":
+          description: Couldn't find user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update Subscription
+      tags:
+      - subscription
+  /subscription/all:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all subscriptions by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete all subscriptions by user id
+      tags:
+      - subscription
+  /subscription/card:
+    get:
+      consumes:
+      - application/json
+      description: Returns subscriptions by card id
+      parameters:
+      - in: query
+        name: id
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Subscription'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Subscriptions by Card ID
+      tags:
+      - subscription
+  /subscription/details:
+    get:
+      consumes:
+      - application/json
+      description: Returns subscription details
+      parameters:
+      - in: query
+        name: id
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.SubscriptionDetails'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "404":
+          description: Not Found
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Subscription Details
+      tags:
+      - subscription
+  /subscription/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns subscription statistics
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.SubscriptionStatistics'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Subscription Statistics by User ID
+      tags:
+      - subscription
+  /terms:
+    get:
+      description: Returns Terms & Conditions .html
+      produces:
+      - text/html
+      responses: {}
+      summary: Terms & Conditions for App
+      tags:
+      - app
+  /user:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes everything related to user
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Deletes user information
+      tags:
+      - user
+  /user/change-currency:
+    put:
+      consumes:
+      - application/json
+      description: Users can change their default currency
+      parameters:
+      - description: Set currency
+        in: body
+        name: changecurrency
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ChangeCurrency'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Change User Currency
+      tags:
+      - user
+  /user/change-password:
+    put:
+      consumes:
+      - application/json
+      description: Users can change their password
+      parameters:
+      - description: Set new password
+        in: body
+        name: ChangePassword
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ChangePassword'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Change User Password
+      tags:
+      - user
+  /user/forgot-password:
+    post:
+      consumes:
+      - application/json
+      description: Users can change their password when they forgot
+      parameters:
+      - description: User's email
+        in: body
+        name: ForgotPassword
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ForgotPassword'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Couldn't find any user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: Will be used when user forgot password
+      tags:
+      - user
+  /user/info:
+    get:
+      consumes:
+      - application/json
+      description: Returns users membership & investing/subscription limits
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User Info
+          schema:
+            $ref: '#/definitions/responses.UserInfo'
+      security:
+      - ApiKeyAuth: []
+      summary: User membership info
+      tags:
+      - user
+schemes:
+- http
+- https
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

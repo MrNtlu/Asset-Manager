@@ -64,3 +64,8 @@ type AssetStats struct {
 	ExchangePercentage  float64 `bson:"exchange_percentage" json:"exchange_percentage"`
 	CommodityPercentage float64 `bson:"commodity_percentage" json:"commodity_percentage"`
 }
+
+type AssetAndStats struct {
+	Data  []Asset    `bson:"data" json:"data"`
+	Stats AssetStats `bson:"stats" json:"stats"`
+}

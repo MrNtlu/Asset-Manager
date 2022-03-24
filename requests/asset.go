@@ -12,21 +12,21 @@ type AssetCreate struct {
 
 type AssetSort struct {
 	Sort     string `form:"sort" binding:"required,oneof=name value amount profit"`
-	SortType int    `form:"type" binding:"required,number,oneof=1 -1"`
+	SortType int    `form:"type" json:"type" binding:"required,number,oneof=1 -1"`
 }
 
 type AssetDetails struct {
-	ToAsset     string `form:"to_asset" binding:"required"`
-	FromAsset   string `form:"from_asset" binding:"required"`
-	AssetMarket string `form:"asset_market" binding:"required"`
+	ToAsset     string `form:"to_asset" json:"to_asset" binding:"required"`
+	FromAsset   string `form:"from_asset" json:"from_asset" binding:"required"`
+	AssetMarket string `form:"asset_market" json:"asset_market" binding:"required"`
 }
 
 type AssetLog struct {
-	ToAsset     string `form:"to_asset" binding:"required"`
-	FromAsset   string `form:"from_asset" binding:"required"`
-	AssetMarket string `form:"asset_market" binding:"required"`
-	Sort        string `form:"sort" binding:"required,oneof=newest oldest amount"`
-	Page        int64  `form:"page" binding:"required,number,min=1"`
+	ToAsset     string `form:"to_asset" json:"to_asset" binding:"required"`
+	FromAsset   string `form:"from_asset" json:"from_asset" binding:"required"`
+	AssetMarket string `form:"asset_market" json:"asset_market" binding:"required"`
+	Sort        string `form:"sort" json:"sort" binding:"required,oneof=newest oldest amount"`
+	Page        int64  `form:"page" json:"page" binding:"required,number,min=1"`
 }
 
 type AssetUpdate struct {
@@ -39,5 +39,5 @@ type AssetUpdate struct {
 type AssetLogsDelete struct {
 	ToAsset     string `json:"to_asset" binding:"required"`
 	FromAsset   string `json:"from_asset" binding:"required"`
-	AssetMarket string `form:"asset_market" binding:"required"`
+	AssetMarket string `json:"asset_market" binding:"required"`
 }

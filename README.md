@@ -18,6 +18,10 @@
     <li> OAuth2
 </ul>
 
+[Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)
+
+[Open API 2 Doc](http://rocky-reaches-65250.herokuapp.com/swagger/doc.json)
+
 ### External API's
 
 <ul>

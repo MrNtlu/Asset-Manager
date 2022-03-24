@@ -1266,7 +1266,11 @@ paths:
       description: Returns Privacy Policy .html
       produces:
       - text/html
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
       summary: Privacy Policy for App
       tags:
       - app
@@ -1565,7 +1569,11 @@ paths:
       description: Returns Terms & Conditions .html
       produces:
       - text/html
-      responses: {}
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
       summary: Terms & Conditions for App
       tags:
       - app
@@ -1717,7 +1725,6 @@ paths:
       - user
 schemes:
 - http
-- https
 securityDefinitions:
   BearerAuth:
     in: header

@@ -1,7 +1,6 @@
 {
     "schemes": [
-        "http",
-        "https"
+        "http"
     ],
     "swagger": "2.0",
     "info": {
@@ -1162,7 +1161,14 @@
                     "app"
                 ],
                 "summary": "Privacy Policy for App",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/subscription": {
@@ -1627,7 +1633,14 @@
                     "app"
                 ],
                 "summary": "Terms \u0026 Conditions for App",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/user": {

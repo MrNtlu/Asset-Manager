@@ -34,7 +34,7 @@ import (
 
 // @host rocky-reaches-65250.herokuapp.com/
 // @BasePath /
-// @schemes http https
+// @schemes http
 
 // @securityDefinitions.apikey BearerAuth
 // @in header

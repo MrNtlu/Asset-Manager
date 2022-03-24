@@ -1165,7 +1165,14 @@ const docTemplate = `{
                     "app"
                 ],
                 "summary": "Privacy Policy for App",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/subscription": {
@@ -1630,7 +1637,14 @@ const docTemplate = `{
                     "app"
                 ],
                 "summary": "Terms \u0026 Conditions for App",
-                "responses": {}
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
             }
         },
         "/user": {
@@ -2655,7 +2669,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "rocky-reaches-65250.herokuapp.com/",
 	BasePath:         "/",
-	Schemes:          []string{"http", "https"},
+	Schemes:          []string{"http"},
 	Title:            "Kantan Investment Manager API",
 	Description:      "REST Api of Kantan.",
 	InfoInstanceName: "swagger",

@@ -33,7 +33,7 @@ import (
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
 // @host rocky-reaches-65250.herokuapp.com
-// @BasePath /
+// @BasePath /api/v1
 // @schemes http
 
 // @securityDefinitions.apikey BearerAuth
@@ -66,7 +66,7 @@ func main() {
 
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
-	docs.SwaggerInfo.BasePath = ""
+	docs.SwaggerInfo.BasePath = "/api/v1"
 
 	routes.SetupRoutes(router, jwtHandler)
 

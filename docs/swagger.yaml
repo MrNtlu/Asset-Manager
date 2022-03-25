@@ -1,4 +1,4 @@
-basePath: /
+basePath: /api/v1
 definitions:
   models.Asset:
     properties:
@@ -518,7 +518,7 @@ definitions:
       subscription_limit:
         type: string
     type: object
-host: rocky-reaches-65250.herokuapp.com/
+host: rocky-reaches-65250.herokuapp.com
 info:
   contact:
     email: mrntlu@gmail.com
@@ -1261,19 +1261,6 @@ paths:
       summary: Get Investing Price Table by Type and Market
       tags:
       - investing
-  /privacy:
-    get:
-      description: Returns Privacy Policy .html
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Privacy Policy for App
-      tags:
-      - app
   /subscription:
     delete:
       consumes:
@@ -1564,19 +1551,6 @@ paths:
       summary: Get Subscription Statistics by User ID
       tags:
       - subscription
-  /terms:
-    get:
-      description: Returns Terms & Conditions .html
-      produces:
-      - text/html
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-      summary: Terms & Conditions for App
-      tags:
-      - app
   /user:
     delete:
       consumes:

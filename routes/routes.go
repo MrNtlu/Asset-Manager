@@ -18,9 +18,11 @@ var (
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
-	userRouter(router, jwtToken)
-	assetRouter(router, jwtToken)
-	subscriptionRouter(router, jwtToken)
+	apiRouter := router.Group("/api/v1")
+
+	userRouter(apiRouter, jwtToken)
+	assetRouter(apiRouter, jwtToken)
+	subscriptionRouter(apiRouter, jwtToken)
 	oauth2Router(router, jwtToken)
 
 	router.GET("/privacy", privacyPolicy)
@@ -31,24 +33,10 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	})
 }
 
-// Privacy Policy
-// @Summary Privacy Policy for App
-// @Description Returns Privacy Policy .html
-// @Tags app
-// @Produce html
-// @Success 200 {string} string
-// @Router /privacy [get]
 func privacyPolicy(c *gin.Context) {
 	http.ServeFile(c.Writer, c.Request, "assets/privacy_policy.html")
 }
 
-// Terms & Conditions
-// @Summary Terms & Conditions for App
-// @Description Returns Terms & Conditions .html
-// @Tags app
-// @Produce html
-// @Success 200 {string} string
-// @Router /terms [get]
 func termsConditions(c *gin.Context) {
 	http.ServeFile(c.Writer, c.Request, "assets/terms_conditions.html")
 }

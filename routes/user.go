@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func userRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
+func userRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", jwtToken.LoginHandler)

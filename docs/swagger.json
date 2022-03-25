@@ -17,8 +17,8 @@
         },
         "version": "1.0"
     },
-    "host": "rocky-reaches-65250.herokuapp.com/",
-    "basePath": "/",
+    "host": "rocky-reaches-65250.herokuapp.com",
+    "basePath": "/api/v1",
     "paths": {
         "/asset": {
             "get": {
@@ -1151,26 +1151,6 @@
                 }
             }
         },
-        "/privacy": {
-            "get": {
-                "description": "Returns Privacy Policy .html",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "app"
-                ],
-                "summary": "Privacy Policy for App",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/subscription": {
             "get": {
                 "security": [
@@ -1616,26 +1596,6 @@
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/terms": {
-            "get": {
-                "description": "Returns Terms \u0026 Conditions .html",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "app"
-                ],
-                "summary": "Terms \u0026 Conditions for App",
-                "responses": {
-                    "200": {
-                        "description": "OK",
                         "schema": {
                             "type": "string"
                         }

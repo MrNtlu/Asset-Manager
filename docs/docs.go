@@ -1155,26 +1155,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/privacy": {
-            "get": {
-                "description": "Returns Privacy Policy .html",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "app"
-                ],
-                "summary": "Privacy Policy for App",
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/subscription": {
             "get": {
                 "security": [
@@ -1620,26 +1600,6 @@ const docTemplate = `{
                     },
                     "500": {
                         "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
-        "/terms": {
-            "get": {
-                "description": "Returns Terms \u0026 Conditions .html",
-                "produces": [
-                    "text/html"
-                ],
-                "tags": [
-                    "app"
-                ],
-                "summary": "Terms \u0026 Conditions for App",
-                "responses": {
-                    "200": {
-                        "description": "OK",
                         "schema": {
                             "type": "string"
                         }
@@ -2667,8 +2627,8 @@ const docTemplate = `{
 // SwaggerInfo holds exported Swagger Info so clients can modify it
 var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
-	Host:             "rocky-reaches-65250.herokuapp.com/",
-	BasePath:         "/",
+	Host:             "rocky-reaches-65250.herokuapp.com",
+	BasePath:         "/api/v1",
 	Schemes:          []string{"http"},
 	Title:            "Kantan Investment Manager API",
 	Description:      "REST Api of Kantan.",

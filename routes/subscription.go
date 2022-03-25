@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func subscriptionRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
+func subscriptionRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
 	subscription := router.Group("/subscription").Use(jwtToken.MiddlewareFunc())
 	{
 		subscription.DELETE("/all", subscriptionController.DeleteAllSubscriptionsByUserID)

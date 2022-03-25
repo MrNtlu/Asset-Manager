@@ -5,7 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func assetRouter(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
+func assetRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
 	asset := router.Group("/asset").Use(jwtToken.MiddlewareFunc())
 	{
 		asset.DELETE("/log", assetController.DeleteAssetLogByAssetID)

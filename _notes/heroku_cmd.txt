@@ -1,0 +1,16 @@
+heroku logs --tail //Console logs
+heroku config //Get configs
+heroku restart //Restart
+heroku apps:destroy <app name>
+
+//Push update
+git add -A
+git commit -m "Message"
+git push heroku master
+
+//Update Packages
+go get -u
+go mod tidy
+
+//Rename
+https://devcenter.heroku.com/articles/renaming-apps

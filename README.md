@@ -1,10 +1,12 @@
-# Asset Manager
+# Asset Manager &nbsp; ![go](https://user-images.githubusercontent.com/25686023/160291006-7312bd67-8b9b-4c20-ae97-564aac206193.png) &nbsp; ![mongo](https://user-images.githubusercontent.com/25686023/160291008-502ef074-53e7-46f9-93cc-f3c6cf4230d7.png) &nbsp; ![redis](https://user-images.githubusercontent.com/25686023/160291009-100f51ce-2a2b-456d-bb76-8051cd2c897b.png)
 
-### Backend of Asset Manager (Golang + MongoDB)
+### Backend of Asset Manager (Golang + MongoDB + Redis)
 
 <ul>
+    <li> Redis (Caching)
     <li> Swaggo/Swag
     <li> Swaggo/Gin-Swagger
+    <li> MessagePack
     <li> Gin-Gonic
     <li> Gin-jwt/v2
     <li> Godotenv

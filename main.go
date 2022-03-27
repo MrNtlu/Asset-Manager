@@ -57,6 +57,8 @@ func main() {
 	}
 	defer db.Close(client, ctx, cancel)
 
+	db.SetupRedis()
+
 	jwtHandler := helpers.SetupJWTHandler()
 
 	logrus.SetFormatter(&logrus.JSONFormatter{

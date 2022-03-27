@@ -1,11 +1,15 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type InvestingController struct{}
@@ -63,12 +67,25 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 		return
 	}
 
-	investings, err := models.GetInvestingPriceTableByTypeAndMarket(data.Type, data.Market)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
+	var investings []responses.InvestingTableResponse
+	var cacheKey = "investings/" + data.Type + "/" + data.Market
+
+	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+	if err != nil || result == "" {
+		investings, err = models.GetInvestingPriceTableByTypeAndMarket(data.Type, data.Market)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		if len(investings) > 0 {
+			marshalInvestings, _ := msgpack.Marshal(investings)
+			go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisSExpire)
+		}
+	} else {
+		msgpack.Unmarshal([]byte(result), &investings)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})

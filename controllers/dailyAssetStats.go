@@ -1,12 +1,16 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
+	"context"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type DailyAssetStatsController struct{}
@@ -45,12 +49,25 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 		return
 	}
 
-	dailyAssetStats, err := models.GetAssetStatsByUserID(uid, data.Interval)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
+	var (
+		cacheKey        = "daily-asset/" + uid + "/" + data.Interval
+		dailyAssetStats responses.DailyAssetStats
+	)
+
+	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+	if err != nil || result == "" {
+		dailyAssetStats, err = models.GetAssetStatsByUserID(uid, data.Interval)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		marshalDailyAssetStats, _ := msgpack.Marshal(dailyAssetStats)
+		go db.RedisDB.Set(context.TODO(), cacheKey, marshalDailyAssetStats, db.RedisLExpire)
+	} else {
+		msgpack.Unmarshal([]byte(result), &dailyAssetStats)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": dailyAssetStats})

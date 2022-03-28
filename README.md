@@ -28,7 +28,7 @@
 
 <ul>
     <li> Coinmarketcap - Cryptocurrencies
-    <li> FinancialModelingPrep - Stocks
+    <li> Removed <s>FinancialModelingPrep</s>
     <li> Removed <s>Alphavantage</s>
 </ul>
 

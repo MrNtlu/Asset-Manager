@@ -27,7 +27,7 @@
 ### External API's
 
 <ul>
-    <li> Coinmarketcap - Cryptocurrencies
+    <li> Moved <s>Coinmarketcap - Cryptocurrencies</s>
     <li> Removed <s>FinancialModelingPrep</s>
     <li> Removed <s>Alphavantage</s>
 </ul>

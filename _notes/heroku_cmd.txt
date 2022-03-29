@@ -12,5 +12,9 @@ git push heroku master
 go get -u
 go mod tidy
 
+//Change deployment type
+heroku stack //list of stacks
+heroku stack:set container
+
 //Rename
 https://devcenter.heroku.com/articles/renaming-apps

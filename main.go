@@ -1,7 +1,6 @@
 package main
 
 import (
-	"asset_backend/apis"
 	"asset_backend/controllers"
 	"asset_backend/db"
 	"asset_backend/docs"
@@ -72,10 +71,7 @@ func main() {
 
 	routes.SetupRoutes(router, jwtHandler)
 
-	hourlyScheduler := helpers.CreateHourlySchedule(func() { hourlyTask() }, 1)
 	dailyScheduler := helpers.CreateDailySchedule(func() { dailyTask() }, "05:00")
-
-	scheduleLogger(hourlyScheduler, "Hourly")
 	scheduleLogger(dailyScheduler, "Daily")
 
 	port := os.Getenv("PORT")
@@ -85,10 +81,6 @@ func main() {
 
 	router.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerfiles.Handler))
 	router.Run(":" + port)
-}
-
-func hourlyTask() {
-	go apis.GetAndCreateInvesting()
 }
 
 func dailyTask() {

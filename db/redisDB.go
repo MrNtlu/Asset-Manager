@@ -16,9 +16,16 @@ var (
 )
 
 func SetupRedis() {
-	RedisDB = redis.NewClient(&redis.Options{
-		Addr:     os.Getenv("REDIS_ENDPOINT"),
-		Password: os.Getenv("REDIS_PASSWORD"),
-		DB:       0,
-	})
+	if os.Getenv("REDIS_TYPE") != "Remote" {
+		RedisDB = redis.NewClient(&redis.Options{
+			Addr: "redis:6379",
+			DB:   0,
+		})
+	} else {
+		RedisDB = redis.NewClient(&redis.Options{
+			Addr:     os.Getenv("REDIS_ENDPOINT"),
+			Password: os.Getenv("REDIS_PASSWORD"),
+			DB:       0,
+		})
+	}
 }

@@ -8,6 +8,7 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingResponse, error) {
@@ -40,24 +41,44 @@ func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingRe
 }
 
 func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.InvestingTableResponse, error) {
-	match := bson.M{"$match": bson.M{
-		"_id.type":   tType,
-		"_id.market": market,
-	}}
-	project := bson.M{"$project": bson.M{
-		"name":     "$name",
-		"symbol":   "$_id.symbol",
-		"price":    "$price",
-		"market":   "$_id.market",
-		"currency": "$_id.stock_currency",
-	}}
+	var cursor *mongo.Cursor
+	var err error
+	if tType == "exchange" {
+		project := bson.M{"$project": bson.M{
+			"name":     "$from_exchange",
+			"symbol":   "$from_exchange",
+			"price":    "$exchange_rate",
+			"market":   "Forex",
+			"currency": "$to_exchange",
+		}}
 
-	cursor, err := db.InvestingCollection.Aggregate(context.TODO(), bson.A{match, project})
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"type": tType,
-		}).Error("failed to aggregate investings: %w", err)
-		return nil, fmt.Errorf("failed to fetch investings")
+		cursor, err = db.ExchangeCollection.Aggregate(context.TODO(), bson.A{project})
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"type": tType,
+			}).Error("failed to aggregate exchanges: %w", err)
+			return nil, fmt.Errorf("failed to fetch exchanges")
+		}
+	} else {
+		match := bson.M{"$match": bson.M{
+			"_id.type":   tType,
+			"_id.market": market,
+		}}
+		project := bson.M{"$project": bson.M{
+			"name":     "$name",
+			"symbol":   "$_id.symbol",
+			"price":    "$price",
+			"market":   "$_id.market",
+			"currency": "$_id.stock_currency",
+		}}
+
+		cursor, err = db.InvestingCollection.Aggregate(context.TODO(), bson.A{match, project})
+		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"type": tType,
+			}).Error("failed to aggregate investings: %w", err)
+			return nil, fmt.Errorf("failed to fetch investings")
+		}
 	}
 
 	var investings []responses.InvestingTableResponse

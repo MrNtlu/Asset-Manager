@@ -19,11 +19,11 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 	var intervalDate time.Time
 	switch interval {
 	case "weekly":
-		time.Now().AddDate(0, 0, -7)
+		intervalDate = time.Now().AddDate(0, 0, -7)
 	case "monthly":
-		time.Now().AddDate(0, -1, 0)
-	case "yearly":
-		time.Now().AddDate(-1, 0, 0)
+		intervalDate = time.Now().AddDate(0, -1, 0)
+	case "3monthly":
+		intervalDate = time.Now().AddDate(0, -3, 0)
 	}
 
 	match := bson.M{"$match": bson.M{
@@ -168,8 +168,6 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		}).Error("failed to decode daily asset stats: ", err)
 		return responses.DailyAssetStats{}, fmt.Errorf("failed to decode daily asset stats")
 	}
-
-	fmt.Println(dailyAssetStats)
 
 	if len(dailyAssetStats) > 0 {
 		return dailyAssetStats[0], nil

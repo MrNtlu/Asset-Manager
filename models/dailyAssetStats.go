@@ -88,38 +88,6 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 				"$total_p/l",
 			},
 		},
-		"stock_p/l": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$stock_p/l", "$user_exchange_rate.exchange_rate"},
-				},
-				"$stock_p/l",
-			},
-		},
-		"crypto_p/l": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$crypto_p/l", "$user_exchange_rate.exchange_rate"},
-				},
-				"$crypto_p/l",
-			},
-		},
-		"exchange_p/l": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$exchange_p/l", "$user_exchange_rate.exchange_rate"},
-				},
-				"$exchange_p/l",
-			},
-		},
-		"commodity_p/l": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$commodity_p/l", "$user_exchange_rate.exchange_rate"},
-				},
-				"$commodity_p/l",
-			},
-		},
 	}}
 	sort := bson.M{"$sort": bson.M{
 		"created_at": 1,
@@ -134,18 +102,6 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		},
 		"total_p/l": bson.M{
 			"$push": "$total_p/l",
-		},
-		"stock_p/l": bson.M{
-			"$push": "$stock_p/l",
-		},
-		"crypto_p/l": bson.M{
-			"$push": "$crypto_p/l",
-		},
-		"exchange_p/l": bson.M{
-			"$push": "$exchange_p/l",
-		},
-		"commodity_p/l": bson.M{
-			"$push": "$commodity_p/l",
 		},
 	}}
 
@@ -415,42 +371,6 @@ func CalculateDailyAssetStats() {
 		},
 		"total_assets": bson.M{
 			"$sum": "$total_assets",
-		},
-		"stock_p/l": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$_id.asset_type", "stock"}},
-					"$total_p/l",
-					0,
-				},
-			},
-		},
-		"crypto_p/l": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$_id.asset_type", "crypto"}},
-					"$total_p/l",
-					0,
-				},
-			},
-		},
-		"exchange_p/l": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$_id.asset_type", "exchange"}},
-					"$total_p/l",
-					0,
-				},
-			},
-		},
-		"commodity_p/l": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$_id.asset_type", "commodity"}},
-					"$total_p/l",
-					0,
-				},
-			},
 		},
 		"total_p/l": bson.M{
 			"$sum": "$total_p/l",

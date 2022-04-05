@@ -255,13 +255,13 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 // @Router /user/info [get]
 func (u *UserController) GetUserInfo(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
+	info, _ := models.FindUserByID(uid)
 	assetCount := models.GetUserAssetCount(uid)
 	subscritionCount := models.GetUserSubscriptionCount(uid)
 
 	var investingLimit string
 	var subscriptionLimit string
-	if !isPremium {
+	if info.IsPremium {
 		investingLimit = fmt.Sprintf("%v", assetCount) + "/unlimited"
 		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/unlimited"
 	} else {
@@ -270,7 +270,9 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 	}
 
 	userInfo := responses.UserInfo{
-		IsPremium:         isPremium,
+		IsPremium:         info.IsPremium,
+		EmailAddress:      info.EmailAddress,
+		Currency:          info.Currency,
 		InvestingLimit:    investingLimit,
 		SubscriptionLimit: subscriptionLimit,
 	}

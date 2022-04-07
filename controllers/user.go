@@ -100,6 +100,36 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "successfully changed currency"})
 }
 
+// Change User Membership
+// @Summary Change User Membership
+// @Description User membership status will be updated depending on subscription status
+// @Tags user
+// @Accept application/json
+// @Produce application/json
+// @Param changemembership body requests.ChangeMembership true "Set Membership"
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 500 {string} string
+// @Router /user/membership [put]
+func (u *UserController) ChangeUserMembership(c *gin.Context) {
+	var data requests.ChangeMembership
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+
+	if err := models.UpdateUserMembership(uid, data.IsPremium); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "successfully updated membership"})
+}
+
 // Change Password
 // @Summary Change User Password
 // @Description Users can change their password

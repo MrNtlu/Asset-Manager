@@ -175,6 +175,11 @@ definitions:
     required:
     - currency
     type: object
+  requests.ChangeMembership:
+    properties:
+      is_premium:
+        type: boolean
+    type: object
   requests.ChangePassword:
     properties:
       new_password:
@@ -392,24 +397,8 @@ definitions:
     type: object
   responses.DailyAssetStats:
     properties:
-      commodity_p/l:
-        items:
-          type: number
-        type: array
-      crypto_p/l:
-        items:
-          type: number
-        type: array
       currency:
         type: string
-      exchange_p/l:
-        items:
-          type: number
-        type: array
-      stock_p/l:
-        items:
-          type: number
-        type: array
       total_assets:
         items:
           type: number
@@ -511,6 +500,10 @@ definitions:
     type: object
   responses.UserInfo:
     properties:
+      currency:
+        type: string
+      email_address:
+        type: string
       investing_limit:
         type: string
       is_premium:
@@ -689,7 +682,7 @@ paths:
       - enum:
         - weekly
         - monthly
-        - yearly
+        - 3monthly
         in: query
         name: interval
         required: true
@@ -1695,6 +1688,40 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: User membership info
+      tags:
+      - user
+  /user/membership:
+    put:
+      consumes:
+      - application/json
+      description: User membership status will be updated depending on subscription
+        status
+      parameters:
+      - description: Set Membership
+        in: body
+        name: changemembership
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ChangeMembership'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Change User Membership
       tags:
       - user
 schemes:

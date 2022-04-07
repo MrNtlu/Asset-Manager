@@ -277,7 +277,7 @@ const docTemplate = `{
                         "enum": [
                             "weekly",
                             "monthly",
-                            "yearly"
+                            "3monthly"
                         ],
                         "type": "string",
                         "name": "interval",
@@ -1836,6 +1836,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user/membership": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "User membership status will be updated depending on subscription status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Change User Membership",
+                "parameters": [
+                    {
+                        "description": "Set Membership",
+                        "name": "changemembership",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ChangeMembership"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2094,6 +2146,14 @@ const docTemplate = `{
                         "KRW",
                         "GBP"
                     ]
+                }
+            }
+        },
+        "requests.ChangeMembership": {
+            "type": "object",
+            "properties": {
+                "is_premium": {
+                    "type": "boolean"
                 }
             }
         },
@@ -2421,32 +2481,8 @@ const docTemplate = `{
         "responses.DailyAssetStats": {
             "type": "object",
             "properties": {
-                "commodity_p/l": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "crypto_p/l": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
                 "currency": {
                     "type": "string"
-                },
-                "exchange_p/l": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
-                },
-                "stock_p/l": {
-                    "type": "array",
-                    "items": {
-                        "type": "number"
-                    }
                 },
                 "total_assets": {
                     "type": "array",
@@ -2603,6 +2639,12 @@ const docTemplate = `{
         "responses.UserInfo": {
             "type": "object",
             "properties": {
+                "currency": {
+                    "type": "string"
+                },
+                "email_address": {
+                    "type": "string"
+                },
                 "investing_limit": {
                     "type": "string"
                 },

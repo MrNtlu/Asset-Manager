@@ -20,6 +20,10 @@ type ChangeCurrency struct {
 	Currency string `json:"currency" binding:"required,oneof=USD EUR JPY KRW GBP"`
 }
 
+type ChangeMembership struct {
+	IsPremium bool `json:"is_premium"`
+}
+
 type ForgotPassword struct {
 	EmailAddress string `json:"email_address" binding:"required,email"`
 }

@@ -98,6 +98,22 @@ func UpdateUser(user User) error {
 	return nil
 }
 
+func UpdateUserMembership(uid string, isPremium bool) error {
+	objectUID, _ := primitive.ObjectIDFromHex(uid)
+
+	if _, err := db.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": objectUID}, bson.M{"$set": bson.M{
+		"is_premium": isPremium,
+	}}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":        uid,
+			"is_premium": isPremium,
+		}).Error("failed to set membership for user: ", err)
+		return fmt.Errorf("failed to set membership for user")
+	}
+
+	return nil
+}
+
 func IsUserPremium(uid string) bool {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 

@@ -292,8 +292,8 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 	var investingLimit string
 	var subscriptionLimit string
 	if info.IsPremium {
-		investingLimit = fmt.Sprintf("%v", assetCount) + "/unlimited"
-		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/unlimited"
+		investingLimit = fmt.Sprintf("%v", assetCount) + "/∞"
+		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/∞"
 	} else {
 		investingLimit = fmt.Sprintf("%v", assetCount) + "/10"
 		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/5"

@@ -25,6 +25,7 @@ type AssetDetails struct {
 	CurrentTotal    float64 `bson:"current_total_value" json:"current_total_value"`
 	PL              float64 `bson:"p/l" json:"p/l"`
 	AssetType       string  `bson:"asset_type" json:"asset_type"`
+	AssetMarket     string  `bson:"asset_market" json:"asset_market"`
 }
 
 type AssetLog struct {

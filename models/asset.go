@@ -471,6 +471,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 		"total_sold":       true,
 		"remaining_amount": true,
 		"asset_type":       true,
+		"asset_market":     true,
 		"current_total_value": bson.M{
 			"$multiply": bson.A{"$remaining_amount", "$investing_price"},
 		},

@@ -39,7 +39,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	isPremium := models.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserSubscriptionCount(uid) > 5 {
+	if !isPremium && models.GetUserSubscriptionCount(uid) >= 5 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errSubscriptionPremium,
 		})

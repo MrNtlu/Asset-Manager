@@ -20,9 +20,9 @@ var (
 	errAssetPremium  = "free members can add up to 10, you can get premium membership for unlimited access"
 )
 
-// Create Asset Log
-// @Summary Create Asset Log
-// @Description Creates asset log
+// Create Asset
+// @Summary Create Asset
+// @Description Creates asset
 // @Tags asset
 // @Accept application/json
 // @Produce application/json
@@ -41,13 +41,46 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	isPremium := models.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserAssetCount(uid) > 10 {
+	//Check if fromasset already in user's investments, if so allow it.
+	if !isPremium && models.GetUserAssetCount(uid) >= 5 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errAssetPremium,
 		})
 		return
 	}
 
+	if err := models.CreateAsset(uid, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
+}
+
+// Create Asset Log
+// @Summary Create Asset Log
+// @Description Creates asset log
+// @Tags asset
+// @Accept application/json
+// @Produce application/json
+// @Param assetcreate body requests.AssetCreate true "Asset Create"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 201 {string} string
+// @Failure 500 {string} string
+// @Router /asset [post]
+func (a *AssetController) CreateAssetLog(c *gin.Context) {
+	var data requests.AssetCreate
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
 	if err := models.CreateAsset(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

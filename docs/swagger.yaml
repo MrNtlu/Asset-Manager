@@ -313,6 +313,8 @@ definitions:
     type: object
   responses.AssetDetails:
     properties:
+      asset_market:
+        type: string
       asset_type:
         type: string
       current_total_value:

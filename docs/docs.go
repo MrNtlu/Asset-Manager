@@ -2353,6 +2353,9 @@ const docTemplate = `{
         "responses.AssetDetails": {
             "type": "object",
             "properties": {
+                "asset_market": {
+                    "type": "string"
+                },
                 "asset_type": {
                     "type": "string"
                 },

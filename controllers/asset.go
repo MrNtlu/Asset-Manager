@@ -41,8 +41,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	isPremium := models.IsUserPremium(uid)
 
-	//Check if fromasset already in user's investments, if so allow it.
-	if !isPremium && models.GetUserAssetCount(uid) >= 5 {
+	if !isPremium && models.GetUserAssetCount(uid) >= 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errAssetPremium,
 		})

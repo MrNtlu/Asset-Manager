@@ -72,7 +72,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 // @Param Authorization header string true "Authentication header"
 // @Success 201 {string} string
 // @Failure 500 {string} string
-// @Router /asset [post]
+// @Router /asset/log [post]
 func (a *AssetController) CreateAssetLog(c *gin.Context) {
 	var data requests.AssetCreate
 	if shouldReturn := bindJSONData(&data, c); shouldReturn {

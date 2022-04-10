@@ -602,7 +602,7 @@ paths:
     post:
       consumes:
       - application/json
-      description: Creates asset log
+      description: Creates asset
       parameters:
       - description: Asset Create
         in: body
@@ -628,7 +628,7 @@ paths:
             type: string
       security:
       - BearerAuth: []
-      summary: Create Asset Log
+      summary: Create Asset
       tags:
       - asset
     put:
@@ -792,6 +792,38 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete Asset Log by AssetID
+      tags:
+      - asset
+    post:
+      consumes:
+      - application/json
+      description: Creates asset log
+      parameters:
+      - description: Asset Create
+        in: body
+        name: assetcreate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.AssetCreate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Asset Log
       tags:
       - asset
   /asset/logs:

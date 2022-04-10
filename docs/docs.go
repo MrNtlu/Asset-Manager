@@ -168,7 +168,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Creates asset log",
+                "description": "Creates asset",
                 "consumes": [
                     "application/json"
                 ],
@@ -178,7 +178,7 @@ const docTemplate = `{
                 "tags": [
                     "asset"
                 ],
-                "summary": "Create Asset Log",
+                "summary": "Create Asset",
                 "parameters": [
                     {
                         "description": "Asset Create",
@@ -382,6 +382,56 @@ const docTemplate = `{
             }
         },
         "/asset/log": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates asset log",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "asset"
+                ],
+                "summary": "Create Asset Log",
+                "parameters": [
+                    {
+                        "description": "Asset Create",
+                        "name": "assetcreate",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.AssetCreate"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            },
             "delete": {
                 "security": [
                     {

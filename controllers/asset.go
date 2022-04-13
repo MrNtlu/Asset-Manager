@@ -117,8 +117,9 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	//TODO: Check redis sorting
 	var (
-		cacheKey      = "asset/" + uid
+		cacheKey      = "asset/" + uid + data.Sort + string(rune(data.SortType))
 		assetAndStats responses.AssetAndStats
 	)
 

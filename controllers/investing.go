@@ -35,12 +35,34 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 		return
 	}
 
+	var (
+		investings []responses.InvestingResponse
+		cacheKey   = "investings/" + data.Type
+	)
+
+	if data.Type == "exchange" {
+		result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+		if err == nil && result != "" {
+			msgpack.Unmarshal([]byte(result), &investings)
+
+			c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
+			return
+		}
+	}
+
 	investings, err := models.GetInvestingsByTypeAndMarket(data.Type, data.Market)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
+	}
+
+	if data.Type == "exchange" {
+		if len(investings) > 0 {
+			marshalInvestings, _ := msgpack.Marshal(investings)
+			go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisXLExpire)
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
@@ -67,8 +89,10 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 		return
 	}
 
-	var investings []responses.InvestingTableResponse
-	var cacheKey = "investings/" + data.Type + "/" + data.Market
+	var (
+		investings []responses.InvestingTableResponse
+		cacheKey   = "investings/prices/" + data.Type + "/" + data.Market
+	)
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {

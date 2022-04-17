@@ -106,7 +106,7 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 
 		if len(investings) > 0 {
 			marshalInvestings, _ := msgpack.Marshal(investings)
-			go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisSExpire)
+			go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisXSExpire)
 		}
 	} else {
 		msgpack.Unmarshal([]byte(result), &investings)

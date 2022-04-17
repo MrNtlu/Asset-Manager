@@ -9,6 +9,7 @@ import (
 
 var (
 	RedisDB       *redis.Client
+	RedisXSExpire = 2 * time.Minute
 	RedisSExpire  = 5 * time.Minute
 	RedisMExpire  = 10 * time.Minute
 	RedisLExpire  = 30 * time.Minute

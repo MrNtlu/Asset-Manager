@@ -7,6 +7,7 @@ import (
 	"asset_backend/responses"
 	"context"
 	"net/http"
+	"sort"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -117,9 +118,8 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	//TODO: Check redis sorting
 	var (
-		cacheKey      = "asset/" + uid + data.Sort + string(rune(data.SortType))
+		cacheKey      = "asset/" + uid
 		assetAndStats responses.AssetAndStats
 	)
 
@@ -150,6 +150,29 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 		go db.RedisDB.Set(context.TODO(), cacheKey, marshalAssetAndStats, db.RedisSExpire)
 	} else {
 		msgpack.Unmarshal([]byte(result), &assetAndStats)
+		sort.Slice(assetAndStats.Data, func(i, j int) bool {
+			if data.Sort == "name" {
+				if data.SortType == 1 {
+					return assetAndStats.Data[i].ToAsset < assetAndStats.Data[j].ToAsset
+				}
+				return assetAndStats.Data[i].ToAsset > assetAndStats.Data[j].ToAsset
+			} else if data.Sort == "type" {
+				if data.SortType == 1 {
+					return assetAndStats.Data[i].AssetType > assetAndStats.Data[j].AssetType
+				}
+				return assetAndStats.Data[i].AssetType < assetAndStats.Data[j].AssetType
+			} else if data.Sort == "amount" {
+				if data.SortType == 1 {
+					return assetAndStats.Data[i].RemainingAmount > assetAndStats.Data[j].RemainingAmount
+				}
+				return assetAndStats.Data[i].RemainingAmount < assetAndStats.Data[j].RemainingAmount
+			} else {
+				if data.SortType == 1 {
+					return assetAndStats.Data[i].PL < assetAndStats.Data[j].PL
+				}
+				return assetAndStats.Data[i].PL > assetAndStats.Data[j].PL
+			}
+		})
 	}
 
 	c.JSON(http.StatusOK, assetAndStats)

@@ -1,13 +1,17 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
+	"context"
 	"net/http"
+	"sort"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type SubscriptionController struct{}
@@ -53,6 +57,8 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 		return
 	}
 
+	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
+
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
@@ -82,6 +88,8 @@ func (s *SubscriptionController) CreateCard(c *gin.Context) {
 		})
 		return
 	}
+
+	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
@@ -169,25 +177,56 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	subscriptions, err := models.GetSubscriptionsByUserID(uid, data)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
+	var (
+		cacheKey             = "subscription/" + uid
+		subscriptionAndStats responses.SubscriptionAndStats
+	)
 
-	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
+	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+	if err != nil || result == "" {
+		subscriptions, err := models.GetSubscriptionsByUserID(uid, data)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 
-	var subscriptionAndStats = responses.SubscriptionAndStats{
-		Data:  subscriptions,
-		Stats: subscriptionStats,
+		subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		subscriptionAndStats = responses.SubscriptionAndStats{
+			Data:  subscriptions,
+			Stats: subscriptionStats,
+		}
+
+		marshalSubscriptionAndStats, _ := msgpack.Marshal(subscriptionAndStats)
+		go db.RedisDB.Set(context.TODO(), cacheKey, marshalSubscriptionAndStats, db.RedisLExpire)
+	} else {
+		msgpack.Unmarshal([]byte(result), &subscriptionAndStats)
+		sort.Slice(subscriptionAndStats.Data, func(i, j int) bool {
+			if data.Sort == "name" {
+				if data.SortType == 1 {
+					return subscriptionAndStats.Data[i].Name < subscriptionAndStats.Data[j].Name
+				}
+				return subscriptionAndStats.Data[i].Name > subscriptionAndStats.Data[j].Name
+			} else if data.Sort == "currency" {
+				if data.SortType == 1 {
+					return subscriptionAndStats.Data[i].Currency < subscriptionAndStats.Data[j].Currency
+				}
+				return subscriptionAndStats.Data[i].Currency > subscriptionAndStats.Data[j].Currency
+			} else {
+				if data.SortType == 1 {
+					return subscriptionAndStats.Data[i].Price > subscriptionAndStats.Data[j].Price
+				}
+				return subscriptionAndStats.Data[i].Price < subscriptionAndStats.Data[j].Price
+			}
+		})
 	}
 
 	c.JSON(http.StatusOK, subscriptionAndStats)
@@ -328,6 +367,8 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
+	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
+
 	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
 }
 
@@ -377,6 +418,8 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 		return
 	}
 
+	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
+
 	c.JSON(http.StatusOK, gin.H{"message": "card updated"})
 }
 
@@ -408,6 +451,7 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 	}
 
 	if isDeleted {
+		go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 		c.JSON(http.StatusOK, gin.H{"message": "subscription deleted successfully"})
 		return
 	}
@@ -434,6 +478,8 @@ func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) 
 		})
 		return
 	}
+
+	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
 	c.JSON(http.StatusOK, gin.H{"message": "subscriptions deleted successfully by user id"})
 }
@@ -466,6 +512,7 @@ func (s *SubscriptionController) DeleteCardByCardID(c *gin.Context) {
 	}
 
 	if isDeleted {
+		go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
 		c.JSON(http.StatusOK, gin.H{"message": "card deleted successfully"})
 
@@ -496,5 +543,6 @@ func (s *SubscriptionController) DeleteAllCardsByUserID(c *gin.Context) {
 	}
 
 	go models.UpdateSubscriptionCardIDToNull(uid, nil)
+	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 	c.JSON(http.StatusOK, gin.H{"message": "cards deleted successfully by user id"})
 }

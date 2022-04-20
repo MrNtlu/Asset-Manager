@@ -42,6 +42,8 @@ definitions:
     properties:
       _id:
         type: string
+      card_holder:
+        type: string
       last_digit:
         type: string
       name:
@@ -143,16 +145,21 @@ definitions:
     type: object
   requests.Card:
     properties:
+      card_holder:
+        type: string
       last_digit:
         type: string
       name:
         type: string
     required:
+    - card_holder
     - last_digit
     - name
     type: object
   requests.CardUpdate:
     properties:
+      card_holder:
+        type: string
       id:
         type: string
       last_digit:
@@ -560,7 +567,7 @@ paths:
       parameters:
       - enum:
         - name
-        - value
+        - type
         - amount
         - profit
         in: query
@@ -1217,7 +1224,7 @@ paths:
             type: string
       security:
       - BearerAuth: []
-      summary: Get Card Statistics by User ID
+      summary: Get Card Statistics by User ID & Card ID
       tags:
       - card
   /investings:

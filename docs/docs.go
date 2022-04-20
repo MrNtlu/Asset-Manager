@@ -46,7 +46,7 @@ const docTemplate = `{
                     {
                         "enum": [
                             "name",
-                            "value",
+                            "type",
                             "amount",
                             "profit"
                         ],
@@ -1072,7 +1072,7 @@ const docTemplate = `{
                 "tags": [
                     "card"
                 ],
-                "summary": "Get Card Statistics by User ID",
+                "summary": "Get Card Statistics by User ID \u0026 Card ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -2003,6 +2003,9 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
+                "card_holder": {
+                    "type": "string"
+                },
                 "last_digit": {
                     "type": "string"
                 },
@@ -2152,10 +2155,14 @@ const docTemplate = `{
         "requests.Card": {
             "type": "object",
             "required": [
+                "card_holder",
                 "last_digit",
                 "name"
             ],
             "properties": {
+                "card_holder": {
+                    "type": "string"
+                },
                 "last_digit": {
                     "type": "string"
                 },
@@ -2170,6 +2177,9 @@ const docTemplate = `{
                 "id"
             ],
             "properties": {
+                "card_holder": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },

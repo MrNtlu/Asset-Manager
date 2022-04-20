@@ -532,9 +532,10 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 	return subscriptionStats, nil
 }
 
-func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
+func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStatistics, error) {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
+		"card_id": cardID,
 	}}
 	set := bson.M{"$set": bson.M{
 		"card_id": bson.M{
@@ -703,6 +704,15 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 		"currency": bson.M{
 			"$first": "$currency",
 		},
+		"card_holder": bson.M{
+			"$first": "$card.card_holder",
+		},
+		"color": bson.M{
+			"$first": "$card.color",
+		},
+		"type": bson.M{
+			"$first": "$card.type",
+		},
 		"card_name": bson.M{
 			"$first": "$card.name",
 		},
@@ -730,7 +740,7 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate card statistics: ", err)
-		return nil, fmt.Errorf("failed to aggregate card statistics: %w", err)
+		return responses.CardStatistics{}, fmt.Errorf("failed to aggregate card statistics: %w", err)
 	}
 
 	var cardStats []responses.CardStatistics
@@ -738,10 +748,14 @@ func GetCardStatisticsByUserID(uid string) ([]responses.CardStatistics, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode card statistics: ", err)
-		return nil, fmt.Errorf("failed to decode card statistics: %w", err)
+		return responses.CardStatistics{}, fmt.Errorf("failed to decode card statistics: %w", err)
 	}
 
-	return cardStats, nil
+	if len(cardStats) > 0 {
+		return cardStats[0], nil
+	}
+
+	return responses.CardStatistics{}, nil
 }
 
 func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) error {

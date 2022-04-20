@@ -298,7 +298,7 @@ func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Contex
 }
 
 // Card Statistics
-// @Summary Get Card Statistics by User ID
+// @Summary Get Card Statistics by User ID & Card ID
 // @Description Returns card statistics
 // @Tags card
 // @Accept application/json
@@ -308,9 +308,18 @@ func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Contex
 // @Success 200 {array} responses.CardStatistics
 // @Failure 500 {string} string
 // @Router /card/stats [get]
-func (s *SubscriptionController) GetCardStatisticsByUserID(c *gin.Context) {
+func (s *SubscriptionController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
+	var data requests.ID
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	cardStats, err := models.GetCardStatisticsByUserID(uid)
+	cardStats, err := models.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

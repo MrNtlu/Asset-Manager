@@ -18,20 +18,26 @@ type Card struct {
 	UserID     string             `bson:"user_id" json:"user_id"`
 	Name       string             `bson:"name" json:"name"`
 	Last4Digit string             `bson:"last_digit" json:"last_digit"`
+	CardHolder string             `bson:"card_holder" json:"card_holder"`
+	Color      string             `bson:"color" json:"color"`
+	CardType   string             `bson:"type" json:"type"`
 	CreatedAt  time.Time          `bson:"created_at" json:"-"`
 }
 
-func createCardObject(uid, name, last4Digit string) *Card {
+func createCardObject(uid, name, last4Digit, cardHolder, color, cardType string) *Card {
 	return &Card{
 		UserID:     uid,
 		Name:       name,
 		Last4Digit: last4Digit,
+		CardHolder: cardHolder,
+		Color:      color,
+		CardType:   cardType,
 		CreatedAt:  time.Now().UTC(),
 	}
 }
 
 func CreateCard(uid string, data requests.Card) error {
-	card := createCardObject(uid, data.Name, data.Last4Digit)
+	card := createCardObject(uid, data.Name, data.Last4Digit, data.CardHolder, data.Color, data.CardType)
 
 	if _, err := db.CardCollection.InsertOne(context.TODO(), card); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -96,6 +102,18 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 
 	if data.Name != nil {
 		card.Name = *data.Name
+	}
+
+	if data.CardHolder != nil {
+		card.CardHolder = *data.CardHolder
+	}
+
+	if data.CardType != nil {
+		card.CardType = *data.CardType
+	}
+
+	if data.Color != nil {
+		card.Color = *data.Color
 	}
 
 	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{

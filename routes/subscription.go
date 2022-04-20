@@ -25,6 +25,6 @@ func subscriptionRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware)
 		card.PUT("", subscriptionController.UpdateCard)
 		card.POST("", subscriptionController.CreateCard)
 		card.GET("", subscriptionController.GetCardsByUserID)
-		card.GET("/stats", subscriptionController.GetCardStatisticsByUserID)
+		card.GET("/stats", subscriptionController.GetCardStatisticsByUserIDAndCardID)
 	}
 }

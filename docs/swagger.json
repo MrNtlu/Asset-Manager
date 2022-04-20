@@ -42,7 +42,7 @@
                     {
                         "enum": [
                             "name",
-                            "value",
+                            "type",
                             "amount",
                             "profit"
                         ],
@@ -1068,7 +1068,7 @@
                 "tags": [
                     "card"
                 ],
-                "summary": "Get Card Statistics by User ID",
+                "summary": "Get Card Statistics by User ID \u0026 Card ID",
                 "parameters": [
                     {
                         "type": "string",
@@ -1999,6 +1999,9 @@
                 "_id": {
                     "type": "string"
                 },
+                "card_holder": {
+                    "type": "string"
+                },
                 "last_digit": {
                     "type": "string"
                 },
@@ -2148,10 +2151,14 @@
         "requests.Card": {
             "type": "object",
             "required": [
+                "card_holder",
                 "last_digit",
                 "name"
             ],
             "properties": {
+                "card_holder": {
+                    "type": "string"
+                },
                 "last_digit": {
                     "type": "string"
                 },
@@ -2166,6 +2173,9 @@
                 "id"
             ],
             "properties": {
+                "card_holder": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },

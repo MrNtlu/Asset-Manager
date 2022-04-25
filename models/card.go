@@ -10,6 +10,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -21,10 +22,11 @@ type Card struct {
 	CardHolder string             `bson:"card_holder" json:"card_holder"`
 	Color      string             `bson:"color" json:"color"`
 	CardType   string             `bson:"type" json:"type"`
+	Currency   string             `bson:"currency" json:"currency"`
 	CreatedAt  time.Time          `bson:"created_at" json:"-"`
 }
 
-func createCardObject(uid, name, last4Digit, cardHolder, color, cardType string) *Card {
+func createCardObject(uid, name, last4Digit, cardHolder, color, cardType, currency string) *Card {
 	return &Card{
 		UserID:     uid,
 		Name:       name,
@@ -32,21 +34,39 @@ func createCardObject(uid, name, last4Digit, cardHolder, color, cardType string)
 		CardHolder: cardHolder,
 		Color:      color,
 		CardType:   cardType,
+		Currency:   currency,
 		CreatedAt:  time.Now().UTC(),
 	}
 }
 
-func CreateCard(uid string, data requests.Card) error {
-	card := createCardObject(uid, data.Name, data.Last4Digit, data.CardHolder, data.Color, data.CardType)
+func CreateCard(uid string, data requests.Card) (Card, error) {
+	card := createCardObject(uid, data.Name, data.Last4Digit, data.CardHolder, data.Color, data.CardType, data.Currency)
 
-	if _, err := db.CardCollection.InsertOne(context.TODO(), card); err != nil {
+	var (
+		insertedID *mongo.InsertOneResult
+		err        error
+	)
+	if insertedID, err = db.CardCollection.InsertOne(context.TODO(), card); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to create new card: ", err)
-		return fmt.Errorf("failed to create new card")
+		return Card{}, fmt.Errorf("failed to create new card")
+	}
+	card.ID = insertedID.InsertedID.(primitive.ObjectID)
+
+	return *card, nil
+}
+
+func GetUserCardCount(uid string) int64 {
+	count, err := db.CardCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to count user cards: ", err)
+		return 5
 	}
 
-	return nil
+	return count
 }
 
 func GetCardByID(cardID string) (Card, error) {
@@ -93,7 +113,7 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 	return cards, nil
 }
 
-func UpdateCard(data requests.CardUpdate, card Card) error {
+func UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Last4Digit != nil {
@@ -116,6 +136,10 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 		card.Color = *data.Color
 	}
 
+	if data.Currency != nil {
+		card.Currency = *data.Currency
+	}
+
 	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectCardID,
 	}, bson.M{"$set": card}); err != nil {
@@ -123,10 +147,10 @@ func UpdateCard(data requests.CardUpdate, card Card) error {
 			"card_id": data.ID,
 			"data":    data,
 		}).Error("failed to update card: ", err)
-		return fmt.Errorf("failed to update card")
+		return Card{}, fmt.Errorf("failed to update card")
 	}
 
-	return nil
+	return card, nil
 }
 
 func DeleteCardByCardID(uid, cardID string) (bool, error) {

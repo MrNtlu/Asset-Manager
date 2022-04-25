@@ -876,7 +876,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.Card"
                         }
                     },
                     "400": {
@@ -944,7 +944,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/models.Card"
                         }
                     },
                     "400": {
@@ -1313,7 +1313,7 @@ const docTemplate = `{
                     "200": {
                         "description": "OK",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/responses.Subscription"
                         }
                     },
                     "400": {
@@ -1381,7 +1381,7 @@ const docTemplate = `{
                     "201": {
                         "description": "Created",
                         "schema": {
-                            "type": "string"
+                            "$ref": "#/definitions/responses.Subscription"
                         }
                     },
                     "400": {
@@ -2006,10 +2006,19 @@ const docTemplate = `{
                 "card_holder": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "last_digit": {
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 },
                 "user_id": {
@@ -2156,17 +2165,29 @@ const docTemplate = `{
             "type": "object",
             "required": [
                 "card_holder",
+                "color",
+                "currency",
                 "last_digit",
-                "name"
+                "name",
+                "type"
             ],
             "properties": {
                 "card_holder": {
+                    "type": "string"
+                },
+                "color": {
+                    "type": "string"
+                },
+                "currency": {
                     "type": "string"
                 },
                 "last_digit": {
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -2180,6 +2201,12 @@ const docTemplate = `{
                 "card_holder": {
                     "type": "string"
                 },
+                "color": {
+                    "type": "string"
+                },
+                "currency": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "string"
                 },
@@ -2187,6 +2214,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "type": {
                     "type": "string"
                 }
             }
@@ -2518,19 +2548,7 @@ const docTemplate = `{
         "responses.CardStatistics": {
             "type": "object",
             "properties": {
-                "card_last_digit": {
-                    "type": "string"
-                },
-                "card_name": {
-                    "type": "string"
-                },
                 "currency": {
-                    "type": "string"
-                },
-                "most_expensive": {
-                    "type": "number"
-                },
-                "most_expensive_name": {
                     "type": "string"
                 },
                 "total_monthly_payment": {
@@ -2622,6 +2640,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "next_bill_date": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -2672,6 +2693,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "next_bill_date": {
                     "type": "string"
                 },
                 "price": {

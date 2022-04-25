@@ -7,18 +7,19 @@ import (
 )
 
 type Subscription struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserID      string             `bson:"user_id" json:"user_id"`
-	CardID      *string            `bson:"card_id" json:"card_id"`
-	Name        string             `bson:"name" json:"name"`
-	Description *string            `bson:"description" json:"description"`
-	BillDate    time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle   BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
-	Price       float64            `bson:"price" json:"price"`
-	Currency    string             `bson:"currency" json:"currency"`
-	Color       string             `bson:"color" json:"color"`
-	Image       *string            `bson:"image" json:"image"`
-	CreatedAt   time.Time          `bson:"created_at" json:"-"`
+	ID           primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	UserID       string             `bson:"user_id" json:"user_id"`
+	CardID       *string            `bson:"card_id" json:"card_id"`
+	Name         string             `bson:"name" json:"name"`
+	Description  *string            `bson:"description" json:"description"`
+	BillDate     time.Time          `bson:"bill_date" json:"bill_date"`
+	NextBillDate time.Time          `bson:"next_bill_date" json:"next_bill_date"`
+	BillCycle    BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
+	Price        float64            `bson:"price" json:"price"`
+	Currency     string             `bson:"currency" json:"currency"`
+	Color        string             `bson:"color" json:"color"`
+	Image        *string            `bson:"image" json:"image"`
+	CreatedAt    time.Time          `bson:"created_at" json:"-"`
 }
 
 type SubscriptionDetails struct {
@@ -28,6 +29,7 @@ type SubscriptionDetails struct {
 	Name           string             `bson:"name" json:"name"`
 	Description    *string            `bson:"description" json:"description"`
 	BillDate       time.Time          `bson:"bill_date" json:"bill_date"`
+	NextBillDate   time.Time          `bson:"next_bill_date" json:"next_bill_date"`
 	BillCycle      BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
 	Price          float64            `bson:"price" json:"price"`
 	Currency       string             `bson:"currency" json:"currency"`

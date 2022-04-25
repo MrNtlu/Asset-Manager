@@ -9,8 +9,10 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"github.com/teambition/rrule-go"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -59,7 +61,7 @@ func createBillCycle(billCycle requests.BillCycle) *BillCycle {
 	}
 }
 
-func CreateSubscription(uid string, data requests.Subscription) error {
+func CreateSubscription(uid string, data requests.Subscription) (responses.Subscription, error) {
 	subscription := createSubscriptionObject(
 		uid,
 		data.Name,
@@ -73,15 +75,20 @@ func CreateSubscription(uid string, data requests.Subscription) error {
 		*createBillCycle(data.BillCycle),
 	)
 
-	if _, err := db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
+	var (
+		insertedID *mongo.InsertOneResult
+		err        error
+	)
+	if insertedID, err = db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to create new subscription: ", err)
-		return fmt.Errorf("failed to create new subscription")
+		return responses.Subscription{}, fmt.Errorf("failed to create new subscription")
 	}
+	subscription.ID = insertedID.InsertedID.(primitive.ObjectID)
 
-	return nil
+	return convertModelToResponse(*subscription), nil
 }
 
 func GetUserSubscriptionCount(uid string) int64 {
@@ -112,7 +119,7 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	return subscription, nil
 }
 
-func GetSubscriptionsByCardID(uid, cardID string) ([]Subscription, error) {
+func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, error) {
 	match := bson.M{
 		"card_id": cardID,
 		"user_id": uid,
@@ -131,13 +138,20 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]Subscription, error) {
 		return nil, fmt.Errorf("failed to find subscription")
 	}
 
-	var subscriptions []Subscription
+	var subscriptions []responses.Subscription
 	if err := cursor.All(context.TODO(), &subscriptions); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to decode subscriptions: ", err)
 		return nil, fmt.Errorf("failed to decode subscriptions")
+	}
+
+	for index, subscription := range subscriptions {
+		subscriptions[index].NextBillDate = getNextBillDate(
+			subscription.BillCycle,
+			subscription.BillDate,
+		)
 	}
 
 	return subscriptions, nil
@@ -179,6 +193,13 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			"sort_type": data.SortType,
 		}).Error("failed to decode subscription: ", err)
 		return nil, fmt.Errorf("failed to decode subscription")
+	}
+
+	for index, subscription := range subscriptions {
+		subscriptions[index].NextBillDate = getNextBillDate(
+			subscription.BillCycle,
+			subscription.BillDate,
+		)
 	}
 
 	return subscriptions, nil
@@ -351,7 +372,12 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 	}
 
 	if len(subscriptions) > 0 {
-		return subscriptions[0], nil
+		subscription := subscriptions[0]
+		subscription.NextBillDate = getNextBillDate(
+			subscription.BillCycle,
+			subscription.BillDate,
+		)
+		return subscription, nil
 	}
 
 	return responses.SubscriptionDetails{}, nil
@@ -553,6 +579,53 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 		"includeArrayIndex":          "index",
 		"preserveNullAndEmptyArrays": false,
 	}}
+	exchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "exchanges",
+		"let": bson.M{
+			"card_currency": "$card.currency",
+			"sub_currency":  "$currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$cond": bson.A{
+							bson.M{"$eq": bson.A{"$$card_currency", "$$sub_currency"}},
+							bson.M{
+								"$and": bson.A{
+									bson.M{"$ne": bson.A{"$$card_currency", "$$sub_currency"}},
+									bson.M{"$eq": bson.A{"$from_exchange", "$$card_currency"}},
+									bson.M{"$eq": bson.A{"$to_exchange", "$$sub_currency"}},
+								},
+							},
+							nil,
+						},
+					},
+				},
+			},
+		},
+		"as": "card_exchange_rate",
+	}}
+	unwindExchange := bson.M{"$unwind": bson.M{
+		"path":                       "$card_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	project := bson.M{"$project": bson.M{
+		"bill_date":  true,
+		"bill_cycle": true,
+		"currency":   "$card.currency",
+		"price": bson.M{
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{
+						"$price", "$card_exchange_rate.exchange_rate",
+					},
+				},
+				"$price",
+			},
+		},
+	}}
 	addFields := bson.M{"$addFields": bson.M{
 		"monthly_payment": bson.M{
 			"$round": bson.A{
@@ -693,9 +766,6 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 			},
 		},
 	}}
-	sort := bson.M{"$sort": bson.M{
-		"monthly_payment": -1,
-	}}
 	group := bson.M{"$group": bson.M{
 		"_id": bson.M{
 			"card_id":  "$card_id",
@@ -704,37 +774,16 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 		"currency": bson.M{
 			"$first": "$currency",
 		},
-		"card_holder": bson.M{
-			"$first": "$card.card_holder",
-		},
-		"color": bson.M{
-			"$first": "$card.color",
-		},
-		"type": bson.M{
-			"$first": "$card.type",
-		},
-		"card_name": bson.M{
-			"$first": "$card.name",
-		},
-		"card_last_digit": bson.M{
-			"$first": "$card.last_digit",
-		},
 		"total_monthly_payment": bson.M{
 			"$sum": "$monthly_payment",
 		},
 		"total_payment": bson.M{
 			"$sum": "$total_payment",
 		},
-		"most_expensive": bson.M{
-			"$first": "$monthly_payment",
-		},
-		"most_expensive_name": bson.M{
-			"$first": "$name",
-		},
 	}}
 
 	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
-		match, set, lookup, unwind, addFields, sort, group,
+		match, set, lookup, unwind, exchangeLookup, unwindExchange, project, addFields, group,
 	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -758,7 +807,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 	return responses.CardStatistics{}, nil
 }
 
-func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) error {
+func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) (responses.Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Name != nil {
@@ -794,10 +843,10 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 			"subscription_id": data.ID,
 			"data":            data,
 		}).Error("failed to update subscription: ", err)
-		return fmt.Errorf("failed to update subscription")
+		return responses.Subscription{}, fmt.Errorf("failed to update subscription")
 	}
 
-	return nil
+	return convertModelToResponse(subscription), nil
 }
 
 func UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
@@ -850,4 +899,62 @@ func DeleteAllSubscriptionsByUserID(uid string) error {
 	}
 
 	return nil
+}
+
+func getNextBillDate(billCycle responses.BillCycle, initialBillDate time.Time) time.Time {
+	var (
+		todayDate      = time.Now().UTC()
+		freq           rrule.Frequency
+		count          int
+		comparisonDate time.Time
+		billDate       time.Time
+	)
+
+	if billCycle.Day != 0 {
+		freq = rrule.DAILY
+		count = billCycle.Day
+	} else if billCycle.Month != 0 {
+		freq = rrule.MONTHLY
+		count = billCycle.Month
+	} else if billCycle.Year != 0 {
+		freq = rrule.YEARLY
+		count = billCycle.Year
+	}
+
+	comparisonDate = time.Date(todayDate.Year(), todayDate.Month(), todayDate.Day(), 0, 0, 0, 0, todayDate.Location())
+	billDate = time.Date(initialBillDate.Year(), initialBillDate.Month(), initialBillDate.Day(), 23, 59, 59, 0, initialBillDate.Location())
+
+	rule, _ := rrule.NewRRule(rrule.ROption{
+		Freq:     freq,
+		Interval: count,
+		Dtstart:  billDate,
+	})
+
+	return rule.After(comparisonDate, true)
+}
+
+func convertModelToResponse(subscription Subscription) responses.Subscription {
+	billCycle := responses.BillCycle{
+		Day:   subscription.BillCycle.Day,
+		Month: subscription.BillCycle.Month,
+		Year:  subscription.BillCycle.Year,
+	}
+	return responses.Subscription{
+		ID:          subscription.ID,
+		UserID:      subscription.UserID,
+		CardID:      subscription.CardID,
+		Name:        subscription.Name,
+		Description: subscription.Description,
+		BillDate:    subscription.BillDate,
+		NextBillDate: getNextBillDate(
+			billCycle,
+			subscription.BillDate,
+		),
+		BillCycle: billCycle,
+		Price:     subscription.Price,
+		Currency:  subscription.Currency,
+		Color:     subscription.Color,
+		Image:     subscription.Image,
+		CreatedAt: subscription.CreatedAt,
+	}
 }

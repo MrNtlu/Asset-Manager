@@ -23,6 +23,8 @@ import (
 *	- Only weekly stats
 * *Subscription
 *	- Max 5 subscription
+* *Card
+*	- Max 3 cards
 **/
 
 type User struct {

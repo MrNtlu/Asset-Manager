@@ -19,6 +19,7 @@ type SubscriptionController struct{}
 var (
 	errSubscriptionNotFound = "subscription not found"
 	errSubscriptionPremium  = "free members can add up to 5 subscriptions, you can get premium membership for unlimited access"
+	errCardPremium          = "free members can add up to 3 credit cards, you can get premium membership for unlimited access"
 )
 
 // Create Subscription
@@ -30,7 +31,7 @@ var (
 // @Param subscription body requests.Subscription true "Subscription Create"
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
-// @Success 201 {string} string
+// @Success 201 {object} responses.Subscription
 // @Failure 400 {string} string
 // @Failure 500 {string} string
 // @Router /subscription [post]
@@ -50,7 +51,11 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	if err := models.CreateSubscription(uid, data); err != nil {
+	var (
+		createdSubscription responses.Subscription
+		err                 error
+	)
+	if createdSubscription, err = models.CreateSubscription(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -59,7 +64,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdSubscription})
 }
 
 // Create Card
@@ -71,7 +76,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 // @Param card body requests.Card true "Card Create"
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
-// @Success 201 {string} string
+// @Success 201 {object} models.Card
 // @Failure 400 {string} string
 // @Failure 500 {string} string
 // @Router /card [post]
@@ -82,7 +87,20 @@ func (s *SubscriptionController) CreateCard(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.CreateCard(uid, data); err != nil {
+	isPremium := models.IsUserPremium(uid)
+
+	if !isPremium && models.GetUserCardCount(uid) >= 3 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errCardPremium,
+		})
+		return
+	}
+
+	var (
+		createdCard models.Card
+		err         error
+	)
+	if createdCard, err = models.CreateCard(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -91,7 +109,7 @@ func (s *SubscriptionController) CreateCard(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 
-	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdCard})
 }
 
 // Cards By User ID
@@ -339,7 +357,7 @@ func (s *SubscriptionController) GetCardStatisticsByUserIDAndCardID(c *gin.Conte
 // @Param subscriptionupdate body requests.SubscriptionUpdate true "Subscription Update"
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
-// @Success 200 {string} string
+// @Success 200 {object} responses.Subscription
 // @Failure 400 {string} string
 // @Failure 403 {string} string "Unauthorized update"
 // @Failure 404 {string} string "Couldn't find user"
@@ -369,7 +387,8 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
-	if err := models.UpdateSubscription(data, subscription); err != nil {
+	var updatedSubscription responses.Subscription
+	if updatedSubscription, err = models.UpdateSubscription(data, subscription); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -378,7 +397,7 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "subscription updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "subscription updated", "data": updatedSubscription})
 }
 
 // Update Card
@@ -390,7 +409,7 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 // @Param cardupdate body requests.CardUpdate true "Card Update"
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
-// @Success 200 {string} string
+// @Success 200 {object} models.Card
 // @Failure 400 {string} string
 // @Failure 403 {string} string "Unauthorized update"
 // @Failure 404 {string} string "Couldn't find user"
@@ -420,7 +439,8 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 		return
 	}
 
-	if err := models.UpdateCard(data, card); err != nil {
+	var updatedCard models.Card
+	if updatedCard, err = models.UpdateCard(data, card); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -429,7 +449,7 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "card updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "card updated", "data": updatedCard})
 }
 
 // Delete Subscription By ID

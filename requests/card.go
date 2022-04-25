@@ -6,6 +6,7 @@ type Card struct {
 	CardHolder string `json:"card_holder" binding:"required"`
 	Color      string `json:"color" binding:"required"`
 	CardType   string `json:"type" binding:"required"`
+	Currency   string `json:"currency" binding:"required"`
 }
 
 type CardUpdate struct {
@@ -15,4 +16,5 @@ type CardUpdate struct {
 	CardHolder *string `json:"card_holder"`
 	Color      *string `json:"color"`
 	CardType   *string `json:"type"`
+	Currency   *string `json:"currency"`
 }

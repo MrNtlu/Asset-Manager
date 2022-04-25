@@ -18,6 +18,7 @@
     <li> jordan-wright/email
     <li> logrus
     <li> OAuth2
+    <li> teambition/rrule-go
 </ul>
 
 [Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)

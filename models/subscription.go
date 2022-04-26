@@ -590,12 +590,11 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 				"$match": bson.M{
 					"$expr": bson.M{
 						"$cond": bson.A{
-							bson.M{"$eq": bson.A{"$$card_currency", "$$sub_currency"}},
+							bson.M{"$ne": bson.A{"$$card_currency", "$$sub_currency"}},
 							bson.M{
 								"$and": bson.A{
-									bson.M{"$ne": bson.A{"$$card_currency", "$$sub_currency"}},
-									bson.M{"$eq": bson.A{"$from_exchange", "$$card_currency"}},
-									bson.M{"$eq": bson.A{"$to_exchange", "$$sub_currency"}},
+									bson.M{"$eq": bson.A{"$to_exchange", "$$card_currency"}},
+									bson.M{"$eq": bson.A{"$from_exchange", "$$sub_currency"}},
 								},
 							},
 							nil,

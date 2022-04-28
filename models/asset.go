@@ -305,9 +305,19 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			},
 		},
 	}}
+	addPercentageField := bson.M{"$addFields": bson.M{
+		"pl_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{"$p/l", "$total_bought"},
+				},
+				100,
+			},
+		},
+	}}
 
 	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, unwindInvesting, exchangeLookup,
-		unwindExchange, addInvestingField, project, sort})
+		unwindExchange, addInvestingField, project, addPercentageField, sort})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":       uid,
@@ -489,10 +499,20 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 			},
 		},
 	}}
+	addPercentageField := bson.M{"$addFields": bson.M{
+		"pl_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{"$p/l", "$total_bought"},
+				},
+				100,
+			},
+		},
+	}}
 
 	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
 		match, group, lookup, unwindInvesting, exchangeLookup,
-		unwindExchange, addInvestingField, project,
+		unwindExchange, addInvestingField, project, addPercentageField,
 	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -860,6 +880,14 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 	addPercentageFields := bson.M{"$addFields": bson.M{
+		"total_pl_percentage": bson.M{
+			"$multiply": bson.A{
+				bson.M{
+					"$divide": bson.A{"$total_p/l", "$total_bought"},
+				},
+				100,
+			},
+		},
 		"stock_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{

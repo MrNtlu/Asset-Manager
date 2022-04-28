@@ -7,7 +7,7 @@ type Login struct {
 
 type Register struct {
 	EmailAddress string `json:"email_address" binding:"required,email"`
-	Currency     string `json:"currency" binding:"required,oneof=USD EUR JPY KRW GBP"`
+	Currency     string `json:"currency" binding:"required"`
 	Password     string `json:"password" binding:"required,min=6"`
 }
 
@@ -17,7 +17,7 @@ type ChangePassword struct {
 }
 
 type ChangeCurrency struct {
-	Currency string `json:"currency" binding:"required,oneof=USD EUR JPY KRW GBP"`
+	Currency string `json:"currency" binding:"required"`
 }
 
 type ChangeMembership struct {

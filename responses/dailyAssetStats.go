@@ -15,7 +15,8 @@ type DailyAssetStatsCalculation struct {
 }
 
 type DailyAssetStats struct {
-	Currency    string    `bson:"currency" json:"currency"`
-	TotalAssets []float64 `bson:"total_assets" json:"total_assets"`
-	TotalPL     []float64 `bson:"total_p/l" json:"total_p/l"`
+	Currency    string      `bson:"currency" json:"currency"`
+	TotalAssets []float64   `bson:"total_assets" json:"total_assets"`
+	TotalPL     []float64   `bson:"total_p/l" json:"total_p/l"`
+	Dates       []time.Time `bson:"dates" json:"dates"`
 }

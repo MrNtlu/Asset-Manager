@@ -97,6 +97,9 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		"currency": bson.M{
 			"$first": "$currency",
 		},
+		"dates": bson.M{
+			"$push": "$created_at",
+		},
 		"total_assets": bson.M{
 			"$push": "$total_assets",
 		},

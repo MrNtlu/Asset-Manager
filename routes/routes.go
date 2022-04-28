@@ -15,6 +15,7 @@ var (
 	subscriptionController    = new(controllers.SubscriptionController)
 	investingController       = new(controllers.InvestingController)
 	OAuth2Controller          = new(controllers.OAuth2Controller)
+	logController             = new(controllers.LogController)
 )
 
 func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
@@ -25,6 +26,7 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	subscriptionRouter(apiRouter, jwtToken)
 	oauth2Router(router, jwtToken)
 
+	apiRouter.Use(jwtToken.MiddlewareFunc()).POST("/log", logController.CreateLog)
 	router.GET("/privacy", privacyPolicy)
 	router.GET("/terms", termsConditions)
 

@@ -13,6 +13,7 @@ type Asset struct {
 	TotalSold       float64 `bson:"total_sold" json:"total_sold"`
 	PL              float64 `bson:"p/l" json:"p/l"`
 	CurrentTotal    float64 `bson:"current_total_value" json:"current_total_value"`
+	PLPercentage    float64 `bson:"pl_percentage" json:"pl_percentage"`
 }
 
 type AssetDetails struct {
@@ -24,6 +25,7 @@ type AssetDetails struct {
 	TotalSold       float64 `bson:"total_sold" json:"total_sold"`
 	CurrentTotal    float64 `bson:"current_total_value" json:"current_total_value"`
 	PL              float64 `bson:"p/l" json:"p/l"`
+	PLPercentage    float64 `bson:"pl_percentage" json:"pl_percentage"`
 	AssetType       string  `bson:"asset_type" json:"asset_type"`
 	AssetMarket     string  `bson:"asset_market" json:"asset_market"`
 }
@@ -60,6 +62,7 @@ type AssetStats struct {
 	ExchangePL          float64 `bson:"exchange_p/l" json:"exchange_p/l"`
 	CommodityPL         float64 `bson:"commodity_p/l" json:"commodity_p/l"`
 	TotalPL             float64 `bson:"total_p/l" json:"total_p/l"`
+	TotalPLPercentage   float64 `bson:"total_pl_percentage" json:"total_pl_percentage"`
 	StockPercentage     float64 `bson:"stock_percentage" json:"stock_percentage"`
 	CryptoPercentage    float64 `bson:"crypto_percentage" json:"crypto_percentage"`
 	ExchangePercentage  float64 `bson:"exchange_percentage" json:"exchange_percentage"`

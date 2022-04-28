@@ -1205,6 +1205,52 @@ const docTemplate = `{
                 }
             }
         },
+        "/log": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates Log",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "logs"
+                ],
+                "summary": "Create Log",
+                "parameters": [
+                    {
+                        "description": "Log Create",
+                        "name": "log",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateLog"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/subscription": {
             "get": {
                 "security": [
@@ -2228,14 +2274,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "currency": {
-                    "type": "string",
-                    "enum": [
-                        "USD",
-                        "EUR",
-                        "JPY",
-                        "KRW",
-                        "GBP"
-                    ]
+                    "type": "string"
                 }
             }
         },
@@ -2261,6 +2300,21 @@ const docTemplate = `{
                 "old_password": {
                     "type": "string",
                     "minLength": 6
+                }
+            }
+        },
+        "requests.CreateLog": {
+            "type": "object",
+            "required": [
+                "log",
+                "log_type"
+            ],
+            "properties": {
+                "log": {
+                    "type": "string"
+                },
+                "log_type": {
+                    "type": "integer"
                 }
             }
         },
@@ -2295,14 +2349,7 @@ const docTemplate = `{
             ],
             "properties": {
                 "currency": {
-                    "type": "string",
-                    "enum": [
-                        "USD",
-                        "EUR",
-                        "JPY",
-                        "KRW",
-                        "GBP"
-                    ]
+                    "type": "string"
                 },
                 "email_address": {
                     "type": "string"
@@ -2412,6 +2459,9 @@ const docTemplate = `{
                 "p/l": {
                     "type": "number"
                 },
+                "pl_percentage": {
+                    "type": "number"
+                },
                 "remaining_amount": {
                     "type": "number"
                 },
@@ -2459,6 +2509,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "p/l": {
+                    "type": "number"
+                },
+                "pl_percentage": {
                     "type": "number"
                 },
                 "remaining_amount": {
@@ -2526,6 +2579,9 @@ const docTemplate = `{
                 "total_p/l": {
                     "type": "number"
                 },
+                "total_pl_percentage": {
+                    "type": "number"
+                },
                 "total_sold": {
                     "type": "number"
                 }
@@ -2564,6 +2620,12 @@ const docTemplate = `{
             "properties": {
                 "currency": {
                     "type": "string"
+                },
+                "dates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "total_assets": {
                     "type": "array",

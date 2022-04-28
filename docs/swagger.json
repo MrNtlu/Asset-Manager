@@ -1201,6 +1201,52 @@
                 }
             }
         },
+        "/log": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates Log",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "logs"
+                ],
+                "summary": "Create Log",
+                "parameters": [
+                    {
+                        "description": "Log Create",
+                        "name": "log",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.CreateLog"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/subscription": {
             "get": {
                 "security": [
@@ -2224,14 +2270,7 @@
             ],
             "properties": {
                 "currency": {
-                    "type": "string",
-                    "enum": [
-                        "USD",
-                        "EUR",
-                        "JPY",
-                        "KRW",
-                        "GBP"
-                    ]
+                    "type": "string"
                 }
             }
         },
@@ -2257,6 +2296,21 @@
                 "old_password": {
                     "type": "string",
                     "minLength": 6
+                }
+            }
+        },
+        "requests.CreateLog": {
+            "type": "object",
+            "required": [
+                "log",
+                "log_type"
+            ],
+            "properties": {
+                "log": {
+                    "type": "string"
+                },
+                "log_type": {
+                    "type": "integer"
                 }
             }
         },
@@ -2291,14 +2345,7 @@
             ],
             "properties": {
                 "currency": {
-                    "type": "string",
-                    "enum": [
-                        "USD",
-                        "EUR",
-                        "JPY",
-                        "KRW",
-                        "GBP"
-                    ]
+                    "type": "string"
                 },
                 "email_address": {
                     "type": "string"
@@ -2408,6 +2455,9 @@
                 "p/l": {
                     "type": "number"
                 },
+                "pl_percentage": {
+                    "type": "number"
+                },
                 "remaining_amount": {
                     "type": "number"
                 },
@@ -2455,6 +2505,9 @@
                     "type": "string"
                 },
                 "p/l": {
+                    "type": "number"
+                },
+                "pl_percentage": {
                     "type": "number"
                 },
                 "remaining_amount": {
@@ -2522,6 +2575,9 @@
                 "total_p/l": {
                     "type": "number"
                 },
+                "total_pl_percentage": {
+                    "type": "number"
+                },
                 "total_sold": {
                     "type": "number"
                 }
@@ -2560,6 +2616,12 @@
             "properties": {
                 "currency": {
                     "type": "string"
+                },
+                "dates": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
                 },
                 "total_assets": {
                     "type": "array",

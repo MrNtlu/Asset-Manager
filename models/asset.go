@@ -130,7 +130,7 @@ func GetUserAssetCount(uid string) int64 {
 		return dcArray[0].DocumentCount[0].N
 	}
 
-	return 10
+	return 0
 }
 
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {

@@ -2,6 +2,8 @@ package controllers
 
 import (
 	"asset_backend/models"
+	"asset_backend/requests"
+	"asset_backend/responses"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -21,6 +23,8 @@ var (
 	googleOauthConfig *oauth2.Config
 
 	oauthStateString = "kantan-login"
+
+	errFailedLogin = "failed to login"
 )
 
 func SetOAuth2() {
@@ -38,6 +42,60 @@ func (o *OAuth2Controller) GoogleLogin(c *gin.Context) {
 	http.Redirect(c.Writer, c.Request, url, http.StatusTemporaryRedirect)
 }
 
+// OAuth2 Google Login
+// @Summary OAuth2 Google Login
+// @Description Gets user info from google and creates/finds user and returns token
+// @Tags oauth2
+// @Accept application/json
+// @Produce application/json
+// @Success 200 {string} string "Token"
+// @Failure 500 {string} string
+// @Router /oauth/google [post]
+func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var data requests.GoogleLogin
+		if shouldReturn := bindJSONData(&data, c); shouldReturn {
+			return
+		}
+
+		response, err := http.Get("https://www.googleapis.com/oauth2/v3/tokeninfo?access_token=" + data.Token)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errFailedLogin,
+			})
+			return
+		}
+		defer response.Body.Close()
+
+		var googleToken responses.GoogleToken
+		json.NewDecoder(response.Body).Decode(&googleToken)
+		if googleToken.Email == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": errFailedLogin, "code": http.StatusUnauthorized})
+			return
+		}
+
+		var user models.User
+		user, _ = models.FindUserByEmail(googleToken.Email)
+		if user.EmailAddress == "" {
+			oAuthUser, err := models.CreateOAuthUser(googleToken.Email)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+				return
+			}
+			user = *oAuthUser
+		}
+
+		token, _, err := jwt.TokenGenerator(user)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.SetCookie("jwt", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
+		c.JSON(http.StatusOK, gin.H{"access_token": token})
+	}
+}
+
 // Google Callback
 // @Summary Callback from Google OAuth
 // @Description Callback from google auth
@@ -51,7 +109,6 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 	return func(c *gin.Context) {
 		content, err := getUserInfo(c.Request.FormValue("state"), c.Request.FormValue("code"))
 		if err != nil {
-			fmt.Println(err.Error())
 			http.Redirect(c.Writer, c.Request, "/", http.StatusTemporaryRedirect)
 			return
 		}

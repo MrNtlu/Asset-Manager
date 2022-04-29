@@ -24,7 +24,7 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	userRouter(apiRouter, jwtToken)
 	assetRouter(apiRouter, jwtToken)
 	subscriptionRouter(apiRouter, jwtToken)
-	oauth2Router(router, jwtToken)
+	oauth2Router(apiRouter, jwtToken)
 
 	apiRouter.Use(jwtToken.MiddlewareFunc()).POST("/log", logController.CreateLog)
 	router.GET("/privacy", privacyPolicy)

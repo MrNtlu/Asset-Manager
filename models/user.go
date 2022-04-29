@@ -26,7 +26,6 @@ import (
 * *Card
 *	- Max 3 cards
 **/
-
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	EmailAddress       string             `bson:"email_address" json:"email_address"`

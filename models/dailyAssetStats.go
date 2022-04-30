@@ -415,3 +415,16 @@ func CalculateDailyAssetStats() {
 		logrus.Error("failed to create daily asset stats calculation list: ", err)
 	}
 }
+
+func DeleteAllAssetStatsByUserID(uid string) error {
+	if _, err := db.DailyAssetStatCollection.DeleteMany(context.TODO(), bson.M{
+		"user_id": uid,
+	}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all asset stats by user id: ", err)
+		return fmt.Errorf("failed to delete all asset stats by user id")
+	}
+
+	return nil
+}

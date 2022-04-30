@@ -1251,6 +1251,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/oauth/google": {
+            "post": {
+                "description": "Gets user info from google and creates/finds user and returns token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "OAuth2 Google Login",
+                "responses": {
+                    "200": {
+                        "description": "Token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/subscription": {
             "get": {
                 "security": [

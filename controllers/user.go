@@ -254,7 +254,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	generatedPass, err := password.Generate(10, 4, 1, true, false)
+	generatedPass, err := password.Generate(10, 4, 0, true, false)
 	if err != nil {
 		generatedPass = user.EmailAddress + "_Password"
 	}
@@ -335,6 +335,7 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	go models.DeleteAllCardsByUserID(uid)
 	go models.DeleteAllSubscriptionsByUserID(uid)
 	go models.DeleteAllAssetStatsByUserID(uid)
+	go models.DeleteAllLogsByUserID(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "successfully deleted user"})
 }

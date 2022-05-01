@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/sirupsen/logrus"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
@@ -40,5 +41,15 @@ func CreateLog(uid string, data requests.CreateLog) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to create new log: ", err)
+	}
+}
+
+func DeleteAllLogsByUserID(uid string) {
+	if _, err := db.LogCollection.DeleteMany(context.TODO(), bson.M{
+		"user_id": uid,
+	}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all logs by user id: ", err)
 	}
 }

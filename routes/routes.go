@@ -27,6 +27,7 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
 	oauth2Router(apiRouter, jwtToken)
 
 	apiRouter.Use(jwtToken.MiddlewareFunc()).POST("/log", logController.CreateLog)
+	router.GET("/confirm-password-reset", userController.ConfirmPasswordReset)
 	router.GET("/privacy", privacyPolicy)
 	router.GET("/terms", termsConditions)
 

@@ -224,16 +224,6 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "successfully send password reset email"})
 }
 
-// Confirm Password Reset
-// @Summary Confirm Password Reset
-// @Description After user confirmed password reset from their email
-// @Tags auth
-// @Accept application/json
-// @Produce application/json
-// @Success 200 {string} string
-// @Failure 400 {string} string "No user found"
-// @Failure 500 {string} string
-// @Router /auth/confirm-password-reset [get]
 func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 	token := c.Query("token")
 	email := c.Query("mail")
@@ -270,7 +260,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 
 	helpers.SendPasswordChangedEmail(generatedPass, user.EmailAddress)
 
-	c.JSON(http.StatusOK, gin.H{"message": "new password sent via email"})
+	http.ServeFile(c.Writer, c.Request, "assets/confirm_password.html")
 }
 
 // User Info

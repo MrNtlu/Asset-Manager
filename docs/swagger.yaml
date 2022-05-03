@@ -983,29 +983,6 @@ paths:
       summary: Get Asset Stats by User ID
       tags:
       - asset
-  /auth/confirm-password-reset:
-    get:
-      consumes:
-      - application/json
-      description: After user confirmed password reset from their email
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            type: string
-        "400":
-          description: No user found
-          schema:
-            type: string
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      summary: Confirm Password Reset
-      tags:
-      - auth
   /auth/register:
     post:
       consumes:

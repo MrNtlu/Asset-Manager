@@ -8,7 +8,7 @@ import (
 )
 
 func SendForgotPasswordEmail(token, mail string) error {
-	url := (os.Getenv("BASE_URI") + "/api/v1/auth/confirm-password-reset?token=" + token + "&mail=" + mail)
+	url := (os.Getenv("BASE_URI") + "/confirm-password-reset?token=" + token + "&mail=" + mail)
 
 	e := email.NewEmail()
 	e.From = "Kanma <" + os.Getenv("FROM_MAIL") + ">"

@@ -37,6 +37,8 @@
 
 Flutter (Android/Mac/Windows/iOS): [Asset Manager Flutter](https://github.com/MrNtlu/Asset-Manager-Flutter)
 
+Frontend(Website): [Asset Manager Frontend](https://github.com/MrNtlu/Asset-Manager-Frontend)
+
 Scraper: [Asset Scraper](https://github.com/MrNtlu/Asset-Scraper)
 
 Mac: [Download Kantan Mac](https://github.com/MrNtlu/Asset-Manager-Flutter/raw/master/installers/dmg_creator/kantan.dmg)

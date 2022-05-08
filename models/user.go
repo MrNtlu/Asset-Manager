@@ -16,8 +16,6 @@ import (
 
 /**
 * !Premium Features
-* *General
-*	?Can only select default currency
 * *Asset
 * 	- Max 10 asset
 *	- Only weekly stats
@@ -104,6 +102,7 @@ func UpdateUserMembership(uid string, isPremium bool) error {
 
 	if _, err := db.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": objectUID}, bson.M{"$set": bson.M{
 		"is_premium": isPremium,
+		"updated_at": time.Now().UTC(),
 	}}); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":        uid,

@@ -6,6 +6,7 @@
     <li> Redis (Caching)
     <li> Swaggo/Swag
     <li> Swaggo/Gin-Swagger
+    <li> Gin-limit-by-key
     <li> MessagePack
     <li> Gin-Gonic
     <li> Gin-jwt/v2

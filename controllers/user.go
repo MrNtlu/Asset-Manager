@@ -1,11 +1,13 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
 	"asset_backend/utils"
+	"context"
 	"fmt"
 	"net/http"
 
@@ -96,6 +98,8 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 		})
 		return
 	}
+
+	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
 	c.JSON(http.StatusOK, gin.H{"message": "successfully changed currency"})
 }

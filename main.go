@@ -6,9 +6,11 @@ import (
 	"asset_backend/docs"
 	"asset_backend/helpers"
 	"asset_backend/models"
+	"asset_backend/requests"
 	"asset_backend/routes"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
@@ -18,6 +20,8 @@ import (
 	"github.com/sirupsen/logrus"
 	swaggerfiles "github.com/swaggo/files"
 	ginSwagger "github.com/swaggo/gin-swagger"
+	limit "github.com/yangxikun/gin-limit-by-key"
+	"golang.org/x/time/rate"
 )
 
 // @title Kantan Investment Manager API
@@ -68,6 +72,20 @@ func main() {
 	gin.SetMode(gin.ReleaseMode)
 	router := gin.Default()
 	docs.SwaggerInfo.BasePath = "/api/v1"
+
+	// Burst of 0.1 sec 20 requests. 5 second restriction.
+	router.Use(limit.NewRateLimiter(func(ctx *gin.Context) string {
+		return ctx.ClientIP()
+	}, func(ctx *gin.Context) (*rate.Limiter, time.Duration) {
+		return rate.NewLimiter(rate.Every(100*time.Millisecond), 20), 5 * time.Second
+	}, func(ctx *gin.Context) {
+		go models.CreateLog(ctx.ClientIP(), requests.CreateLog{
+			Log:     "Rate-Limit",
+			LogType: 0,
+		})
+		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Rescricted for 5 seconds.", "message": "Too many requests. Rescricted for 5 seconds."})
+		ctx.Abort()
+	}))
 
 	routes.SetupRoutes(router, jwtHandler)
 

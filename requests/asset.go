@@ -11,7 +11,7 @@ type AssetCreate struct {
 }
 
 type AssetSort struct {
-	Sort     string `form:"sort" binding:"required,oneof=name type amount profit"`
+	Sort     string `form:"sort" binding:"required,oneof=name percentage amount profit"`
 	SortType int    `form:"type" json:"type" binding:"required,number,oneof=1 -1"`
 }
 

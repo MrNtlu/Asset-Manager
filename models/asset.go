@@ -143,9 +143,9 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		sort = bson.M{"$sort": bson.M{
 			"remaining_amount": data.SortType,
 		}}
-	} else if data.Sort == "type" {
+	} else if data.Sort == "percentage" {
 		sort = bson.M{"$sort": bson.M{
-			"asset_type": data.SortType,
+			"pl_percentage": data.SortType,
 		}}
 	} else {
 		sort = bson.M{"$sort": bson.M{

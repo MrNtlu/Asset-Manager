@@ -156,11 +156,11 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 					return assetAndStats.Data[i].ToAsset < assetAndStats.Data[j].ToAsset
 				}
 				return assetAndStats.Data[i].ToAsset > assetAndStats.Data[j].ToAsset
-			} else if data.Sort == "type" {
+			} else if data.Sort == "percentage" {
 				if data.SortType == 1 {
-					return assetAndStats.Data[i].AssetType > assetAndStats.Data[j].AssetType
+					return assetAndStats.Data[i].PLPercentage < assetAndStats.Data[j].PLPercentage
 				}
-				return assetAndStats.Data[i].AssetType < assetAndStats.Data[j].AssetType
+				return assetAndStats.Data[i].AssetType > assetAndStats.Data[j].AssetType
 			} else if data.Sort == "amount" {
 				if data.SortType == 1 {
 					return assetAndStats.Data[i].RemainingAmount > assetAndStats.Data[j].RemainingAmount

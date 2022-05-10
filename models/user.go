@@ -33,16 +33,20 @@ type User struct {
 	CreatedAt          time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
 	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
+	IsLifetimePremium  bool               `bson:"is_lifetime_premium" json:"is_lifetime_premium"`
+	IsOAuthUser        bool               `bson:"is_oauth" json:"-"`
 }
 
 func createUserObject(emailAddress, currency, password string) *User {
 	return &User{
-		EmailAddress: emailAddress,
-		Currency:     currency,
-		Password:     utils.HashPassword(password),
-		CreatedAt:    time.Now().UTC(),
-		UpdatedAt:    time.Now().UTC(),
-		IsPremium:    false,
+		EmailAddress:      emailAddress,
+		Currency:          currency,
+		Password:          utils.HashPassword(password),
+		CreatedAt:         time.Now().UTC(),
+		UpdatedAt:         time.Now().UTC(),
+		IsPremium:         false,
+		IsLifetimePremium: false,
+		IsOAuthUser:       false,
 	}
 }
 
@@ -53,6 +57,7 @@ func createOAuthUserObject(emailAddress string) *User {
 		CreatedAt:    time.Now().UTC(),
 		UpdatedAt:    time.Now().UTC(),
 		IsPremium:    false,
+		IsOAuthUser:  true,
 	}
 }
 

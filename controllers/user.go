@@ -10,6 +10,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -22,7 +23,9 @@ type UserController struct{}
 var (
 	errAlreadyRegistered = "user already registered"
 	errPasswordNoMatch   = "passwords do not match"
-	errNoUser            = "couldn't find user"
+	errNoUser            = "Sorry, couldn't find user."
+	errOAuthUser         = "Sorry, you can't do this action."
+	errMailAlreadySent   = "Password reset mail already sent, you have to wait 5 minutes before sending another. Please check spam mails."
 	errPremiumFeature    = "this feature requires premium membership"
 )
 
@@ -201,25 +204,46 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 	user, err := models.FindUserByEmail(data.EmailAddress)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+			"error": errNoUser,
 		})
 		return
 	}
 
 	if user.EmailAddress == "" {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "couldn't find user",
+			"error": errNoUser,
 		})
 
 		return
 	}
 
-	resetToken := uuid.NewString()
-	user.PasswordResetToken = resetToken
-	if err = models.UpdateUser(user); err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
+	if user.IsOAuthUser {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errOAuthUser,
 		})
+		return
+	}
+
+	var resetToken string
+	if user.PasswordResetToken == "" {
+		resetToken = uuid.NewString()
+		user.PasswordResetToken = resetToken
+		if err = models.UpdateUser(user); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		time.AfterFunc(5*time.Minute, func() {
+			user.PasswordResetToken = ""
+			go models.UpdateUser(user)
+		})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errMailAlreadySent,
+		})
+
 		return
 	}
 
@@ -295,6 +319,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 
 	userInfo := responses.UserInfo{
 		IsPremium:         info.IsPremium,
+		IsLifetimePremium: info.IsLifetimePremium,
 		EmailAddress:      info.EmailAddress,
 		Currency:          info.Currency,
 		InvestingLimit:    investingLimit,

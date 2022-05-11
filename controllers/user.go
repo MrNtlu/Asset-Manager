@@ -258,17 +258,12 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 
 	user, err := models.FindUserByResetTokenAndEmail(token, email)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
+		http.ServeFile(c.Writer, c.Request, "assets/error_password_reset.html")
 		return
 	}
 
 	if user.EmailAddress == "" {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": errNoUser,
-		})
-
+		http.ServeFile(c.Writer, c.Request, "assets/error_password_reset.html")
 		return
 	}
 

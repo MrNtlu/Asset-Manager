@@ -32,7 +32,7 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 	var data requests.DailyAssetStatsInterval
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return

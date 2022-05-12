@@ -17,9 +17,9 @@ import (
 type SubscriptionController struct{}
 
 var (
-	errSubscriptionNotFound = "subscription not found"
-	errSubscriptionPremium  = "free members can add up to 5 subscriptions, you can get premium membership for unlimited access"
-	errCardPremium          = "free members can add up to 3 credit cards, you can get premium membership for unlimited access"
+	errSubscriptionNotFound = "Subscription not found."
+	errSubscriptionPremium  = "Free members can add up to 5 subscriptions, you can get premium membership for unlimited access."
+	errCardPremium          = "Free members can add up to 3 credit cards, you can get premium membership for unlimited access."
 )
 
 // Create Subscription
@@ -153,7 +153,7 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 	var data requests.ID
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -188,7 +188,7 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 	var data requests.SubscriptionSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -268,7 +268,7 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 	var data requests.ID
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -330,7 +330,7 @@ func (s *SubscriptionController) GetCardStatisticsByUserIDAndCardID(c *gin.Conte
 	var data requests.ID
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -397,7 +397,7 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "subscription updated", "data": updatedSubscription})
+	c.JSON(http.StatusOK, gin.H{"message": "Subscription updated.", "data": updatedSubscription})
 }
 
 // Update Card
@@ -449,7 +449,7 @@ func (s *SubscriptionController) UpdateCard(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "card updated", "data": updatedCard})
+	c.JSON(http.StatusOK, gin.H{"message": "Card updated.", "data": updatedCard})
 }
 
 // Delete Subscription By ID
@@ -481,7 +481,7 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 
 	if isDeleted {
 		go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
-		c.JSON(http.StatusOK, gin.H{"message": "subscription deleted successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "Subscription deleted successfully."})
 		return
 	}
 
@@ -510,7 +510,7 @@ func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) 
 
 	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "subscriptions deleted successfully by user id"})
+	c.JSON(http.StatusOK, gin.H{"message": "Subscriptions deleted successfully by user id."})
 }
 
 // Delete Card By ID
@@ -543,12 +543,12 @@ func (s *SubscriptionController) DeleteCardByCardID(c *gin.Context) {
 	if isDeleted {
 		go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
-		c.JSON(http.StatusOK, gin.H{"message": "card deleted successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "Card deleted successfully."})
 
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"error": "unauthorized delete"})
+	c.JSON(http.StatusOK, gin.H{"error": "Unauthorized delete."})
 }
 
 // Delete All Cards
@@ -573,5 +573,5 @@ func (s *SubscriptionController) DeleteAllCardsByUserID(c *gin.Context) {
 
 	go models.UpdateSubscriptionCardIDToNull(uid, nil)
 	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
-	c.JSON(http.StatusOK, gin.H{"message": "cards deleted successfully by user id"})
+	c.JSON(http.StatusOK, gin.H{"message": "Cards deleted successfully by user id."})
 }

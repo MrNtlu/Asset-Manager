@@ -21,12 +21,12 @@ import (
 type UserController struct{}
 
 var (
-	errAlreadyRegistered = "user already registered"
-	errPasswordNoMatch   = "passwords do not match"
+	errAlreadyRegistered = "User already registered."
+	errPasswordNoMatch   = "Passwords do not match."
 	errNoUser            = "Sorry, couldn't find user."
 	errOAuthUser         = "Sorry, you can't do this action."
 	errMailAlreadySent   = "Password reset mail already sent, you have to wait 5 minutes before sending another. Please check spam mails."
-	errPremiumFeature    = "this feature requires premium membership"
+	errPremiumFeature    = "This feature requires premium membership."
 )
 
 // Register
@@ -64,7 +64,7 @@ func (u *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusCreated, gin.H{"message": "registered successfully"})
+	c.JSON(http.StatusCreated, gin.H{"message": "Registered successfully."})
 }
 
 // Change Currency
@@ -104,7 +104,7 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully changed currency"})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully changed currency."})
 }
 
 // Change User Membership
@@ -134,7 +134,7 @@ func (u *UserController) ChangeUserMembership(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully updated membership"})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully updated membership."})
 }
 
 // Change Password
@@ -166,6 +166,13 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
+	if user.IsOAuthUser {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errOAuthUser,
+		})
+		return
+	}
+
 	if err = utils.CheckPassword([]byte(user.Password), []byte(data.OldPassword)); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"error": errPasswordNoMatch},
@@ -181,7 +188,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully changed password"})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully changed password."})
 }
 
 // Forgot Password
@@ -249,7 +256,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 
 	helpers.SendForgotPasswordEmail(resetToken, user.EmailAddress)
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully send password reset email"})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully send password reset email."})
 }
 
 func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
@@ -263,6 +270,11 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 	}
 
 	if user.EmailAddress == "" {
+		http.ServeFile(c.Writer, c.Request, "assets/error_password_reset.html")
+		return
+	}
+
+	if user.IsOAuthUser {
 		http.ServeFile(c.Writer, c.Request, "assets/error_password_reset.html")
 		return
 	}
@@ -321,7 +333,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 		SubscriptionLimit: subscriptionLimit,
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully fetched user info", "data": userInfo})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched user info.", "data": userInfo})
 }
 
 // Delete User
@@ -351,5 +363,5 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	go models.DeleteAllAssetStatsByUserID(uid)
 	go models.DeleteAllLogsByUserID(uid)
 
-	c.JSON(http.StatusOK, gin.H{"message": "successfully deleted user"})
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully deleted user."})
 }

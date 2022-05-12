@@ -27,7 +27,7 @@ type Subscription struct {
 	Price       float64            `bson:"price" json:"price"`
 	Currency    string             `bson:"currency" json:"currency"`
 	Color       string             `bson:"color" json:"color"`
-	Image       *string            `bson:"image" json:"image"`
+	Image       string             `bson:"image" json:"image"`
 	CreatedAt   time.Time          `bson:"created_at" json:"-"`
 }
 
@@ -37,7 +37,7 @@ type BillCycle struct {
 	Year  int `bson:"year" json:"year"`
 }
 
-func createSubscriptionObject(uid, name, currency, color string, cardID, description, image *string, price float64, billDate time.Time, billCycle BillCycle) *Subscription {
+func createSubscriptionObject(uid, name, currency, color, image string, cardID, description *string, price float64, billDate time.Time, billCycle BillCycle) *Subscription {
 	return &Subscription{
 		UserID:      uid,
 		CardID:      cardID,
@@ -67,9 +67,9 @@ func CreateSubscription(uid string, data requests.Subscription) (responses.Subsc
 		data.Name,
 		data.Currency,
 		data.Color,
+		data.Image,
 		data.CardID,
 		data.Description,
-		data.Image,
 		data.Price,
 		data.BillDate,
 		*createBillCycle(data.BillCycle),
@@ -84,7 +84,7 @@ func CreateSubscription(uid string, data requests.Subscription) (responses.Subsc
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to create new subscription: ", err)
-		return responses.Subscription{}, fmt.Errorf("failed to create new subscription")
+		return responses.Subscription{}, fmt.Errorf("Failed to create new subscription.")
 	}
 	subscription.ID = insertedID.InsertedID.(primitive.ObjectID)
 
@@ -113,7 +113,7 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 		logrus.WithFields(logrus.Fields{
 			"subscription_id": subscriptionID,
 		}).Error("failed to create new subscription: ", err)
-		return Subscription{}, fmt.Errorf("failed to find subscription by subscription id")
+		return Subscription{}, fmt.Errorf("Failed to find subscription by subscription id.")
 	}
 
 	return subscription, nil
@@ -135,7 +135,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to find subscription: ", err)
-		return nil, fmt.Errorf("failed to find subscription")
+		return nil, fmt.Errorf("Failed to find subscription.")
 	}
 
 	var subscriptions []responses.Subscription
@@ -144,7 +144,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to decode subscriptions: ", err)
-		return nil, fmt.Errorf("failed to decode subscriptions")
+		return nil, fmt.Errorf("Failed to decode subscriptions.")
 	}
 
 	for index, subscription := range subscriptions {
@@ -182,7 +182,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to find subscription: ", err)
-		return nil, fmt.Errorf("failed to find subscription")
+		return nil, fmt.Errorf("Failed to find subscription.")
 	}
 
 	var subscriptions []responses.Subscription
@@ -192,7 +192,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to decode subscription: ", err)
-		return nil, fmt.Errorf("failed to decode subscription")
+		return nil, fmt.Errorf("Failed to decode subscription.")
 	}
 
 	for index, subscription := range subscriptions {
@@ -359,7 +359,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to aggregate subscription details: ", err)
-		return responses.SubscriptionDetails{}, fmt.Errorf("failed to aggregate subscription details")
+		return responses.SubscriptionDetails{}, fmt.Errorf("Failed to aggregate subscription details.")
 	}
 
 	var subscriptions []responses.SubscriptionDetails
@@ -368,7 +368,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to decode subscription details: ", err)
-		return responses.SubscriptionDetails{}, fmt.Errorf("failed to decode subscription details")
+		return responses.SubscriptionDetails{}, fmt.Errorf("Failed to decode subscription details.")
 	}
 
 	if len(subscriptions) > 0 {
@@ -544,7 +544,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate subscription statistics: ", err)
-		return nil, fmt.Errorf("failed to aggregate subscription statistics")
+		return nil, fmt.Errorf("Failed to aggregate subscription statistics.")
 	}
 
 	var subscriptionStats []responses.SubscriptionStatistics
@@ -552,7 +552,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode subscription statistics: ", err)
-		return nil, fmt.Errorf("failed to decode subscription statistics")
+		return nil, fmt.Errorf("Failed to decode subscription statistics.")
 	}
 
 	return subscriptionStats, nil
@@ -788,7 +788,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate card statistics: ", err)
-		return responses.CardStatistics{}, fmt.Errorf("failed to aggregate card statistics: %w", err)
+		return responses.CardStatistics{}, fmt.Errorf("Failed to aggregate card statistics: %w", err)
 	}
 
 	var cardStats []responses.CardStatistics
@@ -796,7 +796,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardStati
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode card statistics: ", err)
-		return responses.CardStatistics{}, fmt.Errorf("failed to decode card statistics: %w", err)
+		return responses.CardStatistics{}, fmt.Errorf("Failed to decode card statistics: %w", err)
 	}
 
 	if len(cardStats) > 0 {
@@ -819,7 +819,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 		subscription.Color = *data.Color
 	}
 	if data.Image != nil {
-		subscription.Image = data.Image
+		subscription.Image = *data.Image
 	}
 	if data.BillDate != nil {
 		subscription.BillDate = *data.BillDate
@@ -842,7 +842,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 			"subscription_id": data.ID,
 			"data":            data,
 		}).Error("failed to update subscription: ", err)
-		return responses.Subscription{}, fmt.Errorf("failed to update subscription")
+		return responses.Subscription{}, fmt.Errorf("Failed to update subscription.")
 	}
 
 	return convertModelToResponse(subscription), nil
@@ -881,7 +881,7 @@ func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to delete subscription: ", err)
-		return false, fmt.Errorf("failed to delete subscription")
+		return false, fmt.Errorf("Failed to delete subscription.")
 	}
 
 	return count.DeletedCount > 0, nil
@@ -894,7 +894,7 @@ func DeleteAllSubscriptionsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all subscriptions by user id: ", err)
-		return fmt.Errorf("failed to delete all subscriptions by user id")
+		return fmt.Errorf("Failed to delete all subscriptions by user id.")
 	}
 
 	return nil
@@ -953,7 +953,7 @@ func convertModelToResponse(subscription Subscription) responses.Subscription {
 		Price:     subscription.Price,
 		Currency:  subscription.Currency,
 		Color:     subscription.Color,
-		Image:     subscription.Image,
+		Image:     &subscription.Image,
 		CreatedAt: subscription.CreatedAt,
 	}
 }

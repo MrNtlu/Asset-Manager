@@ -17,8 +17,8 @@ import (
 type AssetController struct{}
 
 var (
-	errAssetNotFound = "asset not found"
-	errAssetPremium  = "free members can add up to 10, you can get premium membership for unlimited access"
+	errAssetNotFound = "Asset not found."
+	errAssetPremium  = "Free members can add up to 10, you can get premium membership for unlimited access."
 )
 
 // Create Asset
@@ -111,7 +111,7 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	var data requests.AssetSort
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -195,7 +195,7 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	var data requests.AssetDetails
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -256,7 +256,7 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	var data requests.AssetLog
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -322,7 +322,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "asset updated"})
+	c.JSON(http.StatusOK, gin.H{"message": "Asset updated."})
 }
 
 // Delete Asset Log
@@ -356,7 +356,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	if isDeleted {
 		go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
-		c.JSON(http.StatusOK, gin.H{"message": "asset deleted successfully"})
+		c.JSON(http.StatusOK, gin.H{"message": "Asset deleted successfully."})
 		return
 	}
 
@@ -392,7 +392,7 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "assets deleted successfully"})
+	c.JSON(http.StatusOK, gin.H{"message": "Assets deleted successfully."})
 }
 
 // Delete All Assets
@@ -417,5 +417,5 @@ func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 
 	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
-	c.JSON(http.StatusOK, gin.H{"message": "assets deleted successfully by user id"})
+	c.JSON(http.StatusOK, gin.H{"message": "Assets deleted successfully by user id."})
 }

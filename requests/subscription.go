@@ -11,7 +11,7 @@ type Subscription struct {
 	Price       float64   `json:"price" binding:"required"`
 	Currency    string    `json:"currency" binding:"required"`
 	Color       string    `json:"color" binding:"required"`
-	Image       *string   `json:"image"`
+	Image       string    `json:"image"`
 }
 
 type BillCycle struct {

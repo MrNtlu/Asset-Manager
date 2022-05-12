@@ -116,7 +116,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			"uid":      uid,
 			"interval": interval,
 		}).Error("failed to aggregate daily asset stats: ", err)
-		return responses.DailyAssetStats{}, fmt.Errorf("failed to aggregate daily asset stats")
+		return responses.DailyAssetStats{}, fmt.Errorf("Failed to aggregate daily asset stats.")
 	}
 
 	var dailyAssetStats []responses.DailyAssetStats
@@ -125,7 +125,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			"uid":      uid,
 			"interval": interval,
 		}).Error("failed to decode daily asset stats: ", err)
-		return responses.DailyAssetStats{}, fmt.Errorf("failed to decode daily asset stats")
+		return responses.DailyAssetStats{}, fmt.Errorf("Failed to decode daily asset stats.")
 	}
 
 	if len(dailyAssetStats) > 0 {
@@ -423,7 +423,7 @@ func DeleteAllAssetStatsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all asset stats by user id: ", err)
-		return fmt.Errorf("failed to delete all asset stats by user id")
+		return fmt.Errorf("Failed to delete all asset stats by user id.")
 	}
 
 	return nil

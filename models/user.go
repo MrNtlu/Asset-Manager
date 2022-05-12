@@ -68,7 +68,7 @@ func CreateUser(data requests.Register) error {
 		logrus.WithFields(logrus.Fields{
 			"email": data.EmailAddress,
 		}).Error("failed to create new user: ", err)
-		return fmt.Errorf("failed to create new user")
+		return fmt.Errorf("Failed to create new user.")
 	}
 
 	return nil
@@ -82,7 +82,7 @@ func CreateOAuthUser(email string) (*User, error) {
 		logrus.WithFields(logrus.Fields{
 			"email": email,
 		}).Error("failed to create new oauth user: ", err)
-		return nil, fmt.Errorf("failed to create new oauth user")
+		return nil, fmt.Errorf("Failed to create new oauth user.")
 	}
 
 	user.ID = result.InsertedID.(primitive.ObjectID)
@@ -96,7 +96,7 @@ func UpdateUser(user User) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": user.ID,
 		}).Error("failed to update user: ", err)
-		return fmt.Errorf("failed to update user")
+		return fmt.Errorf("Failed to update user.")
 	}
 
 	return nil
@@ -113,7 +113,7 @@ func UpdateUserMembership(uid string, isPremium bool) error {
 			"uid":        uid,
 			"is_premium": isPremium,
 		}).Error("failed to set membership for user: ", err)
-		return fmt.Errorf("failed to set membership for user")
+		return fmt.Errorf("Failed to set membership for user.")
 	}
 
 	return nil
@@ -149,7 +149,7 @@ func FindUserByID(uid string) (User, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": user.ID,
 		}).Error("failed to find user by uid: ", err)
-		return User{}, fmt.Errorf("failed to find user by id")
+		return User{}, fmt.Errorf("Failed to find user by id.")
 	}
 
 	return user, nil
@@ -167,7 +167,7 @@ func FindUserByResetTokenAndEmail(token, email string) (User, error) {
 			"uid":   user.ID,
 			"token": token,
 		}).Error("failed to find user by reset token: ", err)
-		return User{}, fmt.Errorf("failed to find user by reset token")
+		return User{}, fmt.Errorf("Failed to find user by reset token.")
 	}
 
 	return user, nil
@@ -183,7 +183,7 @@ func FindUserByEmail(email string) (User, error) {
 		logrus.WithFields(logrus.Fields{
 			"email": email,
 		}).Error("failed to find user by email: ", err)
-		return User{}, fmt.Errorf("failed to find user by email")
+		return User{}, fmt.Errorf("Failed to find user by email.")
 	}
 
 	return user, nil
@@ -196,7 +196,7 @@ func DeleteUserByID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete user: ", err)
-		return fmt.Errorf("failed to delete user")
+		return fmt.Errorf("Failed to delete user.")
 	}
 
 	return nil

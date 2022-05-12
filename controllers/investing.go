@@ -29,7 +29,7 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 	var data requests.Investings
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return
@@ -83,7 +83,7 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 	var data requests.Investings
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": validatorErrorHandler(err),
 		})
 
 		return

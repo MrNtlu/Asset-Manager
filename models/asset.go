@@ -63,7 +63,7 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 		logrus.WithFields(logrus.Fields{
 			"asset": asset,
 		}).Error("failed to create new asset: ", err)
-		return fmt.Errorf("failed to create new asset")
+		return fmt.Errorf("Failed to create new asset.")
 	}
 
 	return nil
@@ -79,7 +79,7 @@ func GetAssetByID(assetID string) (Asset, error) {
 		logrus.WithFields(logrus.Fields{
 			"id": assetID,
 		}).Error("failed to find asset by asset id: ", err)
-		return Asset{}, fmt.Errorf("failed to find asset by asset id")
+		return Asset{}, fmt.Errorf("Failed to find asset by asset id.")
 	}
 
 	return asset, nil
@@ -324,7 +324,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to aggregate assets: ", err)
-		return nil, fmt.Errorf("failed to aggregate assets")
+		return nil, fmt.Errorf("Failed to aggregate assets.")
 	}
 
 	var assets []responses.Asset
@@ -334,7 +334,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to decode assets: ", err)
-		return nil, fmt.Errorf("failed to decode assets")
+		return nil, fmt.Errorf("Failed to decode assets.")
 	}
 
 	return assets, nil
@@ -520,7 +520,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 			"to_asset":   toAsset,
 			"from_asset": fromAsset,
 		}).Error("failed to aggregate asset details: ", err)
-		return responses.AssetDetails{}, fmt.Errorf("failed to aggregate asset details")
+		return responses.AssetDetails{}, fmt.Errorf("Failed to aggregate asset details.")
 	}
 
 	var assetDetails []responses.AssetDetails
@@ -530,7 +530,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 			"to_asset":   toAsset,
 			"from_asset": fromAsset,
 		}).Error("failed to decode asset details: ", err)
-		return responses.AssetDetails{}, fmt.Errorf("failed to decode asset details")
+		return responses.AssetDetails{}, fmt.Errorf("Failed to decode asset details.")
 	}
 
 	if len(assetDetails) > 0 {
@@ -941,7 +941,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate asset stats: ", err)
-		return responses.AssetStats{}, fmt.Errorf("failed to aggregate asset stats")
+		return responses.AssetStats{}, fmt.Errorf("Failed to aggregate asset stats.")
 	}
 
 	var assetStat []responses.AssetStats
@@ -949,7 +949,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode asset stats: ", err)
-		return responses.AssetStats{}, fmt.Errorf("failed to decode asset stats")
+		return responses.AssetStats{}, fmt.Errorf("Failed to decode asset stats.")
 	}
 
 	if len(assetStat) > 0 {
@@ -991,7 +991,7 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 			"page":       data.Page,
 			"sort":       data.Sort,
 		}).Error("failed to fetch/decode: ", err)
-		return nil, pagination.PaginationData{}, fmt.Errorf("failed to get asset logs")
+		return nil, pagination.PaginationData{}, fmt.Errorf("Failed to get asset logs.")
 	}
 
 	return assets, paginatedData.Pagination, nil
@@ -1020,7 +1020,7 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 			"asset_id": data.ID,
 			"data":     data,
 		}).Error("failed to update asset: ", err)
-		return fmt.Errorf("failed to update asset")
+		return fmt.Errorf("Failed to update asset.")
 	}
 
 	return nil
@@ -1038,7 +1038,7 @@ func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 			"uid":      uid,
 			"asset_id": assetID,
 		}).Error("failed to delete asset: ", err)
-		return false, fmt.Errorf("failed to delete asset")
+		return false, fmt.Errorf("Failed to delete asset.")
 	}
 
 	return count.DeletedCount > 0, nil
@@ -1056,7 +1056,7 @@ func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
 			"to_asset":   data.ToAsset,
 			"from_asset": data.FromAsset,
 		}).Error("failed to delete asset logs by user id: ", err)
-		return fmt.Errorf("failed to delete asset logs by user")
+		return fmt.Errorf("Failed to delete asset logs by user.")
 	}
 
 	return nil
@@ -1069,7 +1069,7 @@ func DeleteAllAssetsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all assets by user id: ", err)
-		return fmt.Errorf("failed to delete all assets by user")
+		return fmt.Errorf("Failed to delete all assets by user.")
 	}
 
 	return nil

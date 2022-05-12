@@ -26,7 +26,7 @@ func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingRe
 		logrus.WithFields(logrus.Fields{
 			"type": tType,
 		}).Error("failed to aggregate investings: %w", err)
-		return nil, fmt.Errorf("failed to fetch investings")
+		return nil, fmt.Errorf("Failed to fetch investings.")
 	}
 
 	var investings []responses.InvestingResponse
@@ -34,7 +34,7 @@ func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingRe
 		logrus.WithFields(logrus.Fields{
 			"type": tType,
 		}).Error("failed to decode investings: %w", err)
-		return nil, fmt.Errorf("failed to decode investings")
+		return nil, fmt.Errorf("Failed to decode investings.")
 	}
 
 	return investings, nil
@@ -57,7 +57,7 @@ func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.In
 			logrus.WithFields(logrus.Fields{
 				"type": tType,
 			}).Error("failed to aggregate exchanges: %w", err)
-			return nil, fmt.Errorf("failed to fetch exchanges")
+			return nil, fmt.Errorf("Failed to fetch exchanges.")
 		}
 	} else {
 		match := bson.M{"$match": bson.M{
@@ -77,7 +77,7 @@ func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.In
 			logrus.WithFields(logrus.Fields{
 				"type": tType,
 			}).Error("failed to aggregate investings: %w", err)
-			return nil, fmt.Errorf("failed to fetch investings")
+			return nil, fmt.Errorf("Failed to fetch investings.")
 		}
 	}
 
@@ -86,7 +86,7 @@ func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.In
 		logrus.WithFields(logrus.Fields{
 			"type": tType,
 		}).Error("failed to decode investings: %w", err)
-		return nil, fmt.Errorf("failed to decode investings")
+		return nil, fmt.Errorf("Failed to decode investings.")
 	}
 
 	return investings, nil

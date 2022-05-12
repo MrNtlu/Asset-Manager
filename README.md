@@ -20,6 +20,7 @@
     <li> logrus
     <li> OAuth2
     <li> teambition/rrule-go
+    <li> Validator
 </ul>
 
 [Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)

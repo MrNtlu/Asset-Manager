@@ -39,5 +39,3 @@ func validatorErrorHandler(err error) string {
 	}
 	return err.Error()
 }
-
-//TODO: Base create/update/data/list/pagination response

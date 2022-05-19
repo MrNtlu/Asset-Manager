@@ -29,6 +29,21 @@ definitions:
         description: value in from asset currency
         type: number
     type: object
+  models.BankAccount:
+    properties:
+      _id:
+        type: string
+      account_holder:
+        type: string
+      currency:
+        type: string
+      iban:
+        type: string
+      name:
+        type: string
+      user_id:
+        type: string
+    type: object
   models.BillCycle:
     properties:
       day:
@@ -81,6 +96,34 @@ definitions:
         type: number
       user_id:
         type: string
+    type: object
+  models.Transaction:
+    properties:
+      _id:
+        type: string
+      category:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      method:
+        $ref: '#/definitions/models.TransactionMethod'
+      price:
+        type: number
+      title:
+        type: string
+      transaction_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  models.TransactionMethod:
+    properties:
+      method_id:
+        type: string
+      type:
+        type: integer
     type: object
   requests.AssetCreate:
     properties:
@@ -136,6 +179,37 @@ definitions:
       price:
         type: number
       type:
+        type: string
+    required:
+    - id
+    type: object
+  requests.BankAccountCreate:
+    properties:
+      account_holder:
+        type: string
+      currency:
+        type: string
+      iban:
+        type: string
+      name:
+        type: string
+    required:
+    - account_holder
+    - currency
+    - iban
+    - name
+    type: object
+  requests.BankAccountUpdate:
+    properties:
+      account_holder:
+        type: string
+      currency:
+        type: string
+      iban:
+        type: string
+      id:
+        type: string
+      name:
         type: string
     required:
     - id
@@ -302,6 +376,60 @@ definitions:
         type: string
       price:
         type: number
+    required:
+    - id
+    type: object
+  requests.TransactionCreate:
+    properties:
+      category:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      method:
+        $ref: '#/definitions/requests.TransactionMethod'
+      price:
+        type: number
+      title:
+        type: string
+      transaction_date:
+        type: string
+    required:
+    - category
+    - currency
+    - price
+    - title
+    - transaction_date
+    type: object
+  requests.TransactionMethod:
+    properties:
+      method_id:
+        type: string
+      type:
+        type: integer
+    required:
+    - method_id
+    - type
+    type: object
+  requests.TransactionUpdate:
+    properties:
+      category:
+        type: integer
+      currency:
+        type: string
+      description:
+        type: string
+      id:
+        type: string
+      method:
+        $ref: '#/definitions/requests.TransactionMethod'
+      price:
+        type: number
+      title:
+        type: string
+      transaction_date:
+        type: string
     required:
     - id
     type: object
@@ -540,6 +668,8 @@ definitions:
         type: string
       investing_limit:
         type: string
+      is_lifetime_premium:
+        type: boolean
       is_premium:
         type: boolean
       subscription_limit:
@@ -592,7 +722,7 @@ paths:
       parameters:
       - enum:
         - name
-        - type
+        - percentage
         - amount
         - profit
         in: query
@@ -1013,6 +1143,174 @@ paths:
       summary: User Registration
       tags:
       - auth
+  /ba:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes bank account by id
+      parameters:
+      - description: ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete bank account by bank account id
+      tags:
+      - bankaccount
+    get:
+      consumes:
+      - application/json
+      description: Returns bank accounts by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.BankAccount'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Bank Accounts by User ID
+      tags:
+      - bankaccount
+    post:
+      consumes:
+      - application/json
+      description: Creates bank account
+      parameters:
+      - description: Bank Account Create
+        in: body
+        name: bankaccount
+        required: true
+        schema:
+          $ref: '#/definitions/requests.BankAccountCreate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.BankAccount'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create BankAccount
+      tags:
+      - bankaccount
+    put:
+      consumes:
+      - application/json
+      description: Updates bank account
+      parameters:
+      - description: BankAccount Update
+        in: body
+        name: bankaccountupdate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.BankAccountUpdate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.BankAccount'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Unauthorized update
+          schema:
+            type: string
+        "404":
+          description: Couldn't find user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update Bank Account
+      tags:
+      - bankaccount
+  /ba/all:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all bank accounts by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete all bank accounts by user id
+      tags:
+      - bankaccount
   /callback:
     get:
       consumes:
@@ -1635,6 +1933,174 @@ paths:
       summary: Get Subscription Statistics by User ID
       tags:
       - subscription
+  /transaction:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes transaction by id
+      parameters:
+      - description: ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete transaction by transaction id
+      tags:
+      - transaction
+    get:
+      consumes:
+      - application/json
+      description: Returns transactions by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Transaction'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Transactions by User ID
+      tags:
+      - transaction
+    post:
+      consumes:
+      - application/json
+      description: Creates transaction
+      parameters:
+      - description: Transaction Create
+        in: body
+        name: transaction
+        required: true
+        schema:
+          $ref: '#/definitions/requests.TransactionCreate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/models.Transaction'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Transaction
+      tags:
+      - transaction
+    put:
+      consumes:
+      - application/json
+      description: Updates transaction
+      parameters:
+      - description: Transaction Update
+        in: body
+        name: transactionupdate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.TransactionUpdate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/models.Transaction'
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Unauthorized update
+          schema:
+            type: string
+        "404":
+          description: Couldn't find user
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Update Transaction
+      tags:
+      - transaction
+  /transaction/all:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes all transaction by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete all transaction by user id
+      tags:
+      - transaction
   /user:
     delete:
       consumes:

@@ -23,6 +23,10 @@ import (
 *	- Max 5 subscription
 * *Card
 *	- Max 3 cards
+* *Bank Account
+*	- Max 2 bank accounts
+* *Transactions
+*	- TODO: Set rule
 **/
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`

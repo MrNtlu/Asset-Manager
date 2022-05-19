@@ -63,7 +63,7 @@ func GetUserCardCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to count user cards: ", err)
-		return 5
+		return 3
 	}
 
 	return count

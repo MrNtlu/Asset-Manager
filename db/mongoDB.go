@@ -13,6 +13,8 @@ var (
 	AssetCollection          *mongo.Collection
 	SubscriptionCollection   *mongo.Collection
 	CardCollection           *mongo.Collection
+	BankAccountCollection    *mongo.Collection
+	TransactionCollection    *mongo.Collection
 	UserCollection           *mongo.Collection
 	InvestingCollection      *mongo.Collection
 	ExchangeCollection       *mongo.Collection
@@ -42,6 +44,8 @@ func Connect(uri string) (*mongo.Client, context.Context,
 	AssetCollection = Database.Collection("assets")
 	SubscriptionCollection = Database.Collection("subscriptions")
 	CardCollection = Database.Collection("cards")
+	BankAccountCollection = Database.Collection("bank-accounts")
+	TransactionCollection = Database.Collection("transactions")
 	UserCollection = Database.Collection("users")
 	InvestingCollection = Database.Collection("investings")
 	ExchangeCollection = Database.Collection("exchanges")

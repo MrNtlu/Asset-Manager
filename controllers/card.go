@@ -202,6 +202,7 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 	if isDeleted {
 		go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
+		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.CreditCard)
 		c.JSON(http.StatusOK, gin.H{"message": "Card deleted successfully."})
 
 		return
@@ -231,6 +232,7 @@ func (cc *CardController) DeleteAllCardsByUserID(c *gin.Context) {
 	}
 
 	go models.UpdateSubscriptionCardIDToNull(uid, nil)
+	go models.UpdateTransactionMethodIDToNull(uid, nil, models.CreditCard)
 	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 	c.JSON(http.StatusOK, gin.H{"message": "Cards deleted successfully by user id."})
 }

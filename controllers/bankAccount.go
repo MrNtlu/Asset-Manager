@@ -168,7 +168,7 @@ func (ba *BankAccountController) DeleteBankAccountByBAID(c *gin.Context) {
 
 	if isDeleted {
 		go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
-		//TODO: updatetransactionsbankaccountidtonull implement
+		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.BankAcc)
 		c.JSON(http.StatusOK, gin.H{"message": "Bank account deleted successfully."})
 
 		return
@@ -197,7 +197,7 @@ func (ba *BankAccountController) DeleteAllBankAccountsByUserID(c *gin.Context) {
 		return
 	}
 
-	//TODO: updatetransactionsbankaccountidtonull implement
+	go models.UpdateTransactionMethodIDToNull(uid, nil, models.BankAcc)
 	go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
 	c.JSON(http.StatusOK, gin.H{"message": "Bank accounts deleted successfully by user id."})
 }

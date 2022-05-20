@@ -90,6 +90,39 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdTransaction})
 }
 
+// Transaction Calendar Count
+// @Summary Get Number of Transactions per Day for Calendar
+// @Description Returns number of transactions by year and month
+// @Tags transaction
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {array} responses.TransactionCalendarCount
+// @Failure 500 {string} string
+// @Router /transaction/calendar [get]
+func (t *TransactionController) GetCalendarTransactionCount(c *gin.Context) {
+	var data requests.TransactionCalendar
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionCalendarCounts, err := models.GetCalendarTransactionCount(uid, data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionCalendarCounts})
+}
+
 // Transaction By User ID
 // @Summary Get Transactions by User ID
 // @Description Returns transactions by user id
@@ -101,9 +134,26 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 // @Success 200 {array} models.Transaction
 // @Failure 500 {string} string
 // @Router /transaction [get]
-func (t *TransactionController) GetTransactionsByUserID(c *gin.Context) {
+func (t *TransactionController) GetTransactionsByUserIDAndFilterSort(c *gin.Context) {
+	var data requests.TransactionSortFilter
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	if (data.StartDate != nil && data.EndDate == nil) || (data.StartDate == nil && data.EndDate != nil) {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Please select date range correctly.",
+		})
+
+		return
+	}
+
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	transactions, err := models.GetTransactionsByUserID(uid)
+	transactions, pagination, err := models.GetTransactionsByUserIDAndFilterSort(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -111,7 +161,7 @@ func (t *TransactionController) GetTransactionsByUserID(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactions})
+	c.JSON(http.StatusOK, gin.H{"data": transactions, "pagination": pagination})
 }
 
 // Update Transaction

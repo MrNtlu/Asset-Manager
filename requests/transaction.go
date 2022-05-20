@@ -27,3 +27,19 @@ type TransactionUpdate struct {
 	TransactionMethod *TransactionMethod `json:"method"`
 	TransactionDate   *time.Time         `json:"transaction_date"`
 }
+
+type TransactionCalendar struct {
+	Month int `form:"month" binding:"required"`
+	Year  int `form:"year" binding:"required"`
+}
+
+type TransactionSortFilter struct {
+	Category  *int       `form:"category"`
+	StartDate *time.Time `form:"start_date" time_format:"2006-01-02"`
+	EndDate   *time.Time `form:"end_date" time_format:"2006-01-02"`
+	BankAccID *string    `form:"bank_id"`
+	CardID    *string    `form:"card_id"`
+	Page      int64      `form:"page" binding:"required,number,min=1"`
+	Sort      string     `form:"sort" binding:"required,oneof=price date"`
+	SortType  int        `form:"type" json:"type" binding:"required,oneof=1 -1"`
+}

@@ -967,8 +967,10 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 		"user_id":      uid,
 	}
 
-	var sortType string
-	var sortOrder int8
+	var (
+		sortType  string
+		sortOrder int8
+	)
 	if data.Sort == "newest" {
 		sortType = "created_at"
 		sortOrder = -1

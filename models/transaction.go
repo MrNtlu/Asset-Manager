@@ -3,10 +3,12 @@ package models
 import (
 	"asset_backend/db"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"context"
 	"fmt"
 	"time"
 
+	pagination "github.com/gobeam/mongo-go-pagination"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -120,9 +122,107 @@ func GetTransactionByID(transactionID string) (Transaction, error) {
 	return transaction, nil
 }
 
-//TODO: GET Transaction by uid, date && pagination
-func GetTransactionsByUserID(uid string) ([]Transaction, error) {
-	return nil, nil
+func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) ([]responses.TransactionCalendarCount, error) {
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+		"$expr": bson.M{
+			"$and": bson.A{
+				bson.M{
+					"$eq": bson.A{
+						bson.M{"$month": "$transaction_date"},
+						data.Month,
+					},
+				},
+				bson.M{
+					"$eq": bson.A{
+						bson.M{"$year": "$transaction_date"},
+						data.Year,
+					},
+				},
+			},
+		},
+	}}
+
+	group := bson.M{"$group": bson.M{
+		"_id": "$transaction_date",
+		"count": bson.M{
+			"$sum": 1,
+		},
+	}}
+
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, group})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"data": data,
+		}).Error("failed to aggregate transactions while counting: ", err)
+		return nil, fmt.Errorf("Failed to aggregate transactions while counting.")
+	}
+
+	var transactionCalendarCounts []responses.TransactionCalendarCount
+	if err = cursor.All(context.TODO(), &transactionCalendarCounts); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode transaction calendar count: ", err)
+		return nil, fmt.Errorf("Failed to decode transaction calendar count.")
+	}
+
+	return transactionCalendarCounts, nil
+}
+
+func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
+	match := bson.M{}
+	if data.BankAccID != nil {
+		match["method.type"] = BankAcc
+		match["method.method_id"] = *data.BankAccID
+	} else if data.CardID != nil {
+		match["method.type"] = CreditCard
+		match["method.method_id"] = *data.CardID
+	}
+
+	if data.Category != nil {
+		match["category"] = *data.Category
+	}
+
+	if data.StartDate != nil && data.EndDate != nil {
+		match["$and"] = bson.A{
+			bson.M{
+				"transaction_date": bson.M{
+					"$gte": data.StartDate,
+				},
+			},
+			bson.M{
+				"transaction_date": bson.M{
+					"$lte": data.EndDate,
+				},
+			},
+		}
+	}
+
+	var (
+		sortType  int
+		sortOrder string
+	)
+	if data.Sort == "date" {
+		sortOrder = "transaction_date"
+		sortType = data.SortType
+	} else {
+		sortOrder = data.Sort
+		sortType = data.SortType
+	}
+
+	var transactions []Transaction
+	paginatedData, err := pagination.New(db.TransactionCollection).Context(context.TODO()).
+		Limit(25).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"data": data,
+		}).Error("failed to find transaction: ", err)
+		return nil, pagination.PaginationData{}, fmt.Errorf("Failed to find transaction.")
+	}
+
+	return transactions, paginatedData.Pagination, nil
 }
 
 func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction) (Transaction, error) {
@@ -167,6 +267,28 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 	}
 
 	return transaction, nil
+}
+
+func UpdateTransactionMethodIDToNull(uid string, id *string, methodType int64) {
+	var match bson.M
+	if id != nil {
+		match = bson.M{
+			"method.method_id": id,
+			"method.type":      methodType,
+			"user_id":          uid,
+		}
+	} else {
+		match = bson.M{
+			"user_id": uid,
+		}
+	}
+
+	if _, err := db.TransactionCollection.UpdateMany(context.TODO(), match,
+		bson.M{"$set": bson.M{
+			"method": nil,
+		}}); err != nil {
+		return
+	}
 }
 
 func DeleteTransactionByTransactionID(uid, transactionID string) (bool, error) {

@@ -26,7 +26,7 @@ import (
 * *Bank Account
 *	- Max 2 bank accounts
 * *Transactions
-*	- TODO: Set rule
+*	- Max 10 per day
 **/
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
@@ -138,7 +138,7 @@ func IsUserPremium(uid string) bool {
 		return false
 	}
 
-	return isUserPremium.IsPremium
+	return isUserPremium.IsPremium || isUserPremium.IsLifetimePremium
 }
 
 func FindUserByID(uid string) (User, error) {

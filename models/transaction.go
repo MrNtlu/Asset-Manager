@@ -101,9 +101,38 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 	return *transaction, nil
 }
 
-func GetUserTransactionCountByTime(uid string) int64 {
-	//TODO: Implement
-	return 10
+func GetUserTransactionCountByTime(uid string, date time.Time) int64 {
+	count, err := db.TransactionCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid, "$expr": bson.M{
+		"$and": bson.A{
+			bson.M{
+				"$eq": bson.A{
+					bson.M{"$month": "$transaction_date"},
+					int(date.Month()),
+				},
+			},
+			bson.M{
+				"$eq": bson.A{
+					bson.M{"$year": "$transaction_date"},
+					date.Year(),
+				},
+			},
+			bson.M{
+				"$eq": bson.A{
+					bson.M{"$dayOfMonth": "$transaction_date"},
+					date.Day(),
+				},
+			},
+		},
+	}})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"date": date,
+		}).Error("failed to count transactions by date: ", err)
+		return 10
+	}
+
+	return count
 }
 
 func GetTransactionByID(transactionID string) (Transaction, error) {
@@ -213,7 +242,7 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 
 	var transactions []Transaction
 	paginatedData, err := pagination.New(db.TransactionCollection).Context(context.TODO()).
-		Limit(25).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
+		Limit(20).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,

@@ -24,12 +24,6 @@ type BankAccount struct {
 	CreatedAt     time.Time          `bson:"created_at" json:"-"`
 }
 
-/*TODO:
-Stats:
-	Total paid this month (transactions)
-	Total expenses
-*/
-
 func createBankAccount(uid, name, iban, accoutHolder, currency string) *BankAccount {
 	return &BankAccount{
 		UserID:        uid,

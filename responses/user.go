@@ -1,7 +1,8 @@
 package responses
 
 type IsUserPremium struct {
-	IsPremium bool `bson:"is_premium" json:"is_premium"`
+	IsPremium         bool `bson:"is_premium" json:"is_premium"`
+	IsLifetimePremium bool `bson:"is_lifetime_premium" json:"is_lifetime_premium"`
 }
 
 type UserInfo struct {

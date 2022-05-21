@@ -14,10 +14,8 @@ import (
 type TransactionController struct{}
 
 var (
-	//TODO: Limit per day (by transaction date)
-	//TODO: Also check on update
 	errTransactionMethodUnauthorized = "Unauthorized method access. You're not authorized for this method."
-	errTransactionPremium            = "Free members can add up to x transactions per day, you can get premium membership for unlimited access."
+	errTransactionPremium            = "Free members can add up to 10 transactions per day, you can get premium membership for unlimited access."
 	errNoTransaction                 = "Couldn't find transaction."
 )
 
@@ -41,8 +39,13 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	// isPremium := models.IsUserPremium(uid)
-	//TODO: Add premium check
+	isPremium := models.IsUserPremium(uid)
+	if !isPremium && models.GetUserTransactionCountByTime(uid, data.TransactionDate) >= 10 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errTransactionPremium,
+		})
+		return
+	}
 
 	switch *data.TransactionMethod.Type {
 	case 0:
@@ -200,6 +203,14 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	if uid != transaction.UserID {
 		c.JSON(http.StatusForbidden, gin.H{"error": ErrUnauthorized})
+		return
+	}
+
+	isPremium := models.IsUserPremium(uid)
+	if data.TransactionDate != nil && !isPremium && models.GetUserTransactionCountByTime(uid, *data.TransactionDate) >= 10 {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errTransactionPremium,
+		})
 		return
 	}
 

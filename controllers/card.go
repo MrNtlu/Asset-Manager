@@ -4,6 +4,7 @@ import (
 	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"context"
 	"net/http"
 
@@ -109,12 +110,29 @@ func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	cardStats, err := models.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
+	cardSubscriptionStats, err := models.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
+	}
+
+	var tType int64 = 1
+	cardTransactionStats, err := models.GetMethodStatistics(uid, requests.TransactionMethod{
+		MethodID: data.ID,
+		Type:     &tType,
+	})
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	var cardStats = responses.CardStats{
+		SubscriptionStats: cardSubscriptionStats,
+		TransactionStats:  cardTransactionStats,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cardStats})

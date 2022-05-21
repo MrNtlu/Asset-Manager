@@ -13,5 +13,6 @@ func bankAccountRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) 
 		bankAccount.POST("", bankAccountController.CreateBankAccount)
 		bankAccount.PUT("", bankAccountController.UpdateBankAccount)
 		bankAccount.GET("", bankAccountController.GetBankAccountsByUserID)
+		bankAccount.GET("/stats", bankAccountController.GetBankAccountStatistics)
 	}
 }

@@ -87,6 +87,39 @@ func (ba *BankAccountController) GetBankAccountsByUserID(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": bankAccounts})
 }
 
+// BankAccounts Stats
+// @Summary Get Bank Accounts Stats
+// @Description Returns bank accounts stats
+// @Tags bankaccount
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.TransactionTotal
+// @Failure 500 {string} string
+// @Router /ba/stats [get]
+func (ba *BankAccountController) GetBankAccountStatistics(c *gin.Context) {
+	var data requests.TransactionMethod
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	bankAccountStats, err := models.GetMethodStatistics(uid, data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": bankAccountStats})
+}
+
 // Update BankAccount
 // @Summary Update Bank Account
 // @Description Updates bank account

@@ -101,6 +101,348 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 	return *transaction, nil
 }
 
+func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInterval) (responses.TransactionTotal, error) {
+	var match bson.M
+	if data.Interval == "day" {
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$dayOfMonth": "$transaction_date"},
+							data.TransactionDate.Day(),
+						},
+					},
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$month": "$transaction_date"},
+							int(data.TransactionDate.Month()),
+						},
+					},
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$year": "$transaction_date"},
+							data.TransactionDate.Year(),
+						},
+					},
+				},
+			},
+		}}
+	} else {
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$month": "$transaction_date"},
+							int(data.TransactionDate.Month()),
+						},
+					},
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$year": "$transaction_date"},
+							data.TransactionDate.Year(),
+						},
+					},
+				},
+			},
+		}}
+	}
+	uidToObject := bson.M{"$addFields": bson.M{
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
+	}}
+	userLookup := bson.M{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "user_id",
+		"foreignField": "_id",
+		"as":           "user",
+	}}
+	unwindUser := bson.M{"$unwind": bson.M{
+		"path":                       "$user",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "exchanges",
+		"let": bson.M{
+			"user_currency":        "$user.currency",
+			"transaction_currency": "$currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$ne": bson.A{"$$transaction_currency", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "TRY"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "user_exchange_rate",
+	}}
+	unwindUserCurrency := bson.M{"$unwind": bson.M{
+		"path":                       "$user_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	addExhangeValue := bson.M{"$addFields": bson.M{
+		"value": bson.M{
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+				},
+				"$price",
+			},
+		},
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": "$user_id",
+		"currency": bson.M{
+			"$first": "$user.currency",
+		},
+		"total_transaction": bson.M{
+			"$sum": "$value",
+		},
+	}}
+
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to aggregate total transactions: ", err)
+		return responses.TransactionTotal{}, fmt.Errorf("Failed to aggregate total transactions.")
+	}
+
+	var totalTransaction []responses.TransactionTotal
+	if err = cursor.All(context.TODO(), &totalTransaction); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode total transactions: ", err)
+		return responses.TransactionTotal{}, fmt.Errorf("Failed to decode total transactions.")
+	}
+
+	if len(totalTransaction) > 0 {
+		return totalTransaction[0], nil
+	}
+
+	return responses.TransactionTotal{}, nil
+}
+
+func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses.TransactionTotal, error) {
+	match := bson.M{"$match": bson.M{
+		"method.type":      data.Type,
+		"method.method_id": data.MethodID,
+	}}
+	uidToObject := bson.M{"$addFields": bson.M{
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
+	}}
+	userLookup := bson.M{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "user_id",
+		"foreignField": "_id",
+		"as":           "user",
+	}}
+	unwindUser := bson.M{"$unwind": bson.M{
+		"path":                       "$user",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "exchanges",
+		"let": bson.M{
+			"user_currency":        "$user.currency",
+			"transaction_currency": "$currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$ne": bson.A{"$$transaction_currency", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "TRY"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "user_exchange_rate",
+	}}
+	unwindUserCurrency := bson.M{"$unwind": bson.M{
+		"path":                       "$user_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	addExhangeValue := bson.M{"$addFields": bson.M{
+		"value": bson.M{
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+				},
+				"$price",
+			},
+		},
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": "$user_id",
+		"currency": bson.M{
+			"$first": "$user.currency",
+		},
+		"total_transaction": bson.M{
+			"$sum": "$value",
+		},
+	}}
+
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"data": data,
+		}).Error("failed to aggregate transactions: ", err)
+		return responses.TransactionTotal{}, fmt.Errorf("Failed to aggregate transactions.")
+	}
+
+	var totalTransaction []responses.TransactionTotal
+	if err = cursor.All(context.TODO(), &totalTransaction); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":  uid,
+			"data": data,
+		}).Error("failed to decode transactions: ", err)
+		return responses.TransactionTotal{}, fmt.Errorf("Failed to decode transactions.")
+	}
+
+	if len(totalTransaction) > 0 {
+		return totalTransaction[0], nil
+	}
+
+	return responses.TransactionTotal{}, nil
+}
+
+func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionStats, error) {
+	var intervalDate time.Time
+	switch data.Interval {
+	case "weekly":
+		intervalDate = time.Now().AddDate(0, 0, -7)
+	case "monthly":
+		intervalDate = time.Now().AddDate(0, -1, 0)
+	}
+
+	match := bson.M{"$match": bson.M{
+		"user_id": uid,
+		"transaction_date": bson.M{
+			"$gte": intervalDate,
+		},
+	}}
+	addFields := bson.M{"$addFields": bson.M{
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
+		"transaction_date": bson.M{
+			"$toDate": bson.M{
+				"$dateToString": bson.M{
+					"format": "%Y-%m-%d",
+					"date":   "$transaction_date",
+				},
+			},
+		},
+	}}
+	userLookup := bson.M{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "user_id",
+		"foreignField": "_id",
+		"as":           "user",
+	}}
+	unwindUser := bson.M{"$unwind": bson.M{
+		"path":                       "$user",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "exchanges",
+		"let": bson.M{
+			"user_currency":        "$user.currency",
+			"transaction_currency": "$currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$ne": bson.A{"$$transaction_currency", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "TRY"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "user_exchange_rate",
+	}}
+	unwindUserCurrency := bson.M{"$unwind": bson.M{
+		"path":                       "$user_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	addExhangeValue := bson.M{"$addFields": bson.M{
+		"value": bson.M{
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+				},
+				"$price",
+			},
+		},
+	}}
+	group := bson.M{"$group": bson.M{
+		"_id": "$transaction_date",
+		"currency": bson.M{
+			"$first": "$user.currency",
+		},
+		"total_transaction": bson.M{
+			"$sum": "$value",
+		},
+		"date": bson.M{
+			"$first": "$transaction_date",
+		},
+	}}
+	sort := bson.M{"$sort": bson.M{
+		"_id": 1,
+	}}
+
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+		match, addFields, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group, sort,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to aggregate transaction statistics: ", err)
+		return nil, fmt.Errorf("Failed to aggregate transaction statistics: %w", err)
+	}
+
+	var transactionStats []responses.TransactionStats
+	if err = cursor.All(context.TODO(), &transactionStats); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to decode transaction statistics: ", err)
+		return nil, fmt.Errorf("Failed to decode transaction statistics: %w", err)
+	}
+
+	return transactionStats, nil
+}
+
 func GetUserTransactionCountByTime(uid string, date time.Time) int64 {
 	count, err := db.TransactionCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid, "$expr": bson.M{
 		"$and": bson.A{

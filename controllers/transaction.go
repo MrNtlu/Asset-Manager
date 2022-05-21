@@ -93,6 +93,72 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdTransaction})
 }
 
+// Total Transaction By Interval
+// @Summary Get Total Transaction Value by Interval
+// @Description Returns total transaction value by interval
+// @Tags transaction
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {object} responses.TransactionTotal
+// @Failure 500 {string} string
+// @Router /transaction/total [get]
+func (t *TransactionController) GetTotalTransactionByInterval(c *gin.Context) {
+	var data requests.TransactionTotalInterval
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionTotal, err := models.GetTotalTransactionByInterval(uid, data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionTotal})
+}
+
+// Transaction Statistics
+// @Summary Get Transaction Statistics by Interval
+// @Description Returns transaction statistics by interval
+// @Tags transaction
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {array} responses.TransactionStats
+// @Failure 500 {string} string
+// @Router /transaction/stats [get]
+func (t *TransactionController) GetTransactionStats(c *gin.Context) {
+	var data requests.TransactionStatsInterval
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionStats, err := models.GetTransactionStats(uid, data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionStats})
+}
+
 // Transaction Calendar Count
 // @Summary Get Number of Transactions per Day for Calendar
 // @Description Returns number of transactions by year and month

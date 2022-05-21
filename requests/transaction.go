@@ -13,8 +13,8 @@ type TransactionCreate struct {
 }
 
 type TransactionMethod struct {
-	MethodID string `json:"method_id" binding:"required"`
-	Type     *int64 `json:"type" binding:"required"`
+	MethodID string `json:"method_id" form:"method_id" binding:"required"`
+	Type     *int64 `json:"type" form:"type" binding:"required"`
 }
 
 type TransactionUpdate struct {
@@ -42,4 +42,13 @@ type TransactionSortFilter struct {
 	Page      int64      `form:"page" binding:"required,number,min=1"`
 	Sort      string     `form:"sort" binding:"required,oneof=price date"`
 	SortType  int        `form:"type" json:"type" binding:"required,oneof=1 -1"`
+}
+
+type TransactionTotalInterval struct {
+	Interval        string    `form:"interval" binding:"required,oneof=day month"`
+	TransactionDate time.Time `form:"transaction_date" binding:"required" time_format:"2006-01-02"`
+}
+
+type TransactionStatsInterval struct {
+	Interval string `form:"interval" binding:"required,oneof=weekly monthly"`
 }

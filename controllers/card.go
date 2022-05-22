@@ -96,7 +96,7 @@ func (cc *CardController) GetCardsByUserID(c *gin.Context) {
 // @Produce application/json
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
-// @Success 200 {array} responses.CardStatistics
+// @Success 200 {array} responses.CardStats
 // @Failure 500 {string} string
 // @Router /card/stats [get]
 func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {

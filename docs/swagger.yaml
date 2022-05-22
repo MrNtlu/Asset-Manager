@@ -540,7 +540,14 @@ definitions:
       year:
         type: integer
     type: object
-  responses.CardStatistics:
+  responses.CardStats:
+    properties:
+      subscription_stats:
+        $ref: '#/definitions/responses.CardSubscriptionStatistics'
+      transaction_stats:
+        $ref: '#/definitions/responses.TransactionTotal'
+    type: object
+  responses.CardSubscriptionStatistics:
     properties:
       currency:
         type: string
@@ -658,6 +665,29 @@ definitions:
       total_monthly_payment:
         type: number
       total_payment:
+        type: number
+    type: object
+  responses.TransactionCalendarCount:
+    properties:
+      _id:
+        type: string
+      count:
+        type: integer
+    type: object
+  responses.TransactionStats:
+    properties:
+      currency:
+        type: string
+      date:
+        type: string
+      total_transaction:
+        type: number
+    type: object
+  responses.TransactionTotal:
+    properties:
+      currency:
+        type: string
+      total_transaction:
         type: number
     type: object
   responses.UserInfo:
@@ -1311,6 +1341,33 @@ paths:
       summary: Delete all bank accounts by user id
       tags:
       - bankaccount
+  /ba/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns bank accounts stats
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.TransactionTotal'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Bank Accounts Stats
+      tags:
+      - bankaccount
   /callback:
     get:
       consumes:
@@ -1516,7 +1573,7 @@ paths:
           description: OK
           schema:
             items:
-              $ref: '#/definitions/responses.CardStatistics'
+              $ref: '#/definitions/responses.CardStats'
             type: array
         "500":
           description: Internal Server Error
@@ -2099,6 +2156,91 @@ paths:
       security:
       - BearerAuth: []
       summary: Delete all transaction by user id
+      tags:
+      - transaction
+  /transaction/calendar:
+    get:
+      consumes:
+      - application/json
+      description: Returns number of transactions by year and month
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.TransactionCalendarCount'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Number of Transactions per Day for Calendar
+      tags:
+      - transaction
+  /transaction/stats:
+    get:
+      consumes:
+      - application/json
+      description: Returns transaction statistics by interval
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.TransactionStats'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Transaction Statistics by Interval
+      tags:
+      - transaction
+  /transaction/total:
+    get:
+      consumes:
+      - application/json
+      description: Returns total transaction value by interval
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/responses.TransactionTotal'
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Total Transaction Value by Interval
       tags:
       - transaction
   /user:

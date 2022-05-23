@@ -9,6 +9,7 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type BankAccountController struct{}
@@ -57,8 +58,7 @@ func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
 		})
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
+	ba.clearCache(uid)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdBankAccount})
 }
@@ -76,12 +76,25 @@ func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
 // @Router /ba [get]
 func (ba *BankAccountController) GetBankAccountsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	bankAccounts, err := models.GetBankAccountsByUserID(uid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
+	var (
+		cacheKey     = "ba/" + uid
+		bankAccounts []models.BankAccount
+	)
+
+	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+	if err != nil || result == "" {
+		bankAccounts, err = models.GetBankAccountsByUserID(uid)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		marshalBankAccounts, _ := msgpack.Marshal(bankAccounts)
+		go db.RedisDB.Set(context.TODO(), cacheKey, marshalBankAccounts, db.RedisLExpire)
+	} else {
+		msgpack.Unmarshal([]byte(result), &bankAccounts)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": bankAccounts})
@@ -166,8 +179,7 @@ func (ba *BankAccountController) UpdateBankAccount(c *gin.Context) {
 		})
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
+	ba.clearCache(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Bank account updated.", "data": updatedBankAccount})
 }
@@ -200,7 +212,7 @@ func (ba *BankAccountController) DeleteBankAccountByBAID(c *gin.Context) {
 	}
 
 	if isDeleted {
-		go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
+		ba.clearCache(uid)
 		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.BankAcc)
 		c.JSON(http.StatusOK, gin.H{"message": "Bank account deleted successfully."})
 
@@ -231,6 +243,10 @@ func (ba *BankAccountController) DeleteAllBankAccountsByUserID(c *gin.Context) {
 	}
 
 	go models.UpdateTransactionMethodIDToNull(uid, nil, models.BankAcc)
-	go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
+	ba.clearCache(uid)
 	c.JSON(http.StatusOK, gin.H{"message": "Bank accounts deleted successfully by user id."})
+}
+
+func (ba *BankAccountController) clearCache(uid string) {
+	go db.RedisDB.Del(context.TODO(), ("ba/" + uid))
 }

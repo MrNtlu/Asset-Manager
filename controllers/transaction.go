@@ -1,10 +1,8 @@
 package controllers
 
 import (
-	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
-	"context"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -87,8 +85,6 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		})
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("transaction/" + uid))
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdTransaction})
 }
@@ -319,8 +315,6 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("transaction/" + uid))
-
 	c.JSON(http.StatusOK, gin.H{"message": "Transaction updated.", "data": updatedTransaction})
 }
 
@@ -352,7 +346,6 @@ func (t *TransactionController) DeleteTransactionByTransactionID(c *gin.Context)
 	}
 
 	if isDeleted {
-		go db.RedisDB.Del(context.TODO(), ("transaction/" + uid))
 		c.JSON(http.StatusOK, gin.H{"message": "Transaction deleted successfully."})
 		return
 	}
@@ -380,6 +373,5 @@ func (t *TransactionController) DeleteAllTransactionsByUserID(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("transaction/" + uid))
 	c.JSON(http.StatusOK, gin.H{"message": "Transactions deleted successfully by user id."})
 }

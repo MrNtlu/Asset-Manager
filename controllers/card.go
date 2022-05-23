@@ -10,6 +10,7 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/vmihailenco/msgpack/v5"
 )
 
 type CardController struct{}
@@ -58,8 +59,7 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 		})
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
+	cc.clearCache(uid)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdCard})
 }
@@ -77,12 +77,25 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 // @Router /card [get]
 func (cc *CardController) GetCardsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	cards, err := models.GetCardsByUserID(uid)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
+	var (
+		cacheKey = "card/" + uid
+		cards    []models.Card
+	)
+
+	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
+	if err != nil || result == "" {
+		cards, err = models.GetCardsByUserID(uid)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		marshalCards, _ := msgpack.Marshal(cards)
+		go db.RedisDB.Set(context.TODO(), cacheKey, marshalCards, db.RedisLExpire)
+	} else {
+		msgpack.Unmarshal([]byte(result), &cards)
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cards})
@@ -184,8 +197,7 @@ func (cc *CardController) UpdateCard(c *gin.Context) {
 		})
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
+	cc.clearCache(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Card updated.", "data": updatedCard})
 }
@@ -218,7 +230,7 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 	}
 
 	if isDeleted {
-		go db.RedisDB.Del(context.TODO(), ("card/" + uid))
+		cc.clearCache(uid)
 		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
 		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.CreditCard)
 		c.JSON(http.StatusOK, gin.H{"message": "Card deleted successfully."})
@@ -251,6 +263,10 @@ func (cc *CardController) DeleteAllCardsByUserID(c *gin.Context) {
 
 	go models.UpdateSubscriptionCardIDToNull(uid, nil)
 	go models.UpdateTransactionMethodIDToNull(uid, nil, models.CreditCard)
-	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
+	cc.clearCache(uid)
 	c.JSON(http.StatusOK, gin.H{"message": "Cards deleted successfully by user id."})
+}
+
+func (cc *CardController) clearCache(uid string) {
+	go db.RedisDB.Del(context.TODO(), ("card/" + uid))
 }

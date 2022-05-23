@@ -362,6 +362,8 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	go models.DeleteAllSubscriptionsByUserID(uid)
 	go models.DeleteAllAssetStatsByUserID(uid)
 	go models.DeleteAllLogsByUserID(uid)
+	go models.DeleteAllTransactionsByUserID(uid)
+	go models.DeleteAllBankAccountsByUserID(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully deleted user."})
 }

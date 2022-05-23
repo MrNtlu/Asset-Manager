@@ -513,7 +513,14 @@ func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) 
 			},
 		},
 	}}
-
+	set := bson.M{"$set": bson.M{
+		"transaction_date": bson.M{
+			"$dateTrunc": bson.M{
+				"date": "$transaction_date",
+				"unit": "day",
+			},
+		},
+	}}
 	group := bson.M{"$group": bson.M{
 		"_id": "$transaction_date",
 		"count": bson.M{
@@ -521,7 +528,7 @@ func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) 
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, group})
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, set, group})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
@@ -565,6 +572,31 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 			bson.M{
 				"transaction_date": bson.M{
 					"$lte": data.EndDate,
+				},
+			},
+		}
+	}
+
+	if data.StartDate != nil && data.EndDate == nil {
+		match["$expr"] = bson.M{
+			"$and": bson.A{
+				bson.M{
+					"$eq": bson.A{
+						bson.M{"$month": "$transaction_date"},
+						int(data.StartDate.Month()),
+					},
+				},
+				bson.M{
+					"$eq": bson.A{
+						bson.M{"$year": "$transaction_date"},
+						data.StartDate.Year(),
+					},
+				},
+				bson.M{
+					"$eq": bson.A{
+						bson.M{"$dayOfMonth": "$transaction_date"},
+						data.StartDate.Day(),
+					},
 				},
 			},
 		}

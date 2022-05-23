@@ -209,14 +209,6 @@ func (t *TransactionController) GetTransactionsByUserIDAndFilterSort(c *gin.Cont
 		return
 	}
 
-	if (data.StartDate != nil && data.EndDate == nil) || (data.StartDate == nil && data.EndDate != nil) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Please select date range correctly.",
-		})
-
-		return
-	}
-
 	uid := jwt.ExtractClaims(c)["id"].(string)
 	transactions, pagination, err := models.GetTransactionsByUserIDAndFilterSort(uid, data)
 	if err != nil {

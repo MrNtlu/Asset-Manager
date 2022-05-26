@@ -550,6 +550,7 @@ func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) 
 
 func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
 	match := bson.M{}
+	match["user_id"] = uid
 	if data.BankAccID != nil {
 		match["method.type"] = BankAcc
 		match["method.method_id"] = *data.BankAccID

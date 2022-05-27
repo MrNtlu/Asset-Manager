@@ -551,7 +551,18 @@ func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) 
 func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
 	match := bson.M{}
 	match["user_id"] = uid
-	if data.BankAccID != nil {
+	if data.BankAccID != nil && data.CardID != nil {
+		match["$or"] = bson.A{
+			bson.M{
+				"method.type":      BankAcc,
+				"method.method_id": data.BankAccID,
+			},
+			bson.M{
+				"method.type":      CreditCard,
+				"method.method_id": data.CardID,
+			},
+		}
+	} else if data.BankAccID != nil {
 		match["method.type"] = BankAcc
 		match["method.method_id"] = *data.BankAccID
 	} else if data.CardID != nil {
@@ -572,7 +583,12 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 			},
 			bson.M{
 				"transaction_date": bson.M{
-					"$lte": data.EndDate,
+					"$lte": time.Date(
+						data.EndDate.Year(),
+						data.EndDate.Month(),
+						data.EndDate.Day(),
+						23, 59, 59, 0, time.UTC,
+					),
 				},
 			},
 		}

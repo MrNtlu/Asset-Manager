@@ -18,14 +18,15 @@ type TransactionMethod struct {
 }
 
 type TransactionUpdate struct {
-	ID                string             `json:"id" binding:"required"`
-	Title             *string            `json:"title"`
-	Description       *string            `json:"description"`
-	Category          *int64             `json:"category"`
-	Price             *float64           `json:"price"`
-	Currency          *string            `json:"currency"`
-	TransactionMethod *TransactionMethod `json:"method"`
-	TransactionDate   *time.Time         `json:"transaction_date"`
+	ID                 string             `json:"id" binding:"required"`
+	Title              *string            `json:"title"`
+	Description        *string            `json:"description"`
+	Category           *int64             `json:"category"`
+	Price              *float64           `json:"price"`
+	Currency           *string            `json:"currency"`
+	TransactionMethod  *TransactionMethod `json:"method"`
+	ShouldDeleteMethod *bool              `json:"delete_method"`
+	TransactionDate    *time.Time         `json:"transaction_date"`
 }
 
 type TransactionCalendar struct {

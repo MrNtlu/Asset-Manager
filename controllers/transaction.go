@@ -45,32 +45,34 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		return
 	}
 
-	switch *data.TransactionMethod.Type {
-	case 0:
-		bankAccount, err := models.GetBankAccountByID(data.TransactionMethod.MethodID)
-		if err == nil && bankAccount.UserID != uid {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": errTransactionMethodUnauthorized,
-			})
-			return
-		} else if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
-	case 1:
-		creditCard, err := models.GetCardByID(data.TransactionMethod.MethodID)
-		if err == nil && creditCard.UserID != uid {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": errTransactionMethodUnauthorized,
-			})
-			return
-		} else if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
-			})
-			return
+	if data.TransactionMethod != nil {
+		switch *data.TransactionMethod.Type {
+		case 0:
+			bankAccount, err := models.GetBankAccountByID(data.TransactionMethod.MethodID)
+			if err == nil && bankAccount.UserID != uid {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": errTransactionMethodUnauthorized,
+				})
+				return
+			} else if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+		case 1:
+			creditCard, err := models.GetCardByID(data.TransactionMethod.MethodID)
+			if err == nil && creditCard.UserID != uid {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": errTransactionMethodUnauthorized,
+				})
+				return
+			} else if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
 		}
 	}
 

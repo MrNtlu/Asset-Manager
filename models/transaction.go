@@ -74,6 +74,11 @@ func createTransactionMethod(data requests.TransactionMethod) *TransactionMethod
 }
 
 func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction, error) {
+	var transactionMethod *TransactionMethod
+	if data.TransactionMethod != nil {
+		transactionMethod = createTransactionMethod(*data.TransactionMethod)
+	}
+
 	transaction := createTransaction(
 		uid,
 		data.Title,
@@ -81,7 +86,7 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 		*data.Category,
 		data.Price,
 		data.TransactionDate,
-		createTransactionMethod(*data.TransactionMethod),
+		transactionMethod,
 		data.Description,
 	)
 
@@ -674,6 +679,10 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 
 	if data.TransactionMethod != nil {
 		transaction.TransactionMethod = createTransactionMethod(*data.TransactionMethod)
+	}
+
+	if data.ShouldDeleteMethod != nil && *data.ShouldDeleteMethod {
+		transaction.TransactionMethod = nil
 	}
 
 	if _, err := db.TransactionCollection.UpdateOne(context.TODO(), bson.M{

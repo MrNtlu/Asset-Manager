@@ -51,17 +51,19 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 		return
 	}
 
-	creditCard, tempErr := models.GetCardByID(*data.CardID)
-	if tempErr == nil && creditCard.UserID != uid {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": errUnauthorizedCreditCard,
-		})
-		return
-	} else if tempErr != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": tempErr.Error(),
-		})
-		return
+	if data.CardID != nil {
+		creditCard, tempErr := models.GetCardByID(*data.CardID)
+		if tempErr == nil && creditCard.UserID != uid {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errUnauthorizedCreditCard,
+			})
+			return
+		} else if tempErr != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": tempErr.Error(),
+			})
+			return
+		}
 	}
 
 	var (

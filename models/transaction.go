@@ -197,6 +197,19 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 		"includeArrayIndex":          "index",
 		"preserveNullAndEmptyArrays": true,
 	}}
+	setPrice := bson.M{"$set": bson.M{
+		"price": bson.M{
+			"$cond": bson.A{
+				bson.M{
+					"$eq": bson.A{"$category", 6},
+				},
+				bson.M{
+					"$multiply": bson.A{"$price", -1},
+				},
+				"$price",
+			},
+		},
+	}}
 	addExhangeValue := bson.M{"$addFields": bson.M{
 		"value": bson.M{
 			"$ifNull": bson.A{
@@ -218,7 +231,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 	}}
 
 	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
-		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
+		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, setPrice, addExhangeValue, group,
 	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{

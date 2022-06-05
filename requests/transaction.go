@@ -29,11 +29,6 @@ type TransactionUpdate struct {
 	TransactionDate    *time.Time         `json:"transaction_date"`
 }
 
-type TransactionCalendar struct {
-	Month int `form:"month" binding:"required"`
-	Year  int `form:"year" binding:"required"`
-}
-
 type TransactionSortFilter struct {
 	Category  *int       `form:"category"`
 	StartDate *time.Time `form:"start_date" time_format:"2006-01-02"`
@@ -51,5 +46,5 @@ type TransactionTotalInterval struct {
 }
 
 type TransactionStatsInterval struct {
-	Interval string `form:"interval" binding:"required,oneof=weekly monthly"`
+	Interval string `form:"interval" binding:"required,oneof=weekly monthly yearly"`
 }

@@ -197,19 +197,6 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 		"includeArrayIndex":          "index",
 		"preserveNullAndEmptyArrays": true,
 	}}
-	setPrice := bson.M{"$set": bson.M{
-		"price": bson.M{
-			"$cond": bson.A{
-				bson.M{
-					"$eq": bson.A{"$category", 6},
-				},
-				bson.M{
-					"$multiply": bson.A{"$price", -1},
-				},
-				"$price",
-			},
-		},
-	}}
 	addExhangeValue := bson.M{"$addFields": bson.M{
 		"value": bson.M{
 			"$ifNull": bson.A{
@@ -231,7 +218,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 	}}
 
 	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
-		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, setPrice, addExhangeValue, group,
+		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
 	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -349,13 +336,15 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 	return responses.TransactionTotal{}, nil
 }
 
-func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionStats, error) {
+func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionDailyStats, error) {
 	var intervalDate time.Time
 	switch data.Interval {
 	case "weekly":
 		intervalDate = time.Now().AddDate(0, 0, -7)
 	case "monthly":
 		intervalDate = time.Now().AddDate(0, -1, 0)
+	case "yearly":
+		intervalDate = time.Now().AddDate(-1, 0, 0)
 	}
 
 	match := bson.M{"$match": bson.M{
@@ -450,7 +439,7 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		return nil, fmt.Errorf("Failed to aggregate transaction statistics: %w", err)
 	}
 
-	var transactionStats []responses.TransactionStats
+	var transactionStats []responses.TransactionDailyStats
 	if err = cursor.All(context.TODO(), &transactionStats); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -511,59 +500,174 @@ func GetTransactionByID(transactionID string) (Transaction, error) {
 	return transaction, nil
 }
 
-func GetCalendarTransactionCount(uid string, data requests.TransactionCalendar) ([]responses.TransactionCalendarCount, error) {
-	match := bson.M{"$match": bson.M{
-		"user_id": uid,
-		"$expr": bson.M{
-			"$and": bson.A{
-				bson.M{
-					"$eq": bson.A{
-						bson.M{"$month": "$transaction_date"},
-						data.Month,
+func GetTransactionCategoryDistribution(uid string, data requests.TransactionStatsInterval) (responses.TransactionCategoryStats, error) {
+	var today = time.Now()
+	var match bson.M
+
+	switch data.Interval {
+	case "weekly":
+		var year, week = today.ISOWeek()
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$week": "$transaction_date"},
+							week,
+						},
 					},
-				},
-				bson.M{
-					"$eq": bson.A{
-						bson.M{"$year": "$transaction_date"},
-						data.Year,
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$year": "$transaction_date"},
+							year,
+						},
 					},
 				},
 			},
-		},
-	}}
+		}}
+	case "monthly":
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$month": "$transaction_date"},
+							today.Month(),
+						},
+					},
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$year": "$transaction_date"},
+							today.Year(),
+						},
+					},
+				},
+			},
+		}}
+	case "yearly":
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$and": bson.A{
+					bson.M{
+						"$eq": bson.A{
+							bson.M{"$year": "$transaction_date"},
+							today.Year(),
+						},
+					},
+				},
+			},
+		}}
+	}
+
 	set := bson.M{"$set": bson.M{
-		"transaction_date": bson.M{
-			"$dateTrunc": bson.M{
-				"date": "$transaction_date",
-				"unit": "day",
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
+	}}
+	userLookup := bson.M{"$lookup": bson.M{
+		"from":         "users",
+		"localField":   "user_id",
+		"foreignField": "_id",
+		"as":           "user",
+	}}
+	unwindUser := bson.M{"$unwind": bson.M{
+		"path":                       "$user",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	userCurrencyExchangeLookup := bson.M{"$lookup": bson.M{
+		"from": "exchanges",
+		"let": bson.M{
+			"user_currency":        "$user.currency",
+			"transaction_currency": "$currency",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$ne": bson.A{"$$transaction_currency", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$to_exchange", "$$user_currency"}},
+							bson.M{"$eq": bson.A{"$from_exchange", "TRY"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "user_exchange_rate",
+	}}
+	unwindUserCurrency := bson.M{"$unwind": bson.M{
+		"path":                       "$user_exchange_rate",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
+	addExhangeValue := bson.M{"$addFields": bson.M{
+		"value": bson.M{
+			"$ifNull": bson.A{
+				bson.M{
+					"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+				},
+				"$price",
 			},
 		},
 	}}
-	group := bson.M{"$group": bson.M{
-		"_id": "$transaction_date",
-		"count": bson.M{
-			"$sum": 1,
+	facet := bson.M{"$facet": bson.M{
+		"total_transaction": bson.A{bson.M{
+			"$group": bson.M{
+				"_id": "$user_id",
+				"total_val": bson.M{
+					"$sum": "$value",
+				},
+			},
+		}},
+		"category_list": bson.A{bson.M{
+			"$group": bson.M{
+				"_id": "$category",
+				"total_transaction": bson.M{
+					"$sum": "$value",
+				},
+			},
+		}},
+		"currency": bson.A{bson.M{
+			"$project": bson.M{
+				"currency": "$user.currency",
+			},
+		}},
+	}}
+	setResponse := bson.M{"$set": bson.M{
+		"total_transaction": bson.M{
+			"$first": "$total_transaction.total_val",
+		},
+		"currency": bson.M{
+			"$first": "$currency.currency",
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, set, group})
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, set, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, facet, setResponse})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
-		}).Error("failed to aggregate transactions while counting: ", err)
-		return nil, fmt.Errorf("Failed to aggregate transactions while counting.")
+		}).Error("failed to aggregate transaction category stats while aggregating: ", err)
+		return responses.TransactionCategoryStats{}, fmt.Errorf("Failed to aggregate transaction category stats while aggregating.")
 	}
 
-	var transactionCalendarCounts []responses.TransactionCalendarCount
-	if err = cursor.All(context.TODO(), &transactionCalendarCounts); err != nil {
+	var transactionCategoryDistribution []responses.TransactionCategoryStats
+	if err = cursor.All(context.TODO(), &transactionCategoryDistribution); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
-		}).Error("failed to decode transaction calendar count: ", err)
-		return nil, fmt.Errorf("Failed to decode transaction calendar count.")
+		}).Error("failed to decode transaction category stats aggregate: ", err)
+		return responses.TransactionCategoryStats{}, fmt.Errorf("Failed to decode transaction category stats aggregate.")
 	}
 
-	return transactionCalendarCounts, nil
+	if len(transactionCategoryDistribution) > 0 {
+		return transactionCategoryDistribution[0], nil
+	}
+
+	return responses.TransactionCategoryStats{}, nil
 }
 
 func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
@@ -762,4 +866,17 @@ func DeleteAllTransactionsByUserID(uid string) error {
 	}
 
 	return nil
+}
+
+func GetTotalFromCategoryStats(stats responses.TransactionCategoryStats, isIncome bool) float64 {
+	var total float64 = 0
+	for _, item := range stats.CategoryList {
+		if isIncome && item.CategoryID == Income {
+			total = item.TotalCategoryTransaction
+		} else if !isIncome {
+			total += item.TotalCategoryTransaction
+		}
+	}
+
+	return total
 }

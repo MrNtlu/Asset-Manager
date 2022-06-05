@@ -3,6 +3,7 @@ package controllers
 import (
 	"asset_backend/models"
 	"asset_backend/requests"
+	"asset_backend/responses"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -146,48 +147,30 @@ func (t *TransactionController) GetTransactionStats(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	transactionStats, err := models.GetTransactionStats(uid, data)
+	transactionDailyStats, err := models.GetTransactionStats(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
 		return
+	}
+
+	categoryDistStats, err := models.GetTransactionCategoryDistribution(uid, data)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	transactionStats := responses.TransactionStats{
+		TransactionDailyStats:    transactionDailyStats,
+		TransactionCategoryStats: categoryDistStats,
+		TotalExpense:             models.GetTotalFromCategoryStats(categoryDistStats, false),
+		TotalIncome:              models.GetTotalFromCategoryStats(categoryDistStats, true),
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionStats})
-}
-
-// Transaction Calendar Count
-// @Summary Get Number of Transactions per Day for Calendar
-// @Description Returns number of transactions by year and month
-// @Tags transaction
-// @Accept application/json
-// @Produce application/json
-// @Security BearerAuth
-// @Param Authorization header string true "Authentication header"
-// @Success 200 {array} responses.TransactionCalendarCount
-// @Failure 500 {string} string
-// @Router /transaction/calendar [get]
-func (t *TransactionController) GetCalendarTransactionCount(c *gin.Context) {
-	var data requests.TransactionCalendar
-	if err := c.ShouldBindQuery(&data); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": validatorErrorHandler(err),
-		})
-
-		return
-	}
-
-	uid := jwt.ExtractClaims(c)["id"].(string)
-	transactionCalendarCounts, err := models.GetCalendarTransactionCount(uid, data)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": err.Error(),
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionCalendarCounts})
 }
 
 // Transaction By User ID

@@ -13,7 +13,6 @@ func transactionRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) 
 		transaction.POST("", transactionController.CreateTransaction)
 		transaction.PUT("", transactionController.UpdateTransaction)
 		transaction.GET("", transactionController.GetTransactionsByUserIDAndFilterSort)
-		transaction.GET("/calendar", transactionController.GetCalendarTransactionCount)
 		transaction.GET("/total", transactionController.GetTotalTransactionByInterval)
 		transaction.GET("/stats", transactionController.GetTransactionStats)
 	}

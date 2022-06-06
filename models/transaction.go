@@ -347,12 +347,31 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		intervalDate = time.Now().AddDate(-1, 0, 0)
 	}
 
-	match := bson.M{"$match": bson.M{
-		"user_id": uid,
-		"transaction_date": bson.M{
-			"$gte": intervalDate,
-		},
-	}}
+	var match bson.M
+	if data.Interval == "yearly" {
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"$expr": bson.M{
+				"$eq": bson.A{
+					bson.M{"$year": "$transaction_date"},
+					time.Now().Year(),
+				},
+			},
+			"category": bson.M{
+				"$ne": Income,
+			},
+		}}
+	} else {
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"transaction_date": bson.M{
+				"$gte": intervalDate,
+			},
+			"category": bson.M{
+				"$ne": Income,
+			},
+		}}
+	}
 	addFields := bson.M{"$addFields": bson.M{
 		"user_id": bson.M{
 			"$toObjectId": "$user_id",
@@ -403,16 +422,37 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		"includeArrayIndex":          "index",
 		"preserveNullAndEmptyArrays": true,
 	}}
-	addExhangeValue := bson.M{"$addFields": bson.M{
-		"value": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+
+	var addExhangeValue bson.M
+	if data.Interval == "yearly" {
+		addExhangeValue = bson.M{"$addFields": bson.M{
+			"value": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+					},
+					"$price",
 				},
-				"$price",
 			},
-		},
-	}}
+			"transaction_date": bson.M{
+				"$dateTrunc": bson.M{
+					"date": "$transaction_date",
+					"unit": "month",
+				},
+			},
+		}}
+	} else {
+		addExhangeValue = bson.M{"$addFields": bson.M{
+			"value": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$price", "$user_exchange_rate.exchange_rate"},
+					},
+					"$price",
+				},
+			},
+		}}
+	}
 	group := bson.M{"$group": bson.M{
 		"_id": "$transaction_date",
 		"currency": bson.M{
@@ -446,6 +486,8 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		}).Error("failed to decode transaction statistics: ", err)
 		return nil, fmt.Errorf("Failed to decode transaction statistics: %w", err)
 	}
+
+	fmt.Println(transactionStats)
 
 	return transactionStats, nil
 }
@@ -623,14 +665,21 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 				},
 			},
 		}},
-		"category_list": bson.A{bson.M{
-			"$group": bson.M{
-				"_id": "$category",
-				"total_transaction": bson.M{
-					"$sum": "$value",
+		"category_list": bson.A{
+			bson.M{
+				"$sort": bson.M{
+					"category": 1,
 				},
 			},
-		}},
+			bson.M{
+				"$group": bson.M{
+					"_id": "$category",
+					"total_transaction": bson.M{
+						"$sum": "$value",
+					},
+				},
+			},
+		},
 		"currency": bson.A{bson.M{
 			"$project": bson.M{
 				"currency": "$user.currency",
@@ -873,7 +922,7 @@ func GetTotalFromCategoryStats(stats responses.TransactionCategoryStats, isIncom
 	for _, item := range stats.CategoryList {
 		if isIncome && item.CategoryID == Income {
 			total = item.TotalCategoryTransaction
-		} else if !isIncome {
+		} else if !isIncome && item.CategoryID != Income {
 			total += item.TotalCategoryTransaction
 		}
 	}

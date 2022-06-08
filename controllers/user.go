@@ -127,7 +127,7 @@ func (u *UserController) ChangeUserMembership(c *gin.Context) {
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
-	if err := models.UpdateUserMembership(uid, data.IsPremium); err != nil {
+	if err := models.UpdateUserMembership(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -327,6 +327,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 	userInfo := responses.UserInfo{
 		IsPremium:         info.IsPremium,
 		IsLifetimePremium: info.IsLifetimePremium,
+		IsOAuth:           info.IsOAuthUser,
 		EmailAddress:      info.EmailAddress,
 		Currency:          info.Currency,
 		InvestingLimit:    investingLimit,

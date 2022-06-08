@@ -343,8 +343,6 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		intervalDate = time.Now().AddDate(0, 0, -7)
 	case "monthly":
 		intervalDate = time.Now().AddDate(0, -1, 0)
-	case "yearly":
-		intervalDate = time.Now().AddDate(-1, 0, 0)
 	}
 
 	var match bson.M

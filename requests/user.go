@@ -21,7 +21,8 @@ type ChangeCurrency struct {
 }
 
 type ChangeMembership struct {
-	IsPremium bool `json:"is_premium"`
+	IsPremium         bool `json:"is_premium"`
+	IsLifetimePremium bool `json:"is_lifetime_premium"`
 }
 
 type ForgotPassword struct {

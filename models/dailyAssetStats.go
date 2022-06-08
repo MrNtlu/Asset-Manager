@@ -22,16 +22,27 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		intervalDate = time.Now().AddDate(0, 0, -7)
 	case "monthly":
 		intervalDate = time.Now().AddDate(0, -1, 0)
-	case "3monthly":
-		intervalDate = time.Now().AddDate(0, -3, 0)
 	}
 
-	match := bson.M{"$match": bson.M{
-		"user_id": objectUID,
-		"created_at": bson.M{
-			"$gte": intervalDate,
-		},
-	}}
+	var match bson.M
+	if interval == "yearly" {
+		match = bson.M{"$match": bson.M{
+			"user_id": objectUID,
+			"$expr": bson.M{
+				"$eq": bson.A{
+					bson.M{"$year": "$created_at"},
+					time.Now().Year(),
+				},
+			},
+		}}
+	} else {
+		match = bson.M{"$match": bson.M{
+			"user_id": objectUID,
+			"created_at": bson.M{
+				"$gte": intervalDate,
+			},
+		}}
+	}
 	userLookup := bson.M{"$lookup": bson.M{
 		"from":         "users",
 		"localField":   "user_id",
@@ -69,26 +80,72 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		"includeArrayIndex":          "index",
 		"preserveNullAndEmptyArrays": true,
 	}}
-	project := bson.M{"$project": bson.M{
-		"currency":   "$user.currency",
-		"created_at": true,
-		"total_assets": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$total_assets", "$user_exchange_rate.exchange_rate"},
+
+	var project bson.M
+	var yearlyGroup bson.M
+	if interval == "yearly" {
+		project = bson.M{"$project": bson.M{
+			"currency": "$user.currency",
+			"total_assets": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$total_assets", "$user_exchange_rate.exchange_rate"},
+					},
+					"$total_assets",
 				},
-				"$total_assets",
 			},
-		},
-		"total_p/l": bson.M{
-			"$ifNull": bson.A{
-				bson.M{
-					"$multiply": bson.A{"$total_p/l", "$user_exchange_rate.exchange_rate"},
+			"total_p/l": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$total_p/l", "$user_exchange_rate.exchange_rate"},
+					},
+					"$total_p/l",
 				},
-				"$total_p/l",
 			},
-		},
-	}}
+			"created_at": bson.M{
+				"$dateTrunc": bson.M{
+					"date": "$created_at",
+					"unit": "month",
+				},
+			},
+		}}
+		yearlyGroup = bson.M{"$group": bson.M{
+			"_id": "$created_at",
+			"currency": bson.M{
+				"$first": "$currency",
+			},
+			"total_p/l": bson.M{
+				"$sum": "$total_p/l",
+			},
+			"total_assets": bson.M{
+				"$sum": "$total_assets",
+			},
+			"created_at": bson.M{
+				"$first": "$created_at",
+			},
+		}}
+	} else {
+		project = bson.M{"$project": bson.M{
+			"currency":   "$user.currency",
+			"created_at": true,
+			"total_assets": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$total_assets", "$user_exchange_rate.exchange_rate"},
+					},
+					"$total_assets",
+				},
+			},
+			"total_p/l": bson.M{
+				"$ifNull": bson.A{
+					bson.M{
+						"$multiply": bson.A{"$total_p/l", "$user_exchange_rate.exchange_rate"},
+					},
+					"$total_p/l",
+				},
+			},
+		}}
+	}
 	sort := bson.M{"$sort": bson.M{
 		"created_at": 1,
 	}}
@@ -108,9 +165,18 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		},
 	}}
 
-	cursor, err := db.DailyAssetStatCollection.Aggregate(context.TODO(), bson.A{
-		match, userLookup, unwindUser, exchangeLookup, unwindExchange, project, sort, arrayGroup,
-	})
+	var aggregationList bson.A
+	if interval == "yearly" {
+		aggregationList = bson.A{
+			match, userLookup, unwindUser, exchangeLookup, unwindExchange, project, yearlyGroup, sort, arrayGroup,
+		}
+	} else {
+		aggregationList = bson.A{
+			match, userLookup, unwindUser, exchangeLookup, unwindExchange, project, sort, arrayGroup,
+		}
+	}
+
+	cursor, err := db.DailyAssetStatCollection.Aggregate(context.TODO(), aggregationList)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":      uid,

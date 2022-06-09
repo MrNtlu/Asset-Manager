@@ -24,6 +24,7 @@ func userRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
 			user.DELETE("", userController.DeleteUser)
 			user.PUT("/change-password", userController.ChangePassword)
 			user.PUT("/change-currency", userController.ChangeCurrency)
+			user.PUT("/update-token", userController.UpdateFCMToken)
 			user.PUT("/membership", userController.ChangeUserMembership)
 		}
 	}

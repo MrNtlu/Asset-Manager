@@ -37,8 +37,9 @@ type User struct {
 	CreatedAt          time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
 	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
+	FCMToken           string             `bson:"fcm_token" json:"fcm_token"`
 	IsLifetimePremium  bool               `bson:"is_lifetime_premium" json:"is_lifetime_premium"`
-	IsOAuthUser        bool               `bson:"is_oauth" json:"-"`
+	IsOAuthUser        bool               `bson:"is_oauth" json:"is_oauth"`
 }
 
 func createUserObject(emailAddress, currency, password string) *User {
@@ -51,6 +52,7 @@ func createUserObject(emailAddress, currency, password string) *User {
 		IsPremium:         false,
 		IsLifetimePremium: false,
 		IsOAuthUser:       false,
+		FCMToken:          "",
 	}
 }
 

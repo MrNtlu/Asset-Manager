@@ -107,6 +107,46 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully changed currency."})
 }
 
+// Update FCM Token
+// @Summary Updates FCM User Token
+// @Description Depending on logged in device fcm token will be updated
+// @Tags user
+// @Accept application/json
+// @Produce application/json
+// @Param changefcmtoken body requests.ChangeFCMToken true "Set token"
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 500 {string} string
+// @Router /user/update-token [put]
+func (u *UserController) UpdateFCMToken(c *gin.Context) {
+	var data requests.ChangeFCMToken
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	user, err := models.FindUserByID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	if user.FCMToken != data.FCMToken {
+		user.FCMToken = data.FCMToken
+		if err = models.UpdateUser(user); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully updated FCM Token."})
+}
+
 // Change User Membership
 // @Summary Change User Membership
 // @Description User membership status will be updated depending on subscription status
@@ -330,6 +370,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 		IsOAuth:           info.IsOAuthUser,
 		EmailAddress:      info.EmailAddress,
 		Currency:          info.Currency,
+		FCMToken:          info.FCMToken,
 		InvestingLimit:    investingLimit,
 		SubscriptionLimit: subscriptionLimit,
 	}

@@ -20,6 +20,10 @@ type ChangeCurrency struct {
 	Currency string `json:"currency" binding:"required"`
 }
 
+type ChangeFCMToken struct {
+	FCMToken string `json:"fcm_token" binding:"required"`
+}
+
 type ChangeMembership struct {
 	IsPremium         bool `json:"is_premium"`
 	IsLifetimePremium bool `json:"is_lifetime_premium"`

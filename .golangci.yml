@@ -44,6 +44,5 @@ linters:
     - golint
     - maligned
     - noctx
-    - gci
     - tagliatelle
     - goerr113

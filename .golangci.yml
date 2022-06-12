@@ -43,7 +43,6 @@ linters:
     - interfacer
     - golint
     - maligned
-    - maintidx
     - noctx
     - varnamelen
     - wrapcheck

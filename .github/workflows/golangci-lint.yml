@@ -27,12 +27,6 @@ jobs:
           # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: v1.29
 
-          linters-settings:
-            errcheck:
-              # path to a file containing a list of functions to exclude from checking
-              # see https://github.com/kisielk/errcheck#excluding-functions for details
-              exclude: ./controllers/user.go
-
           # Optional: working directory, useful for monorepos
           # working-directory: somedir
 

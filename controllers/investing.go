@@ -43,7 +43,12 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 	if data.Type == "exchange" {
 		result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 		if err == nil && result != "" {
-			msgpack.Unmarshal([]byte(result), &investings)
+			if err := msgpack.Unmarshal([]byte(result), &investings); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
 
 			c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
 			return
@@ -109,7 +114,12 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 			go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisXSExpire)
 		}
 	} else {
-		msgpack.Unmarshal([]byte(result), &investings)
+		if err := msgpack.Unmarshal([]byte(result), &investings); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})

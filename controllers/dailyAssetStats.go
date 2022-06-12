@@ -67,7 +67,12 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 		marshalDailyAssetStats, _ := msgpack.Marshal(dailyAssetStats)
 		go db.RedisDB.Set(context.TODO(), cacheKey, marshalDailyAssetStats, db.RedisLExpire)
 	} else {
-		msgpack.Unmarshal([]byte(result), &dailyAssetStats)
+		if err := msgpack.Unmarshal([]byte(result), &dailyAssetStats); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"data": dailyAssetStats})

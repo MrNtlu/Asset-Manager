@@ -9,25 +9,26 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-type pagination struct {
+type CustomPagination struct {
 	collection      *mongo.Collection
 	context         context.Context
 	aggregationList []bson.M
 }
 
-func Init(collection *mongo.Collection) *pagination {
-	return &pagination{
+func Init(collection *mongo.Collection) *CustomPagination {
+	return &CustomPagination{
 		collection: collection,
 	}
 }
 
-func (pagination *pagination) Aggregation(context context.Context, aggregation []bson.M) *pagination {
+func (pagination *CustomPagination) Aggregation(context context.Context, aggregation []bson.M) *CustomPagination {
 	pagination.context = context
 	pagination.aggregationList = aggregation
+
 	return pagination
 }
 
-func (pagination *pagination) KeysetPaginate(lastItem string, limit int64) *pagination {
+func (pagination *CustomPagination) KeysetPaginate(lastItem string, limit int64) *CustomPagination {
 	sort := bson.M{"$sort": bson.M{
 		"symbol": 1,
 	}}
@@ -40,19 +41,21 @@ func (pagination *pagination) KeysetPaginate(lastItem string, limit int64) *pagi
 
 	paginationAggregation := []bson.M{sort, match, limitAgg}
 	pagination.aggregationList = append(pagination.aggregationList, paginationAggregation...)
+
 	return pagination
 }
 
-func (pagination *pagination) SkipLimitPaginate(limit, page int64) *pagination {
+func (pagination *CustomPagination) SkipLimitPaginate(limit, page int64) *CustomPagination {
 	skip := bson.M{"$skip": (page - 1) * limit}
 	limitAgg := bson.M{"$limit": limit}
 
 	paginationAggregation := []bson.M{skip, limitAgg}
 	pagination.aggregationList = append(pagination.aggregationList, paginationAggregation...)
+
 	return pagination
 }
 
-func (pagination *pagination) SkipLimitDecode() (*mongo.Cursor, responses.PaginationResponse, error) {
+func (pagination *CustomPagination) SkipLimitDecode() (*mongo.Cursor, responses.PaginationResponse, error) {
 	cursor, err := pagination.collection.Aggregate(pagination.context, pagination.aggregationList)
 	if err != nil {
 		return nil, responses.PaginationResponse{}, fmt.Errorf("failed to aggregate pagination: %w", err)
@@ -61,7 +64,7 @@ func (pagination *pagination) SkipLimitDecode() (*mongo.Cursor, responses.Pagina
 	return cursor, responses.PaginationResponse{}, nil
 }
 
-func (pagination *pagination) Paginate(limit, page int64) *pagination {
+func (pagination *CustomPagination) Paginate(limit, page int64) *CustomPagination {
 	facet := bson.M{"$facet": bson.M{
 		"data_info": bson.A{
 			bson.M{
@@ -104,16 +107,18 @@ func (pagination *pagination) Paginate(limit, page int64) *pagination {
 	}}
 	paginationAggregation := []bson.M{facet, unwind, project}
 	pagination.aggregationList = append(pagination.aggregationList, paginationAggregation...)
+
 	return pagination
 }
 
-func (pagination *pagination) Decode() (*mongo.Cursor, responses.PaginationResponse, error) {
+func (pagination *CustomPagination) Decode() (*mongo.Cursor, responses.PaginationResponse, error) {
 	cursor, err := pagination.collection.Aggregate(pagination.context, pagination.aggregationList)
 	if err != nil {
 		return nil, responses.PaginationResponse{}, fmt.Errorf("failed to aggregate pagination: %w", err)
 	}
 
 	defer cursor.Close(pagination.context)
+
 	var paginationData responses.PaginationResponse
 	for cursor.Next(pagination.context) {
 		if err = cursor.Decode(&paginationData); err != nil {

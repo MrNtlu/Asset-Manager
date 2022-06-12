@@ -1,0 +1,4 @@
+golangci-lint run
+
+
+https://golangci-lint.run/usage/linters

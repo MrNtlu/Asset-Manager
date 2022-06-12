@@ -37,5 +37,6 @@ func validatorErrorHandler(err error) string {
 			}
 		}
 	}
+
 	return err.Error()
 }

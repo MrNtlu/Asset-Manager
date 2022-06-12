@@ -18,15 +18,15 @@ import (
 * !Premium Features
 * *Asset
 * 	- Max 10 asset
-*	- Only weekly stats
+*	- Only weekly stats.
 * *Subscription
-*	- Max 5 subscription
+*	- Max 5 subscription.
 * *Card
-*	- Max 3 cards
+*	- Max 3 cards.
 * *Bank Account
-*	- Max 2 bank accounts
+*	- Max 2 bank accounts.
 * *Transactions
-*	- Max 10 per day
+*	- Max 10 per day.
 **/
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
@@ -74,6 +74,7 @@ func CreateUser(data requests.Register) error {
 		logrus.WithFields(logrus.Fields{
 			"email": data.EmailAddress,
 		}).Error("failed to create new user: ", err)
+
 		return fmt.Errorf("Failed to create new user.")
 	}
 
@@ -88,10 +89,12 @@ func CreateOAuthUser(email string) (*User, error) {
 		logrus.WithFields(logrus.Fields{
 			"email": email,
 		}).Error("failed to create new oauth user: ", err)
+
 		return nil, fmt.Errorf("Failed to create new oauth user.")
 	}
 
 	user.ID = result.InsertedID.(primitive.ObjectID)
+
 	return user, nil
 }
 
@@ -102,6 +105,7 @@ func UpdateUser(user User) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": user.ID,
 		}).Error("failed to update user: ", err)
+
 		return fmt.Errorf("Failed to update user.")
 	}
 
@@ -121,6 +125,7 @@ func UpdateUserMembership(uid string, data requests.ChangeMembership) error {
 			"is_premium":          data.IsPremium,
 			"is_lifetime_premium": data.IsLifetimePremium,
 		}).Error("failed to set membership for user: ", err)
+
 		return fmt.Errorf("Failed to set membership for user.")
 	}
 
@@ -139,6 +144,7 @@ func IsUserPremium(uid string) bool {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to find user by uid: ", err)
+
 		return false
 	}
 
@@ -157,6 +163,7 @@ func FindUserByID(uid string) (User, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": user.ID,
 		}).Error("failed to find user by uid: ", err)
+
 		return User{}, fmt.Errorf("Failed to find user by id.")
 	}
 
@@ -175,6 +182,7 @@ func FindUserByResetTokenAndEmail(token, email string) (User, error) {
 			"uid":   user.ID,
 			"token": token,
 		}).Error("failed to find user by reset token: ", err)
+
 		return User{}, fmt.Errorf("Failed to find user by reset token.")
 	}
 
@@ -191,6 +199,7 @@ func FindUserByEmail(email string) (User, error) {
 		logrus.WithFields(logrus.Fields{
 			"email": email,
 		}).Error("failed to find user by email: ", err)
+
 		return User{}, fmt.Errorf("Failed to find user by email.")
 	}
 
@@ -204,6 +213,7 @@ func DeleteUserByID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete user: ", err)
+
 		return fmt.Errorf("Failed to delete user.")
 	}
 

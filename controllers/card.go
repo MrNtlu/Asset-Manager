@@ -40,12 +40,13 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
 
+	isPremium := models.IsUserPremium(uid)
 	if !isPremium && models.GetUserCardCount(uid) >= 3 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errCardPremium,
 		})
+
 		return
 	}
 
@@ -53,12 +54,15 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 		createdCard models.Card
 		err         error
 	)
+
 	if createdCard, err = models.CreateCard(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
+
 	cc.clearCache(uid)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdCard})
@@ -77,6 +81,7 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 // @Router /card [get]
 func (cc *CardController) GetCardsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	var (
 		cacheKey = "card/" + uid
 		cards    []models.Card
@@ -89,18 +94,18 @@ func (cc *CardController) GetCardsByUserID(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
 		marshalCards, _ := msgpack.Marshal(cards)
 		go db.RedisDB.Set(context.TODO(), cacheKey, marshalCards, db.RedisLExpire)
-	} else {
-		if err := msgpack.Unmarshal([]byte(result), &cards); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
+	} else if err := msgpack.Unmarshal([]byte(result), &cards); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cards})
@@ -128,15 +133,18 @@ func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	cardSubscriptionStats, err := models.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
 	var tType int64 = 1
+
 	cardTransactionStats, err := models.GetMethodStatistics(uid, requests.TransactionMethod{
 		MethodID: data.ID,
 		Type:     &tType,
@@ -145,15 +153,14 @@ func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
-	var cardStats = responses.CardStats{
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": responses.CardStats{
 		SubscriptionStats: cardSubscriptionStats,
 		TransactionStats:  cardTransactionStats,
-	}
-
-	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": cardStats})
+	}})
 }
 
 // Update Card
@@ -180,7 +187,6 @@ func (cc *CardController) UpdateCard(c *gin.Context) {
 	card, err := models.GetCardByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-
 		return
 	}
 
@@ -196,12 +202,15 @@ func (cc *CardController) UpdateCard(c *gin.Context) {
 	}
 
 	var updatedCard models.Card
+
 	if updatedCard, err = models.UpdateCard(data, card); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
+
 	cc.clearCache(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Card updated.", "data": updatedCard})
@@ -226,16 +235,19 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	isDeleted, err := models.DeleteCardByCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
 	if isDeleted {
 		cc.clearCache(uid)
+
 		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
 		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.CreditCard)
 		c.JSON(http.StatusOK, gin.H{"message": "Card deleted successfully."})
@@ -263,6 +275,7 @@ func (cc *CardController) DeleteAllCardsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 

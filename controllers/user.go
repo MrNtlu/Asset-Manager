@@ -86,11 +86,13 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	user, err := models.FindUserByID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -99,6 +101,7 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -126,11 +129,13 @@ func (u *UserController) UpdateFCMToken(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	user, err := models.FindUserByID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -140,6 +145,7 @@ func (u *UserController) UpdateFCMToken(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 	}
@@ -171,6 +177,7 @@ func (u *UserController) ChangeUserMembership(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -203,6 +210,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -210,6 +218,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": errOAuthUser,
 		})
+
 		return
 	}
 
@@ -217,6 +226,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": gin.H{"error": errPasswordNoMatch},
 		})
+
 		return
 	}
 
@@ -225,6 +235,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -253,6 +264,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errNoUser,
 		})
+
 		return
 	}
 
@@ -268,6 +280,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": errOAuthUser,
 		})
+
 		return
 	}
 
@@ -275,14 +288,18 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 	if user.PasswordResetToken == "" {
 		resetToken = uuid.NewString()
 		user.PasswordResetToken = resetToken
+
 		if err = models.UpdateUser(user); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
-		time.AfterFunc(5*time.Minute, func() {
+		const scheduleTime = 5 * time.Minute
+
+		time.AfterFunc(scheduleTime, func() {
 			user.PasswordResetToken = ""
 			go models.UpdateUser(user)
 		})
@@ -298,6 +315,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -324,17 +342,24 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	generatedPass, err := password.Generate(10, 4, 0, true, false)
+	const (
+		passwordLength = 10
+		numDigits      = 4
+	)
+
+	generatedPass, err := password.Generate(passwordLength, numDigits, 0, true, false)
 	if err != nil {
 		generatedPass = user.EmailAddress + "_Password"
 	}
 
 	user.Password = utils.HashPassword(generatedPass)
 	user.PasswordResetToken = ""
+
 	if err = models.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -342,6 +367,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -364,8 +390,11 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 	assetCount := models.GetUserAssetCount(uid)
 	subscritionCount := models.GetUserSubscriptionCount(uid)
 
-	var investingLimit string
-	var subscriptionLimit string
+	var (
+		investingLimit    string
+		subscriptionLimit string
+	)
+
 	if info.IsPremium {
 		investingLimit = fmt.Sprintf("%v", assetCount) + "/∞"
 		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/∞"
@@ -406,6 +435,7 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 

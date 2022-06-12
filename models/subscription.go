@@ -37,7 +37,13 @@ type BillCycle struct {
 	Year  int `bson:"year" json:"year"`
 }
 
-func createSubscriptionObject(uid, name, currency, color, image string, cardID, description *string, price float64, billDate time.Time, billCycle BillCycle) *Subscription {
+const subscriptionPremiumLimit = 5
+
+func createSubscriptionObject(
+	uid, name, currency, color, image string,
+	cardID, description *string, price float64,
+	billDate time.Time, billCycle BillCycle,
+) *Subscription {
 	return &Subscription{
 		UserID:      uid,
 		CardID:      cardID,
@@ -79,13 +85,16 @@ func CreateSubscription(uid string, data requests.Subscription) (responses.Subsc
 		insertedID *mongo.InsertOneResult
 		err        error
 	)
+
 	if insertedID, err = db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to create new subscription: ", err)
+
 		return responses.Subscription{}, fmt.Errorf("Failed to create new subscription.")
 	}
+
 	subscription.ID = insertedID.InsertedID.(primitive.ObjectID)
 
 	return convertModelToResponse(*subscription), nil
@@ -97,7 +106,8 @@ func GetUserSubscriptionCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to count user subscriptions: ", err)
-		return 5
+
+		return subscriptionPremiumLimit
 	}
 
 	return count
@@ -113,6 +123,7 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 		logrus.WithFields(logrus.Fields{
 			"subscription_id": subscriptionID,
 		}).Error("failed to create new subscription: ", err)
+
 		return Subscription{}, fmt.Errorf("Failed to find subscription by subscription id.")
 	}
 
@@ -135,6 +146,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to find subscription: ", err)
+
 		return nil, fmt.Errorf("Failed to find subscription.")
 	}
 
@@ -144,6 +156,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to decode subscriptions: ", err)
+
 		return nil, fmt.Errorf("Failed to decode subscriptions.")
 	}
 
@@ -173,6 +186,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			{Key: data.Sort, Value: data.SortType},
 		}
 	}
+
 	options := options.Find().SetSort(sort)
 
 	cursor, err := db.SubscriptionCollection.Find(context.TODO(), match, options)
@@ -182,6 +196,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to find subscription: ", err)
+
 		return nil, fmt.Errorf("Failed to find subscription.")
 	}
 
@@ -192,6 +207,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to decode subscription: ", err)
+
 		return nil, fmt.Errorf("Failed to decode subscription.")
 	}
 
@@ -219,6 +235,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to aggregate subscription details: ", err)
+
 		return responses.SubscriptionDetails{}, fmt.Errorf("Failed to aggregate subscription details.")
 	}
 
@@ -228,6 +245,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to decode subscription details: ", err)
+
 		return responses.SubscriptionDetails{}, fmt.Errorf("Failed to decode subscription details.")
 	}
 
@@ -237,6 +255,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 			subscription.BillCycle,
 			subscription.BillDate,
 		)
+
 		return subscription, nil
 	}
 
@@ -264,6 +283,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate subscription statistics: ", err)
+
 		return nil, fmt.Errorf("Failed to aggregate subscription statistics.")
 	}
 
@@ -272,6 +292,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode subscription statistics: ", err)
+
 		return nil, fmt.Errorf("Failed to decode subscription statistics.")
 	}
 
@@ -368,6 +389,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubsc
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate card statistics: ", err)
+
 		return responses.CardSubscriptionStatistics{}, fmt.Errorf("Failed to aggregate card statistics: %w", err)
 	}
 
@@ -376,6 +398,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubsc
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode card statistics: ", err)
+
 		return responses.CardSubscriptionStatistics{}, fmt.Errorf("Failed to decode card statistics: %w", err)
 	}
 
@@ -392,27 +415,35 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	if data.Name != nil {
 		subscription.Name = *data.Name
 	}
+
 	if data.Description != nil {
 		subscription.Description = data.Description
 	}
+
 	if data.Color != nil {
 		subscription.Color = *data.Color
 	}
+
 	if data.Image != nil {
 		subscription.Image = *data.Image
 	}
+
 	if data.BillDate != nil {
 		subscription.BillDate = *data.BillDate
 	}
+
 	if data.BillCycle != nil {
 		subscription.BillCycle = *createBillCycle(*data.BillCycle)
 	}
+
 	if data.Price != nil {
 		subscription.Price = *data.Price
 	}
+
 	if data.Currency != nil {
 		subscription.Currency = *data.Currency
 	}
+
 	subscription.CardID = data.CardID
 
 	if _, err := db.SubscriptionCollection.UpdateOne(context.TODO(), bson.M{
@@ -422,6 +453,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 			"subscription_id": data.ID,
 			"data":            data,
 		}).Error("failed to update subscription: ", err)
+
 		return responses.Subscription{}, fmt.Errorf("Failed to update subscription.")
 	}
 
@@ -461,6 +493,7 @@ func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error
 			"uid":             uid,
 			"subscription_id": subscriptionID,
 		}).Error("failed to delete subscription: ", err)
+
 		return false, fmt.Errorf("Failed to delete subscription.")
 	}
 
@@ -474,6 +507,7 @@ func DeleteAllSubscriptionsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all subscriptions by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all subscriptions by user id.")
 	}
 
@@ -518,6 +552,7 @@ func convertModelToResponse(subscription Subscription) responses.Subscription {
 		Month: subscription.BillCycle.Month,
 		Year:  subscription.BillCycle.Year,
 	}
+
 	return responses.Subscription{
 		ID:          subscription.ID,
 		UserID:      subscription.UserID,
@@ -545,7 +580,7 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 				bson.M{
 					"$switch": bson.M{
 						"branches": bson.A{
-							//Day case
+							// Day case
 							bson.M{
 								"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
 								"then": bson.M{
@@ -557,14 +592,14 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 									},
 								},
 							},
-							//Month Case
+							// Month Case
 							bson.M{
 								"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 1}},
 								"then": bson.M{
 									"$divide": bson.A{"$price", "$bill_cycle.month"},
 								},
 							},
-							//Year Case
+							// Year Case
 							bson.M{
 								"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
 								"then": bson.M{
@@ -610,7 +645,7 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 								bson.M{
 									"$switch": bson.M{
 										"branches": bson.A{
-											//Day case
+											// Day case
 											bson.M{
 												"case": bson.M{"$gt": bson.A{"$bill_cycle.day", 0}},
 												"then": bson.M{
@@ -624,7 +659,7 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 													},
 												},
 											},
-											//Month Case
+											// Month Case
 											bson.M{
 												"case": bson.M{"$gt": bson.A{"$bill_cycle.month", 0}},
 												"then": bson.M{
@@ -645,7 +680,7 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 													},
 												},
 											},
-											//Year Case
+											// Year Case
 											bson.M{
 												"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
 												"then": bson.M{

@@ -78,7 +78,7 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 		TokenLookup:    "header: Authorization, cookie: jwt_token",
 		TimeFunc:       time.Now,
 		SendCookie:     true,
-		SecureCookie:   false,       //non HTTPS dev environments
+		SecureCookie:   false,       // non HTTPS dev environments
 		CookieHTTPOnly: true,        // JS can't modify
 		CookieName:     "jwt_token", // default jwt
 	})

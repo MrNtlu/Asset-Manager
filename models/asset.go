@@ -22,14 +22,22 @@ type Asset struct {
 	FromAsset     string             `bson:"from_asset" json:"from_asset"`
 	Price         float64            `bson:"price" json:"price"`
 	Amount        float64            `bson:"amount" json:"amount"`
-	AssetType     string             `bson:"asset_type" json:"asset_type"`     //stock, crypto etc.
-	AssetMarket   string             `bson:"asset_market" json:"asset_market"` //if stock the market else if crypto CMC else exchange
-	Type          string             `bson:"type" json:"type"`                 //sell buy
-	CurrencyValue float64            `bson:"value" json:"value"`               //value in from asset currency
+	AssetType     string             `bson:"asset_type" json:"asset_type"`
+	AssetMarket   string             `bson:"asset_market" json:"asset_market"`
+	Type          string             `bson:"type" json:"type"`
+	CurrencyValue float64            `bson:"value" json:"value"`
 	CreatedAt     time.Time          `bson:"created_at" json:"created_at"`
 }
 
-func createAssetObject(uid, toAsset, fromAsset, assetType, assetMarket, tType string, price, amount, currencyValue float64) *Asset {
+const (
+	assetLogPaginationLimit = 15
+	assetPremiumLimit       = 10
+)
+
+func createAssetObject(
+	uid, toAsset, fromAsset, assetType, assetMarket,
+	tType string, price, amount, currencyValue float64,
+) *Asset {
 	return &Asset{
 		UserID:        uid,
 		ToAsset:       toAsset,
@@ -45,7 +53,7 @@ func createAssetObject(uid, toAsset, fromAsset, assetType, assetMarket, tType st
 }
 
 func CreateAsset(uid string, data requests.AssetCreate) error {
-	var currencyValue = data.Price * data.Amount
+	currencyValue := data.Price * data.Amount
 
 	asset := createAssetObject(
 		uid,
@@ -63,6 +71,7 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 		logrus.WithFields(logrus.Fields{
 			"asset": asset,
 		}).Error("failed to create new asset: ", err)
+
 		return fmt.Errorf("Failed to create new asset.")
 	}
 
@@ -79,6 +88,7 @@ func GetAssetByID(assetID string) (Asset, error) {
 		logrus.WithFields(logrus.Fields{
 			"id": assetID,
 		}).Error("failed to find asset by asset id: ", err)
+
 		return Asset{}, fmt.Errorf("Failed to find asset by asset id.")
 	}
 
@@ -115,7 +125,8 @@ func GetUserAssetCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate assets while counting: ", err)
-		return 10
+
+		return assetPremiumLimit
 	}
 
 	var dcArray []responses.AssetDocumentCount
@@ -123,7 +134,8 @@ func GetUserAssetCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode assets while counting: ", err)
-		return 10
+
+		return assetPremiumLimit
 	}
 
 	if len(dcArray) > 0 && len(dcArray[0].DocumentCount) > 0 {
@@ -135,19 +147,21 @@ func GetUserAssetCount(uid string) int64 {
 
 func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
 	var sort bson.M
-	if data.Sort == "name" {
+
+	switch data.Sort {
+	case "name":
 		sort = bson.M{"$sort": bson.M{
 			"to_asset": data.SortType,
 		}}
-	} else if data.Sort == "amount" {
+	case "amount":
 		sort = bson.M{"$sort": bson.M{
 			"remaining_amount": data.SortType,
 		}}
-	} else if data.Sort == "percentage" {
+	case "percentage":
 		sort = bson.M{"$sort": bson.M{
-			"pl_percentage": data.SortType,
+			"remaining_amount": data.SortType,
 		}}
-	} else {
+	case "profit":
 		sort = bson.M{"$sort": bson.M{
 			"p/l": data.SortType,
 		}}
@@ -316,14 +330,17 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, group, lookup, unwindInvesting, exchangeLookup,
-		unwindExchange, addInvestingField, project, addPercentageField, sort})
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+		match, group, lookup, unwindInvesting, exchangeLookup,
+		unwindExchange, addInvestingField, project, addPercentageField, sort,
+	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":       uid,
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to aggregate assets: ", err)
+
 		return nil, fmt.Errorf("Failed to aggregate assets.")
 	}
 
@@ -334,6 +351,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 			"sort":      data.Sort,
 			"sort_type": data.SortType,
 		}).Error("failed to decode assets: ", err)
+
 		return nil, fmt.Errorf("Failed to decode assets.")
 	}
 
@@ -478,6 +496,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 			"to_asset":   toAsset,
 			"from_asset": fromAsset,
 		}).Error("failed to aggregate asset details: ", err)
+
 		return responses.AssetDetails{}, fmt.Errorf("Failed to aggregate asset details.")
 	}
 
@@ -488,6 +507,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 			"to_asset":   toAsset,
 			"from_asset": fromAsset,
 		}).Error("failed to decode asset details: ", err)
+
 		return responses.AssetDetails{}, fmt.Errorf("Failed to decode asset details.")
 	}
 
@@ -846,17 +866,16 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 
-	var aggregationList = bson.A{
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
 		match, groupAssetsByToAssetFromAsset(), lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup, addPercentageFields,
-	}
-
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), aggregationList)
+	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate asset stats: ", err)
+
 		return responses.AssetStats{}, fmt.Errorf("Failed to aggregate asset stats.")
 	}
 
@@ -865,6 +884,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode asset stats: ", err)
+
 		return responses.AssetStats{}, fmt.Errorf("Failed to decode asset stats.")
 	}
 
@@ -887,20 +907,23 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 		sortType  string
 		sortOrder int8
 	)
-	if data.Sort == "newest" {
+
+	switch data.Sort {
+	case "newest":
 		sortType = "created_at"
 		sortOrder = -1
-	} else if data.Sort == "oldest" {
+	case "oldest":
 		sortType = "created_at"
 		sortOrder = 1
-	} else {
+	case "amount":
 		sortType = "amount"
 		sortOrder = -1
 	}
 
 	var assets []Asset
+
 	paginatedData, err := pagination.New(db.AssetCollection).Context(context.TODO()).
-		Limit(15).Sort(sortType, sortOrder).Page(data.Page).Filter(match).Decode(&assets).Find()
+		Limit(assetLogPaginationLimit).Sort(sortType, sortOrder).Page(data.Page).Filter(match).Decode(&assets).Find()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":        uid,
@@ -909,6 +932,7 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 			"page":       data.Page,
 			"sort":       data.Sort,
 		}).Error("failed to fetch/decode: ", err)
+
 		return nil, pagination.PaginationData{}, fmt.Errorf("Failed to get asset logs.")
 	}
 
@@ -921,12 +945,15 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	if data.Type != nil {
 		asset.Type = *data.Type
 	}
+
 	if data.Price != nil {
 		asset.Price = *data.Price
 	}
+
 	if data.Amount != nil {
 		asset.Amount = *data.Amount
 	}
+
 	if data.Amount != nil || data.Price != nil {
 		asset.CurrencyValue = asset.Price * asset.Amount
 	}
@@ -938,6 +965,7 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 			"asset_id": data.ID,
 			"data":     data,
 		}).Error("failed to update asset: ", err)
+
 		return fmt.Errorf("Failed to update asset.")
 	}
 
@@ -956,6 +984,7 @@ func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 			"uid":      uid,
 			"asset_id": assetID,
 		}).Error("failed to delete asset: ", err)
+
 		return false, fmt.Errorf("Failed to delete asset.")
 	}
 
@@ -974,6 +1003,7 @@ func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
 			"to_asset":   data.ToAsset,
 			"from_asset": data.FromAsset,
 		}).Error("failed to delete asset logs by user id: ", err)
+
 		return fmt.Errorf("Failed to delete asset logs by user.")
 	}
 
@@ -987,6 +1017,7 @@ func DeleteAllAssetsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all assets by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all assets by user.")
 	}
 

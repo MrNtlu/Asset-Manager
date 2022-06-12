@@ -15,6 +15,7 @@ func CreateHourlySchedule(task interface{}, rate int) *gocron.Scheduler {
 			"rate": rate,
 		}).Error("error hourly schedule ", err)
 	}
+
 	scheduler.StartAsync()
 
 	return scheduler
@@ -28,6 +29,7 @@ func CreateDailySchedule(task interface{}, atTime string) *gocron.Scheduler {
 			"time": atTime,
 		}).Error("error daily schedule ", err)
 	}
+
 	scheduler.StartAsync()
 
 	return scheduler

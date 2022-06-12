@@ -17,6 +17,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
 	var intervalDate time.Time
+
 	switch interval {
 	case "weekly":
 		intervalDate = time.Now().AddDate(0, 0, -7)
@@ -43,6 +44,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			},
 		}}
 	}
+
 	userLookup := bson.M{"$lookup": bson.M{
 		"from":         "users",
 		"localField":   "user_id",
@@ -81,8 +83,11 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		"preserveNullAndEmptyArrays": true,
 	}}
 
-	var project bson.M
-	var yearlyGroup bson.M
+	var (
+		project     bson.M
+		yearlyGroup bson.M
+	)
+
 	if interval == "yearly" {
 		project = bson.M{"$project": bson.M{
 			"currency": "$user.currency",
@@ -146,6 +151,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			},
 		}}
 	}
+
 	sort := bson.M{"$sort": bson.M{
 		"created_at": 1,
 	}}
@@ -182,6 +188,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			"uid":      uid,
 			"interval": interval,
 		}).Error("failed to aggregate daily asset stats: ", err)
+
 		return responses.DailyAssetStats{}, fmt.Errorf("Failed to aggregate daily asset stats.")
 	}
 
@@ -191,6 +198,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 			"uid":      uid,
 			"interval": interval,
 		}).Error("failed to decode daily asset stats: ", err)
+
 		return responses.DailyAssetStats{}, fmt.Errorf("Failed to decode daily asset stats.")
 	}
 
@@ -452,13 +460,11 @@ func CalculateDailyAssetStats() {
 		},
 	}}
 
-	var aggregationList = bson.A{
+	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
 		group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup,
-	}
-
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), aggregationList)
+	})
 	if err != nil {
 		logrus.Error("failed to aggregate daily asset stats calculation: ", err)
 	}
@@ -468,7 +474,7 @@ func CalculateDailyAssetStats() {
 		logrus.Error("failed to decode daily asset stats calculation: ", err)
 	}
 
-	if len(dailyAssetStats) < 0 {
+	if len(dailyAssetStats) < 1 {
 		logrus.Error("empty daily asset stats")
 		return
 	}
@@ -477,7 +483,12 @@ func CalculateDailyAssetStats() {
 	for i, dailyAssetStat := range dailyAssetStats {
 		insertDASList[i] = dailyAssetStat
 	}
-	if _, err := db.DailyAssetStatCollection.InsertMany(context.TODO(), insertDASList, options.InsertMany().SetOrdered(false)); err != nil {
+
+	if _, err := db.DailyAssetStatCollection.InsertMany(
+		context.TODO(),
+		insertDASList,
+		options.InsertMany().SetOrdered(false),
+	); err != nil {
 		logrus.Error("failed to create daily asset stats calculation list: ", err)
 	}
 }
@@ -489,6 +500,7 @@ func DeleteAllAssetStatsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all asset stats by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all asset stats by user id.")
 	}
 

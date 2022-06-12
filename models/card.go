@@ -26,6 +26,8 @@ type Card struct {
 	CreatedAt  time.Time          `bson:"created_at" json:"-"`
 }
 
+const cardPremiumLimit = 3
+
 func createCardObject(uid, name, last4Digit, cardHolder, color, cardType, currency string) *Card {
 	return &Card{
 		UserID:     uid,
@@ -46,12 +48,15 @@ func CreateCard(uid string, data requests.Card) (Card, error) {
 		insertedID *mongo.InsertOneResult
 		err        error
 	)
+
 	if insertedID, err = db.CardCollection.InsertOne(context.TODO(), card); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to create new card: ", err)
+
 		return Card{}, fmt.Errorf("Failed to create new card.")
 	}
+
 	card.ID = insertedID.InsertedID.(primitive.ObjectID)
 
 	return *card, nil
@@ -63,7 +68,8 @@ func GetUserCardCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to count user cards: ", err)
-		return 3
+
+		return cardPremiumLimit
 	}
 
 	return count
@@ -79,6 +85,7 @@ func GetCardByID(cardID string) (Card, error) {
 		logrus.WithFields(logrus.Fields{
 			"card_id": cardID,
 		}).Error("failed to find card by card id: ", err)
+
 		return Card{}, fmt.Errorf("Failed to find card by card id.")
 	}
 
@@ -99,6 +106,7 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to find card by user id: ", err)
+
 		return nil, fmt.Errorf("Failed to find card by user id.")
 	}
 
@@ -107,6 +115,7 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode card: ", err)
+
 		return nil, fmt.Errorf("Failed to decode card.")
 	}
 
@@ -147,6 +156,7 @@ func UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
 			"card_id": data.ID,
 			"data":    data,
 		}).Error("failed to update card: ", err)
+
 		return Card{}, fmt.Errorf("Failed to update card.")
 	}
 
@@ -165,6 +175,7 @@ func DeleteCardByCardID(uid, cardID string) (bool, error) {
 			"uid":     uid,
 			"card_id": cardID,
 		}).Error("failed to delete card by card id: ", err)
+
 		return false, fmt.Errorf("Failed to delete card by card id.")
 	}
 
@@ -178,6 +189,7 @@ func DeleteAllCardsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all cards by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all cards by user id.")
 	}
 

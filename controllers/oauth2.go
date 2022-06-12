@@ -27,6 +27,8 @@ var (
 	errFailedLogin = "failed to login"
 )
 
+const tokenExpiration = 259200
+
 func SetOAuth2() {
 	googleOauthConfig = &oauth2.Config{
 		RedirectURL:  "http://localhost:8080/callback",
@@ -63,6 +65,7 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": errFailedLogin,
 			})
+
 			return
 		}
 		defer response.Body.Close()
@@ -72,6 +75,7 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
@@ -82,12 +86,14 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 
 		var user models.User
 		user, _ = models.FindUserByEmail(googleToken.Email)
+
 		if user.EmailAddress == "" {
 			oAuthUser, err := models.CreateOAuthUser(googleToken.Email)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
+
 			user = *oAuthUser
 		}
 
@@ -97,7 +103,7 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 			return
 		}
 
-		c.SetCookie("jwt", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
+		c.SetCookie("jwt", token, tokenExpiration, "/", os.Getenv("BASE_URI"), true, true)
 		c.JSON(http.StatusOK, gin.H{"access_token": token})
 	}
 }
@@ -122,22 +128,26 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 		type OAuth2Google struct {
 			Email string `json:"email"`
 		}
+
 		var authGoogle OAuth2Google
 		if err := json.Unmarshal(content, &authGoogle); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
 		var user models.User
 		user, _ = models.FindUserByEmail(authGoogle.Email)
+
 		if user.EmailAddress == "" {
 			oAuthUser, err := models.CreateOAuthUser(authGoogle.Email)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
 			}
+
 			user = *oAuthUser
 		}
 
@@ -147,7 +157,7 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 			return
 		}
 
-		c.SetCookie("access_token", token, 259200, "/", os.Getenv("BASE_URI"), true, true)
+		c.SetCookie("access_token", token, tokenExpiration, "/", os.Getenv("BASE_URI"), true, true)
 		c.JSON(http.StatusOK, gin.H{"access_token": token})
 	}
 }
@@ -159,18 +169,19 @@ func getUserInfo(state string, code string) ([]byte, error) {
 
 	token, err := googleOauthConfig.Exchange(context.Background(), code)
 	if err != nil {
-		return nil, fmt.Errorf("Code exchange failed: %s", err.Error())
+		return nil, fmt.Errorf("code exchange failed: %w", err)
 	}
 
 	response, err := http.Get("https://www.googleapis.com/oauth2/v2/userinfo?access_token=" + token.AccessToken)
 	if err != nil {
-		return nil, fmt.Errorf("Failed getting user info: %s", err.Error())
+		return nil, fmt.Errorf("failed getting user info: %w", err)
 	}
 
 	defer response.Body.Close()
+
 	contents, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return nil, fmt.Errorf("Failed reading response body: %s", err.Error())
+		return nil, fmt.Errorf("failed reading response body: %w", err)
 	}
 
 	return contents, nil

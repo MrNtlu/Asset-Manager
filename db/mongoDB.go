@@ -22,9 +22,7 @@ var (
 	LogCollection            *mongo.Collection
 )
 
-func Close(client *mongo.Client, ctx context.Context,
-	cancel context.CancelFunc) {
-
+func Close(ctx context.Context, client *mongo.Client, cancel context.CancelFunc) {
 	defer cancel()
 
 	defer func() {
@@ -34,11 +32,14 @@ func Close(client *mongo.Client, ctx context.Context,
 	}()
 }
 
-func Connect(uri string) (*mongo.Client, context.Context,
-	context.CancelFunc, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+func Connect(uri string) (*mongo.Client, context.Context, context.CancelFunc) {
+	const timeOut = 10 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 
 	client, err := mongo.Connect(ctx, options.Client().ApplyURI(uri))
+	if err != nil {
+		panic(err)
+	}
 
 	Database = client.Database("asset-manager")
 	AssetCollection = Database.Collection("assets")
@@ -52,5 +53,5 @@ func Connect(uri string) (*mongo.Client, context.Context,
 	DailyAssetStatCollection = Database.Collection("daily-asset-stats")
 	LogCollection = Database.Collection("logs")
 
-	return client, ctx, cancel, err
+	return client, ctx, cancel
 }

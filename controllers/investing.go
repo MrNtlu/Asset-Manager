@@ -47,10 +47,12 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": err.Error(),
 				})
+
 				return
 			}
 
 			c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": investings})
+
 			return
 		}
 	}
@@ -60,6 +62,7 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -106,6 +109,7 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
@@ -118,6 +122,7 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 	}

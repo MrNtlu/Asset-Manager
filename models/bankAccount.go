@@ -24,6 +24,8 @@ type BankAccount struct {
 	CreatedAt     time.Time          `bson:"created_at" json:"-"`
 }
 
+const bankAccPremiumLimit = 2
+
 func createBankAccount(uid, name, iban, accoutHolder, currency string) *BankAccount {
 	return &BankAccount{
 		UserID:        uid,
@@ -42,13 +44,16 @@ func CreateBankAccount(uid string, data requests.BankAccountCreate) (BankAccount
 		insertedID *mongo.InsertOneResult
 		err        error
 	)
+
 	if insertedID, err = db.BankAccountCollection.InsertOne(context.TODO(), bankAccount); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to create new bank account: ", err)
+
 		return BankAccount{}, fmt.Errorf("Failed to create new bank account.")
 	}
+
 	bankAccount.ID = insertedID.InsertedID.(primitive.ObjectID)
 
 	return *bankAccount, nil
@@ -60,7 +65,8 @@ func GetUserBankAccountCount(uid string) int64 {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to count bank accounts: ", err)
-		return 2
+
+		return bankAccPremiumLimit
 	}
 
 	return count
@@ -76,6 +82,7 @@ func GetBankAccountByID(baID string) (BankAccount, error) {
 		logrus.WithFields(logrus.Fields{
 			"bankaccount_id": baID,
 		}).Error("failed to find bank account by ba id: ", err)
+
 		return BankAccount{}, fmt.Errorf("Failed to find bank account by id.")
 	}
 
@@ -96,6 +103,7 @@ func GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to find bank account by user id: ", err)
+
 		return nil, fmt.Errorf("Failed to find bank account by user id.")
 	}
 
@@ -104,6 +112,7 @@ func GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode bankAccount: ", err)
+
 		return nil, fmt.Errorf("Failed to decode bankAccount.")
 	}
 
@@ -136,6 +145,7 @@ func UpdateBankAccount(data requests.BankAccountUpdate, bankAccount BankAccount)
 			"bankaccount_id": data.ID,
 			"data":           data,
 		}).Error("failed to update bank account: ", err)
+
 		return BankAccount{}, fmt.Errorf("Failed to update bank account.")
 	}
 
@@ -154,6 +164,7 @@ func DeleteBankAccountByBAID(uid, baID string) (bool, error) {
 			"uid":            uid,
 			"bankaccount_id": baID,
 		}).Error("failed to delete bank account by bank account id: ", err)
+
 		return false, fmt.Errorf("Failed to delete bank account by bank account id.")
 	}
 
@@ -167,6 +178,7 @@ func DeleteAllBankAccountsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all bank accounts by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all bank accounts by user id.")
 	}
 

@@ -12,6 +12,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"github.com/vmihailenco/msgpack/v5"
+	"golang.org/x/sync/errgroup"
 )
 
 type AssetController struct{}
@@ -46,6 +47,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errAssetPremium,
 		})
+
 		return
 	}
 
@@ -118,6 +120,7 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	var (
 		cacheKey      = "asset/" + uid
 		assetAndStats responses.AssetAndStats
@@ -125,19 +128,29 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		assets, err := models.GetAssetsByUserID(uid, data)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-			return
-		}
+		var (
+			assets    []responses.Asset
+			assetStat responses.AssetStats
+			err       error
+			errs, _   = errgroup.WithContext(context.TODO())
+		)
 
-		assetStat, err := models.GetAllAssetStats(uid)
+		errs.Go(func() error {
+			assets, err = models.GetAssetsByUserID(uid, data)
+			return err
+		})
+
+		errs.Go(func() error {
+			assetStat, err = models.GetAllAssetStats(uid)
+			return err
+		})
+
+		err = errs.Wait()
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
@@ -153,30 +166,38 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+
 			return
 		}
 
 		sort.Slice(assetAndStats.Data, func(i, j int) bool {
-			if data.Sort == "name" {
+			switch data.Sort {
+			case "name":
 				if data.SortType == 1 {
 					return assetAndStats.Data[i].ToAsset < assetAndStats.Data[j].ToAsset
 				}
+
 				return assetAndStats.Data[i].ToAsset > assetAndStats.Data[j].ToAsset
-			} else if data.Sort == "percentage" {
+			case "percentage":
 				if data.SortType == 1 {
 					return assetAndStats.Data[i].PLPercentage < assetAndStats.Data[j].PLPercentage
 				}
+
 				return assetAndStats.Data[i].AssetType > assetAndStats.Data[j].AssetType
-			} else if data.Sort == "amount" {
+			case "amount":
 				if data.SortType == 1 {
 					return assetAndStats.Data[i].RemainingAmount > assetAndStats.Data[j].RemainingAmount
 				}
+
 				return assetAndStats.Data[i].RemainingAmount < assetAndStats.Data[j].RemainingAmount
-			} else {
+			case "profit":
 				if data.SortType == 1 {
 					return assetAndStats.Data[i].PL < assetAndStats.Data[j].PL
 				}
+
 				return assetAndStats.Data[i].PL > assetAndStats.Data[j].PL
+			default:
+				return true
 			}
 		})
 	}
@@ -206,6 +227,7 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 
 		return
 	}
+
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
 	assetDetails, err := models.GetAssetStatsByAssetAndUserID(uid, data.ToAsset, data.FromAsset, data.AssetMarket)
@@ -213,6 +235,7 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -239,6 +262,7 @@ func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -269,11 +293,13 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	assets, pagination, err := models.GetAssetLogsByUserID(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -304,7 +330,6 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 	asset, err := models.GetAssetByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-
 		return
 	}
 
@@ -323,6 +348,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -351,11 +377,13 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+
 	isDeleted, err := models.DeleteAssetLogByAssetID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -363,6 +391,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 		go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
 		c.JSON(http.StatusOK, gin.H{"message": "Asset deleted successfully."})
+
 		return
 	}
 
@@ -393,6 +422,7 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 
@@ -418,6 +448,7 @@ func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
+
 		return
 	}
 

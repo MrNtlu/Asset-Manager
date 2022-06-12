@@ -8,7 +8,6 @@ import (
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/routes"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -43,8 +42,6 @@ import (
 // @in header
 // @name Authorization
 func main() {
-	fmt.Println("Running")
-
 	if os.Getenv("ENV") != "Production" {
 		if err := godotenv.Load(".env"); err != nil {
 			log.Default().Println(os.Getenv("ENV"))
@@ -54,11 +51,8 @@ func main() {
 
 	controllers.SetOAuth2()
 
-	client, ctx, cancel, err := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
-	if err != nil {
-		panic(err)
-	}
-	defer db.Close(client, ctx, cancel)
+	client, ctx, cancel := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
+	defer db.Close(ctx, client, cancel)
 
 	db.SetupRedis()
 
@@ -73,17 +67,23 @@ func main() {
 	router := gin.Default()
 	docs.SwaggerInfo.BasePath = "/api/v1"
 
+	const (
+		burstTime       = 100 * time.Millisecond
+		requestCount    = 20
+		restrictionTime = 5 * time.Second
+	)
 	// Burst of 0.1 sec 20 requests. 5 second restriction.
 	router.Use(limit.NewRateLimiter(func(ctx *gin.Context) string {
 		return ctx.ClientIP()
 	}, func(ctx *gin.Context) (*rate.Limiter, time.Duration) {
-		return rate.NewLimiter(rate.Every(100*time.Millisecond), 20), 5 * time.Second
+		return rate.NewLimiter(rate.Every(burstTime), requestCount), restrictionTime
 	}, func(ctx *gin.Context) {
 		go models.CreateLog(ctx.ClientIP(), requests.CreateLog{
 			Log:     "Rate-Limit",
 			LogType: 0,
 		})
-		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": "Too many requests. Rescricted for 5 seconds.", "message": "Too many requests. Rescricted for 5 seconds."})
+		const tooManyRequestError = "Too many requests. Rescricted for 5 seconds."
+		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": tooManyRequestError, "message": tooManyRequestError})
 		ctx.Abort()
 	}))
 

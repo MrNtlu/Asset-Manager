@@ -15,7 +15,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-//Categories
+// Categories
 const (
 	Food int64 = iota
 	Shopping
@@ -27,13 +27,15 @@ const (
 	Others
 )
 
-//Transaction Types
+// Transaction Types
 const (
 	BankAcc int64 = iota
 	CreditCard
 )
 
-//TODO: Allow receipt photo and keep it also get price from receipt via ML or something research (Premium feature only)
+const transactionPremiumLimit = 10
+
+// TODO: Allow receipt photo and keep it also get price from receipt via ML or something research (Premium feature only).
 type Transaction struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID            string             `bson:"user_id" json:"user_id"`
@@ -52,7 +54,13 @@ type TransactionMethod struct {
 	Type     int64  `bson:"type" json:"type"`
 }
 
-func createTransaction(uid, title, currency string, category int64, price float64, transactionDate time.Time, method *TransactionMethod, description *string) *Transaction {
+const transactionPaginationLimit = 20
+
+func createTransaction(
+	uid, title, currency string, category int64,
+	price float64, transactionDate time.Time,
+	method *TransactionMethod, description *string,
+) *Transaction {
 	return &Transaction{
 		UserID:            uid,
 		Title:             title,
@@ -94,13 +102,16 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 		insertedID *mongo.InsertOneResult
 		err        error
 	)
+
 	if insertedID, err = db.TransactionCollection.InsertOne(context.TODO(), transaction); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to create new transaction: ", err)
+
 		return Transaction{}, fmt.Errorf("Failed to create new transaction.")
 	}
+
 	transaction.ID = insertedID.InsertedID.(primitive.ObjectID)
 
 	return *transaction, nil
@@ -155,6 +166,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 			},
 		}}
 	}
+
 	uidToObject := bson.M{"$addFields": bson.M{
 		"user_id": bson.M{
 			"$toObjectId": "$user_id",
@@ -224,6 +236,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate total transactions: ", err)
+
 		return responses.TransactionTotal{}, fmt.Errorf("Failed to aggregate total transactions.")
 	}
 
@@ -232,6 +245,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode total transactions: ", err)
+
 		return responses.TransactionTotal{}, fmt.Errorf("Failed to decode total transactions.")
 	}
 
@@ -317,6 +331,7 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to aggregate transactions: ", err)
+
 		return responses.TransactionTotal{}, fmt.Errorf("Failed to aggregate transactions.")
 	}
 
@@ -326,6 +341,7 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to decode transactions: ", err)
+
 		return responses.TransactionTotal{}, fmt.Errorf("Failed to decode transactions.")
 	}
 
@@ -338,6 +354,7 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 
 func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionDailyStats, error) {
 	var intervalDate time.Time
+
 	switch data.Interval {
 	case "weekly":
 		intervalDate = time.Now().AddDate(0, 0, -7)
@@ -370,6 +387,7 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 			},
 		}}
 	}
+
 	addFields := bson.M{"$addFields": bson.M{
 		"user_id": bson.M{
 			"$toObjectId": "$user_id",
@@ -451,6 +469,7 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 			},
 		}}
 	}
+
 	group := bson.M{"$group": bson.M{
 		"_id": "$transaction_date",
 		"currency": bson.M{
@@ -474,6 +493,7 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to aggregate transaction statistics: ", err)
+
 		return nil, fmt.Errorf("Failed to aggregate transaction statistics: %w", err)
 	}
 
@@ -482,10 +502,9 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode transaction statistics: ", err)
+
 		return nil, fmt.Errorf("Failed to decode transaction statistics: %w", err)
 	}
-
-	fmt.Println(transactionStats)
 
 	return transactionStats, nil
 }
@@ -518,7 +537,8 @@ func GetUserTransactionCountByTime(uid string, date time.Time) int64 {
 			"uid":  uid,
 			"date": date,
 		}).Error("failed to count transactions by date: ", err)
-		return 10
+
+		return transactionPremiumLimit
 	}
 
 	return count
@@ -534,6 +554,7 @@ func GetTransactionByID(transactionID string) (Transaction, error) {
 		logrus.WithFields(logrus.Fields{
 			"transaction_id": transaction,
 		}).Error("failed to create new transaction: ", err)
+
 		return Transaction{}, fmt.Errorf("Failed to find transaction by transaction id.")
 	}
 
@@ -541,12 +562,14 @@ func GetTransactionByID(transactionID string) (Transaction, error) {
 }
 
 func GetTransactionCategoryDistribution(uid string, data requests.TransactionStatsInterval) (responses.TransactionCategoryStats, error) {
-	var today = time.Now()
-	var match bson.M
+	var (
+		today = time.Now()
+		match bson.M
+	)
 
 	switch data.Interval {
 	case "weekly":
-		var year, week = today.ISOWeek()
+		year, week := today.ISOWeek()
 		match = bson.M{"$match": bson.M{
 			"user_id": uid,
 			"$expr": bson.M{
@@ -693,12 +716,16 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{match, set, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, facet, setResponse})
+	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+		match, set, userLookup, unwindUser, userCurrencyExchangeLookup,
+		unwindUserCurrency, addExhangeValue, facet, setResponse,
+	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to aggregate transaction category stats while aggregating: ", err)
+
 		return responses.TransactionCategoryStats{}, fmt.Errorf("Failed to aggregate transaction category stats while aggregating.")
 	}
 
@@ -707,6 +734,7 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to decode transaction category stats aggregate: ", err)
+
 		return responses.TransactionCategoryStats{}, fmt.Errorf("Failed to decode transaction category stats aggregate.")
 	}
 
@@ -720,6 +748,7 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
 	match := bson.M{}
 	match["user_id"] = uid
+
 	if data.BankAccID != nil && data.CardID != nil {
 		match["$or"] = bson.A{
 			bson.M{
@@ -792,6 +821,7 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 		sortType  int
 		sortOrder string
 	)
+
 	if data.Sort == "date" {
 		sortOrder = "transaction_date"
 		sortType = data.SortType
@@ -801,13 +831,15 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 	}
 
 	var transactions []Transaction
+
 	paginatedData, err := pagination.New(db.TransactionCollection).Context(context.TODO()).
-		Limit(20).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
+		Limit(transactionPaginationLimit).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
 		}).Error("failed to find transaction: ", err)
+
 		return nil, pagination.PaginationData{}, fmt.Errorf("Failed to find transaction.")
 	}
 
@@ -856,6 +888,7 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 			"transaction_id": data.ID,
 			"data":           data,
 		}).Error("failed to update transaction: ", err)
+
 		return Transaction{}, fmt.Errorf("Failed to update transaction.")
 	}
 
@@ -896,6 +929,7 @@ func DeleteTransactionByTransactionID(uid, transactionID string) (bool, error) {
 			"uid":            uid,
 			"transaction_id": transactionID,
 		}).Error("failed to delete transaction by transaction id: ", err)
+
 		return false, fmt.Errorf("Failed to delete transaction by transaction id.")
 	}
 
@@ -909,6 +943,7 @@ func DeleteAllTransactionsByUserID(uid string) error {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete all transactions by user id: ", err)
+
 		return fmt.Errorf("Failed to delete all transactions by user id.")
 	}
 
@@ -917,6 +952,7 @@ func DeleteAllTransactionsByUserID(uid string) error {
 
 func GetTotalFromCategoryStats(stats responses.TransactionCategoryStats, isIncome bool) float64 {
 	var total float64 = 0
+
 	for _, item := range stats.CategoryList {
 		if isIncome && item.CategoryID == Income {
 			total = item.TotalCategoryTransaction

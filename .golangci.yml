@@ -44,7 +44,6 @@ linters:
     - golint
     - maligned
     - noctx
-    - varnamelen
     - wrapcheck
     - gci
     - tagliatelle

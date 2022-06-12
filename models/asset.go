@@ -347,48 +347,6 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 		"asset_market": market,
 		"user_id":      uid,
 	}}
-	group := bson.M{"$group": bson.M{
-		"_id": bson.M{
-			"to_asset":   "$to_asset",
-			"from_asset": "$from_asset",
-		},
-		"total_bought": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "buy"}},
-					"$value",
-					0,
-				},
-			},
-		},
-		"total_sold": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "sell"}},
-					"$value",
-					0,
-				},
-			},
-		},
-		"remaining_amount": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "buy"}},
-					"$amount",
-					bson.M{"$multiply": bson.A{"$amount", -1}},
-				},
-			},
-		},
-		"asset_type": bson.M{
-			"$first": "$asset_type",
-		},
-		"asset_market": bson.M{
-			"$first": "$asset_market",
-		},
-		"user_id": bson.M{
-			"$first": "$user_id",
-		},
-	}}
 	lookup := bson.M{"$lookup": bson.M{
 		"from": "investings",
 		"let": bson.M{
@@ -511,7 +469,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 	}}
 
 	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
-		match, group, lookup, unwindInvesting, exchangeLookup,
+		match, groupAssetsByToAssetFromAsset(), lookup, unwindInvesting, exchangeLookup,
 		unwindExchange, addInvestingField, project, addPercentageField,
 	})
 	if err != nil {
@@ -543,48 +501,6 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
-	}}
-	group := bson.M{"$group": bson.M{
-		"_id": bson.M{
-			"to_asset":   "$to_asset",
-			"from_asset": "$from_asset",
-		},
-		"total_bought": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "buy"}},
-					"$value",
-					0,
-				},
-			},
-		},
-		"total_sold": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "sell"}},
-					"$value",
-					0,
-				},
-			},
-		},
-		"remaining_amount": bson.M{
-			"$sum": bson.M{
-				"$cond": bson.A{
-					bson.M{"$eq": bson.A{"$type", "buy"}},
-					"$amount",
-					bson.M{"$multiply": bson.A{"$amount", -1}},
-				},
-			},
-		},
-		"asset_type": bson.M{
-			"$first": "$asset_type",
-		},
-		"asset_market": bson.M{
-			"$first": "$asset_market",
-		},
-		"user_id": bson.M{
-			"$first": "$user_id",
-		},
 	}}
 	lookup := bson.M{"$lookup": bson.M{
 		"from": "investings",
@@ -931,7 +847,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	}}
 
 	var aggregationList = bson.A{
-		match, group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
+		match, groupAssetsByToAssetFromAsset(), lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup, addPercentageFields,
 	}
@@ -1075,4 +991,49 @@ func DeleteAllAssetsByUserID(uid string) error {
 	}
 
 	return nil
+}
+
+func groupAssetsByToAssetFromAsset() bson.M {
+	return bson.M{"$group": bson.M{
+		"_id": bson.M{
+			"to_asset":   "$to_asset",
+			"from_asset": "$from_asset",
+		},
+		"total_bought": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"total_sold": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "sell"}},
+					"$value",
+					0,
+				},
+			},
+		},
+		"remaining_amount": bson.M{
+			"$sum": bson.M{
+				"$cond": bson.A{
+					bson.M{"$eq": bson.A{"$type", "buy"}},
+					"$amount",
+					bson.M{"$multiply": bson.A{"$amount", -1}},
+				},
+			},
+		},
+		"asset_type": bson.M{
+			"$first": "$asset_type",
+		},
+		"asset_market": bson.M{
+			"$first": "$asset_market",
+		},
+		"user_id": bson.M{
+			"$first": "$user_id",
+		},
+	}}
 }

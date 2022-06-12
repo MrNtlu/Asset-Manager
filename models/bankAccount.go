@@ -153,7 +153,7 @@ func DeleteBankAccountByBAID(uid, baID string) (bool, error) {
 		logrus.WithFields(logrus.Fields{
 			"uid":            uid,
 			"bankaccount_id": baID,
-		}).Error("failed to delete bank account by ba id: ", err)
+		}).Error("failed to delete bank account by bank account id: ", err)
 		return false, fmt.Errorf("Failed to delete bank account by bank account id.")
 	}
 

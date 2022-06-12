@@ -149,7 +149,13 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 		marshalAssetAndStats, _ := msgpack.Marshal(assetAndStats)
 		go db.RedisDB.Set(context.TODO(), cacheKey, marshalAssetAndStats, db.RedisSExpire)
 	} else {
-		msgpack.Unmarshal([]byte(result), &assetAndStats)
+		if err := msgpack.Unmarshal([]byte(result), &assetAndStats); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
 		sort.Slice(assetAndStats.Data, func(i, j int) bool {
 			if data.Sort == "name" {
 				if data.SortType == 1 {

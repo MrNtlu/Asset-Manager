@@ -11,6 +11,12 @@ permissions:
   contents: read
   # Optional: allow read access to pull request. Use with `only-new-issues` option.
   # pull-requests: read
+linters-settings:
+  errcheck:
+    # path to a file containing a list of functions to exclude from checking
+    # see https://github.com/kisielk/errcheck#excluding-functions for details
+    exclude: ./controllers/user.go
+
 jobs:
   golangci:
     name: lint

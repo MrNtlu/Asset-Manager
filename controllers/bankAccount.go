@@ -94,7 +94,12 @@ func (ba *BankAccountController) GetBankAccountsByUserID(c *gin.Context) {
 		marshalBankAccounts, _ := msgpack.Marshal(bankAccounts)
 		go db.RedisDB.Set(context.TODO(), cacheKey, marshalBankAccounts, db.RedisLExpire)
 	} else {
-		msgpack.Unmarshal([]byte(result), &bankAccounts)
+		if err := msgpack.Unmarshal([]byte(result), &bankAccounts); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": bankAccounts})

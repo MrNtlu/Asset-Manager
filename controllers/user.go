@@ -294,7 +294,12 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	helpers.SendForgotPasswordEmail(resetToken, user.EmailAddress)
+	if err := helpers.SendForgotPasswordEmail(resetToken, user.EmailAddress); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully send password reset email."})
 }
@@ -333,7 +338,12 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 		return
 	}
 
-	helpers.SendPasswordChangedEmail(generatedPass, user.EmailAddress)
+	if err := helpers.SendPasswordChangedEmail(generatedPass, user.EmailAddress); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+		return
+	}
 
 	http.ServeFile(c.Writer, c.Request, "assets/confirm_password.html")
 }

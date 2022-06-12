@@ -68,7 +68,13 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 		defer response.Body.Close()
 
 		var googleToken responses.GoogleToken
-		json.NewDecoder(response.Body).Decode(&googleToken)
+		if err := json.NewDecoder(response.Body).Decode(&googleToken); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
 		if googleToken.Email == "" {
 			c.JSON(http.StatusUnauthorized, gin.H{"message": errFailedLogin, "code": http.StatusUnauthorized})
 			return
@@ -117,7 +123,12 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 			Email string `json:"email"`
 		}
 		var authGoogle OAuth2Google
-		json.Unmarshal(content, &authGoogle)
+		if err := json.Unmarshal(content, &authGoogle); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 
 		var user models.User
 		user, _ = models.FindUserByEmail(authGoogle.Email)

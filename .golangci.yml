@@ -43,7 +43,6 @@ linters:
     - interfacer
     - golint
     - maligned
-    - exhaustivestruct
     - exhaustruct
     - forcetypeassert
     - maintidx

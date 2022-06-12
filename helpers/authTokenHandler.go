@@ -22,14 +22,10 @@ var (
 )
 
 func SetupJWTHandler() *jwt.GinJWTMiddleware {
-	port := os.Getenv("PORT")
+	// port := os.Getenv("PORT")
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-
-	if port == "" {
-		port = "8080"
-	}
 
 	authMiddleware, err := jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "asset-manager",

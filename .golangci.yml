@@ -43,7 +43,6 @@ linters:
     - interfacer
     - golint
     - maligned
-    - exhaustruct
     - forcetypeassert
     - maintidx
     - noctx

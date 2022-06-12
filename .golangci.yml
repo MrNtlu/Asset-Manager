@@ -4,3 +4,4 @@ linters:
     - errcheck
     - dupl
     - funlen
+    - gochecknoglobals

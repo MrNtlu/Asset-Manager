@@ -29,6 +29,7 @@ run:
     - helpers/authTokenHandler.go
     - utils/pagination.go
     - utils/hashPassword.go
+    - controllers/oauth2.go
 
 linters:
   enable-all: true

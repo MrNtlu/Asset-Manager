@@ -7,10 +7,8 @@ definitions:
       amount:
         type: number
       asset_market:
-        description: if stock the market else if crypto CMC else exchange
         type: string
       asset_type:
-        description: stock, crypto etc.
         type: string
       created_at:
         type: string
@@ -21,12 +19,10 @@ definitions:
       to_asset:
         type: string
       type:
-        description: sell buy
         type: string
       user_id:
         type: string
       value:
-        description: value in from asset currency
         type: number
     type: object
   models.BankAccount:
@@ -271,8 +267,17 @@ definitions:
     required:
     - currency
     type: object
+  requests.ChangeFCMToken:
+    properties:
+      fcm_token:
+        type: string
+    required:
+    - fcm_token
+    type: object
   requests.ChangeMembership:
     properties:
+      is_lifetime_premium:
+        type: boolean
       is_premium:
         type: boolean
     type: object
@@ -418,6 +423,8 @@ definitions:
         type: integer
       currency:
         type: string
+      delete_method:
+        type: boolean
       description:
         type: string
       id:
@@ -667,20 +674,44 @@ definitions:
       total_payment:
         type: number
     type: object
-  responses.TransactionCalendarCount:
+  responses.TransactionCategoryStat:
     properties:
       _id:
-        type: string
-      count:
         type: integer
+      total_transaction:
+        type: number
     type: object
-  responses.TransactionStats:
+  responses.TransactionCategoryStats:
+    properties:
+      category_list:
+        items:
+          $ref: '#/definitions/responses.TransactionCategoryStat'
+        type: array
+      currency:
+        type: string
+      total_transaction:
+        type: number
+    type: object
+  responses.TransactionDailyStats:
     properties:
       currency:
         type: string
       date:
         type: string
       total_transaction:
+        type: number
+    type: object
+  responses.TransactionStats:
+    properties:
+      category_stats:
+        $ref: '#/definitions/responses.TransactionCategoryStats'
+      daily_stats:
+        items:
+          $ref: '#/definitions/responses.TransactionDailyStats'
+        type: array
+      total_expense:
+        type: number
+      total_income:
         type: number
     type: object
   responses.TransactionTotal:
@@ -696,9 +727,13 @@ definitions:
         type: string
       email_address:
         type: string
+      fcm_token:
+        type: string
       investing_limit:
         type: string
       is_lifetime_premium:
+        type: boolean
+      is_oauth:
         type: boolean
       is_premium:
         type: boolean
@@ -876,7 +911,7 @@ paths:
       - enum:
         - weekly
         - monthly
-        - 3monthly
+        - yearly
         in: query
         name: interval
         required: true
@@ -1681,6 +1716,25 @@ paths:
       summary: Create Log
       tags:
       - logs
+  /oauth/apple:
+    post:
+      consumes:
+      - application/json
+      description: Gets user info from apple and creates/finds user and returns token
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Token
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      summary: OAuth2 Apple Login
+      tags:
+      - oauth2
   /oauth/google:
     post:
       consumes:
@@ -2158,35 +2212,6 @@ paths:
       summary: Delete all transaction by user id
       tags:
       - transaction
-  /transaction/calendar:
-    get:
-      consumes:
-      - application/json
-      description: Returns number of transactions by year and month
-      parameters:
-      - description: Authentication header
-        in: header
-        name: Authorization
-        required: true
-        type: string
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/responses.TransactionCalendarCount'
-            type: array
-        "500":
-          description: Internal Server Error
-          schema:
-            type: string
-      security:
-      - BearerAuth: []
-      summary: Get Number of Transactions per Day for Calendar
-      tags:
-      - transaction
   /transaction/stats:
     get:
       consumes:
@@ -2421,6 +2446,39 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: Change User Membership
+      tags:
+      - user
+  /user/update-token:
+    put:
+      consumes:
+      - application/json
+      description: Depending on logged in device fcm token will be updated
+      parameters:
+      - description: Set token
+        in: body
+        name: changefcmtoken
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ChangeFCMToken'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - ApiKeyAuth: []
+      summary: Updates FCM User Token
       tags:
       - user
 schemes:

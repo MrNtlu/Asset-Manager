@@ -22,6 +22,7 @@
     <li> teambition/rrule-go
     <li> Validator
     <li> Golangci-lint
+    <li> Timothylock/go-signin-with-apple
 </ul>
 
 [Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)

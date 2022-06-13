@@ -277,7 +277,7 @@ const docTemplate = `{
                         "enum": [
                             "weekly",
                             "monthly",
-                            "3monthly"
+                            "yearly"
                         ],
                         "type": "string",
                         "name": "interval",
@@ -1522,6 +1522,35 @@ const docTemplate = `{
                 }
             }
         },
+        "/oauth/apple": {
+            "post": {
+                "description": "Gets user info from apple and creates/finds user and returns token",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "oauth2"
+                ],
+                "summary": "OAuth2 Apple Login",
+                "responses": {
+                    "200": {
+                        "description": "Token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/oauth/google": {
             "post": {
                 "description": "Gets user info from google and creates/finds user and returns token",
@@ -2266,52 +2295,6 @@ const docTemplate = `{
                 }
             }
         },
-        "/transaction/calendar": {
-            "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
-                "description": "Returns number of transactions by year and month",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "transaction"
-                ],
-                "summary": "Get Number of Transactions per Day for Calendar",
-                "parameters": [
-                    {
-                        "type": "string",
-                        "description": "Authentication header",
-                        "name": "Authorization",
-                        "in": "header",
-                        "required": true
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "OK",
-                        "schema": {
-                            "type": "array",
-                            "items": {
-                                "$ref": "#/definitions/responses.TransactionCalendarCount"
-                            }
-                        }
-                    },
-                    "500": {
-                        "description": "Internal Server Error",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                }
-            }
-        },
         "/transaction/stats": {
             "get": {
                 "security": [
@@ -2682,6 +2665,58 @@ const docTemplate = `{
                     }
                 }
             }
+        },
+        "/user/update-token": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Depending on logged in device fcm token will be updated",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Updates FCM User Token",
+                "parameters": [
+                    {
+                        "description": "Set token",
+                        "name": "changefcmtoken",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ChangeFCMToken"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
         }
     },
     "definitions": {
@@ -2695,11 +2730,9 @@ const docTemplate = `{
                     "type": "number"
                 },
                 "asset_market": {
-                    "description": "if stock the market else if crypto CMC else exchange",
                     "type": "string"
                 },
                 "asset_type": {
-                    "description": "stock, crypto etc.",
                     "type": "string"
                 },
                 "created_at": {
@@ -2715,14 +2748,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "type": {
-                    "description": "sell buy",
                     "type": "string"
                 },
                 "user_id": {
                     "type": "string"
                 },
                 "value": {
-                    "description": "value in from asset currency",
                     "type": "number"
                 }
             }
@@ -3088,9 +3119,23 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.ChangeFCMToken": {
+            "type": "object",
+            "required": [
+                "fcm_token"
+            ],
+            "properties": {
+                "fcm_token": {
+                    "type": "string"
+                }
+            }
+        },
         "requests.ChangeMembership": {
             "type": "object",
             "properties": {
+                "is_lifetime_premium": {
+                    "type": "boolean"
+                },
                 "is_premium": {
                     "type": "boolean"
                 }
@@ -3307,6 +3352,9 @@ const docTemplate = `{
                 },
                 "currency": {
                     "type": "string"
+                },
+                "delete_method": {
+                    "type": "boolean"
                 },
                 "description": {
                     "type": "string"
@@ -3686,18 +3734,35 @@ const docTemplate = `{
                 }
             }
         },
-        "responses.TransactionCalendarCount": {
+        "responses.TransactionCategoryStat": {
             "type": "object",
             "properties": {
                 "_id": {
-                    "type": "string"
-                },
-                "count": {
                     "type": "integer"
+                },
+                "total_transaction": {
+                    "type": "number"
                 }
             }
         },
-        "responses.TransactionStats": {
+        "responses.TransactionCategoryStats": {
+            "type": "object",
+            "properties": {
+                "category_list": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.TransactionCategoryStat"
+                    }
+                },
+                "currency": {
+                    "type": "string"
+                },
+                "total_transaction": {
+                    "type": "number"
+                }
+            }
+        },
+        "responses.TransactionDailyStats": {
             "type": "object",
             "properties": {
                 "currency": {
@@ -3707,6 +3772,26 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "total_transaction": {
+                    "type": "number"
+                }
+            }
+        },
+        "responses.TransactionStats": {
+            "type": "object",
+            "properties": {
+                "category_stats": {
+                    "$ref": "#/definitions/responses.TransactionCategoryStats"
+                },
+                "daily_stats": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/responses.TransactionDailyStats"
+                    }
+                },
+                "total_expense": {
+                    "type": "number"
+                },
+                "total_income": {
                     "type": "number"
                 }
             }
@@ -3731,10 +3816,16 @@ const docTemplate = `{
                 "email_address": {
                     "type": "string"
                 },
+                "fcm_token": {
+                    "type": "string"
+                },
                 "investing_limit": {
                     "type": "string"
                 },
                 "is_lifetime_premium": {
+                    "type": "boolean"
+                },
+                "is_oauth": {
                     "type": "boolean"
                 },
                 "is_premium": {

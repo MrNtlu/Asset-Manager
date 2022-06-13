@@ -37,9 +37,11 @@ type User struct {
 	CreatedAt          time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt          time.Time          `bson:"updated_at" json:"-"`
 	IsPremium          bool               `bson:"is_premium" json:"is_premium"`
-	FCMToken           string             `bson:"fcm_token" json:"fcm_token"`
 	IsLifetimePremium  bool               `bson:"is_lifetime_premium" json:"is_lifetime_premium"`
 	IsOAuthUser        bool               `bson:"is_oauth" json:"is_oauth"`
+	OAuthType          int                `bson:"oauth_type" json:"oauth_type"`
+	RefreshToken       *string            `bson:"refresh_token" json:"-"`
+	FCMToken           string             `bson:"fcm_token" json:"fcm_token"`
 }
 
 func createUserObject(emailAddress, currency, password string) *User {
@@ -56,7 +58,7 @@ func createUserObject(emailAddress, currency, password string) *User {
 	}
 }
 
-func createOAuthUserObject(emailAddress string) *User {
+func createOAuthUserObject(emailAddress string, refreshToken *string, oAuthType int) *User {
 	return &User{
 		EmailAddress: emailAddress,
 		Currency:     "USD",
@@ -64,6 +66,8 @@ func createOAuthUserObject(emailAddress string) *User {
 		UpdatedAt:    time.Now().UTC(),
 		IsPremium:    false,
 		IsOAuthUser:  true,
+		OAuthType:    oAuthType,
+		RefreshToken: refreshToken,
 	}
 }
 
@@ -81,8 +85,8 @@ func CreateUser(data requests.Register) error {
 	return nil
 }
 
-func CreateOAuthUser(email string) (*User, error) {
-	user := createOAuthUserObject(email)
+func CreateOAuthUser(email string, refreshToken *string, oAuthType int) (*User, error) {
+	user := createOAuthUserObject(email, refreshToken, oAuthType)
 
 	result, err := db.UserCollection.InsertOne(context.TODO(), user)
 	if err != nil {
@@ -165,6 +169,23 @@ func FindUserByID(uid string) (User, error) {
 		}).Error("failed to find user by uid: ", err)
 
 		return User{}, fmt.Errorf("Failed to find user by id.")
+	}
+
+	return user, nil
+}
+
+func FindUserByRefreshToken(refreshToken string) (User, error) {
+	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+		"refresh_token": refreshToken,
+	})
+
+	var user User
+	if err := result.Decode(&user); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"refresh_token": refreshToken,
+		}).Error("failed to find user by refreshToken: ", err)
+
+		return User{}, fmt.Errorf("Failed to find user by token.")
 	}
 
 	return user, nil

@@ -29,6 +29,17 @@ var (
 	errPremiumFeature    = "This feature requires premium membership."
 )
 
+func (u *UserController) SendNotification(c *gin.Context) {
+
+	if err := helpers.SendNotification("d7IMhmAoTtSfCtFK6PEJd6:APA91bGtVDTjMzDCyXtDx7yU_CLLhXmlcnHD7xTrD2ZZteYVPbyXOBMwV7NBLsUngvFhK9PMlC1h37vRqPUlSYy9YvQAWcpchlRqCBvKXEi0IUuhS48laxKOHJezGuZJsCMPlAcBIjfa", "Test notification", "This is an example."); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": errAlreadyRegistered,
+		})
+	}
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully sent notification."})
+}
+
 // Register
 // @Summary User Registration
 // @Description Allows users to register

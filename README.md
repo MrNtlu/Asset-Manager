@@ -23,6 +23,7 @@
     <li> Validator
     <li> Golangci-lint
     <li> Timothylock/go-signin-with-apple
+    <li> appleboy/Go-FCM
 </ul>
 
 [Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)

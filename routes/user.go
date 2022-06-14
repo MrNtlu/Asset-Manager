@@ -17,6 +17,7 @@ func userRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
 	user := router.Group("/user")
 	{
 		user.POST("/forgot-password", userController.ForgotPassword)
+		user.POST("/notification", userController.SendNotification)
 
 		user.Use(jwtToken.MiddlewareFunc())
 		{

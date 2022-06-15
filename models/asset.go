@@ -168,6 +168,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.A
 	}
 
 	var match bson.M
+
 	if data.AssetType != nil {
 		assetTypeList := bson.A{}
 		for _, item := range strings.Split(*data.AssetType, ",") {

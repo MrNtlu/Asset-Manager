@@ -145,7 +145,7 @@ func GetUserAssetCount(uid string) int64 {
 	return 0
 }
 
-func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, error) {
+func GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.Asset, error) {
 	var sort bson.M
 
 	switch data.Sort {
@@ -167,9 +167,25 @@ func GetAssetsByUserID(uid string, data requests.AssetSort) ([]responses.Asset, 
 		}}
 	}
 
-	match := bson.M{"$match": bson.M{
-		"user_id": uid,
-	}}
+	var match bson.M
+	if data.AssetType != nil {
+		assetTypeList := bson.A{}
+		for _, item := range strings.Split(*data.AssetType, ",") {
+			assetTypeList = append(assetTypeList, item)
+		}
+
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+			"asset_type": bson.M{
+				"$in": assetTypeList,
+			},
+		}}
+	} else {
+		match = bson.M{"$match": bson.M{
+			"user_id": uid,
+		}}
+	}
+
 	group := bson.M{"$group": bson.M{
 		"_id": bson.M{
 			"to_asset":   "$to_asset",

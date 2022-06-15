@@ -10,9 +10,10 @@ type AssetCreate struct {
 	Type        string  `json:"type" binding:"required,oneof=sell buy"`
 }
 
-type AssetSort struct {
-	Sort     string `form:"sort" binding:"required,oneof=name percentage amount profit"`
-	SortType int    `form:"type" json:"type" binding:"required,number,oneof=1 -1"`
+type AssetSortFilter struct {
+	AssetType *string `form:"asset_type"`
+	Sort      string  `form:"sort" binding:"required,oneof=name percentage amount profit"`
+	SortType  int     `form:"type" json:"type" binding:"required,number,oneof=1 -1"`
 }
 
 type AssetDetails struct {

@@ -1,17 +1,14 @@
 package controllers
 
 import (
-	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
 	"context"
 	"net/http"
-	"sort"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"github.com/vmihailenco/msgpack/v5"
 	"golang.org/x/sync/errgroup"
 )
 
@@ -59,8 +56,6 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
-
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
@@ -91,8 +86,6 @@ func (a *AssetController) CreateAssetLog(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
-
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }
 
@@ -110,7 +103,7 @@ func (a *AssetController) CreateAssetLog(c *gin.Context) {
 // @Failure 500 {string} string
 // @Router /asset [get]
 func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
-	var data requests.AssetSort
+	var data requests.AssetSortFilter
 	if err := c.ShouldBindQuery(&data); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": validatorErrorHandler(err),
@@ -122,84 +115,35 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
 	var (
-		cacheKey      = "asset/" + uid
 		assetAndStats responses.AssetAndStats
+		assets        []responses.Asset
+		assetStat     responses.AssetStats
+		err           error
+		errs, _       = errgroup.WithContext(context.TODO())
 	)
 
-	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
-	if err != nil || result == "" {
-		var (
-			assets    []responses.Asset
-			assetStat responses.AssetStats
-			err       error
-			errs, _   = errgroup.WithContext(context.TODO())
-		)
+	errs.Go(func() error {
+		assets, err = models.GetAssetsByUserID(uid, data)
+		return err
+	})
 
-		errs.Go(func() error {
-			assets, err = models.GetAssetsByUserID(uid, data)
-			return err
+	errs.Go(func() error {
+		assetStat, err = models.GetAllAssetStats(uid)
+		return err
+	})
+
+	err = errs.Wait()
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
 		})
 
-		errs.Go(func() error {
-			assetStat, err = models.GetAllAssetStats(uid)
-			return err
-		})
+		return
+	}
 
-		err = errs.Wait()
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		assetAndStats = responses.AssetAndStats{
-			Data:  assets,
-			Stats: assetStat,
-		}
-
-		marshalAssetAndStats, _ := msgpack.Marshal(assetAndStats)
-		go db.RedisDB.Set(context.TODO(), cacheKey, marshalAssetAndStats, db.RedisSExpire)
-	} else {
-		if err := msgpack.Unmarshal([]byte(result), &assetAndStats); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
-			})
-
-			return
-		}
-
-		sort.Slice(assetAndStats.Data, func(i, j int) bool {
-			switch data.Sort {
-			case "name":
-				if data.SortType == 1 {
-					return assetAndStats.Data[i].ToAsset < assetAndStats.Data[j].ToAsset
-				}
-
-				return assetAndStats.Data[i].ToAsset > assetAndStats.Data[j].ToAsset
-			case "percentage":
-				if data.SortType == 1 {
-					return assetAndStats.Data[i].PLPercentage < assetAndStats.Data[j].PLPercentage
-				}
-
-				return assetAndStats.Data[i].AssetType > assetAndStats.Data[j].AssetType
-			case "amount":
-				if data.SortType == 1 {
-					return assetAndStats.Data[i].RemainingAmount > assetAndStats.Data[j].RemainingAmount
-				}
-
-				return assetAndStats.Data[i].RemainingAmount < assetAndStats.Data[j].RemainingAmount
-			case "profit":
-				if data.SortType == 1 {
-					return assetAndStats.Data[i].PL < assetAndStats.Data[j].PL
-				}
-
-				return assetAndStats.Data[i].PL > assetAndStats.Data[j].PL
-			default:
-				return true
-			}
-		})
+	assetAndStats = responses.AssetAndStats{
+		Data:  assets,
+		Stats: assetStat,
 	}
 
 	c.JSON(http.StatusOK, assetAndStats)
@@ -352,8 +296,6 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
-
 	c.JSON(http.StatusOK, gin.H{"message": "Asset updated."})
 }
 
@@ -388,10 +330,7 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	}
 
 	if isDeleted {
-		go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
-
 		c.JSON(http.StatusOK, gin.H{"message": "Asset deleted successfully."})
-
 		return
 	}
 
@@ -426,8 +365,6 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 		return
 	}
 
-	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
-
 	c.JSON(http.StatusOK, gin.H{"message": "Assets deleted successfully."})
 }
 
@@ -451,8 +388,6 @@ func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 
 		return
 	}
-
-	go db.RedisDB.Del(context.TODO(), ("asset/" + uid))
 
 	c.JSON(http.StatusOK, gin.H{"message": "Assets deleted successfully by user id."})
 }

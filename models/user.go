@@ -42,6 +42,8 @@ type User struct {
 	OAuthType          int                `bson:"oauth_type" json:"oauth_type"`
 	RefreshToken       *string            `bson:"refresh_token" json:"-"`
 	FCMToken           string             `bson:"fcm_token" json:"fcm_token"`
+	AppNotification    bool               `bson:"app_notification" json:"app_notification"`
+	MailNotification   bool               `bson:"mail_notification" json:"mail_notification"`
 }
 
 func createUserObject(emailAddress, currency, password string) *User {
@@ -54,20 +56,24 @@ func createUserObject(emailAddress, currency, password string) *User {
 		IsPremium:         false,
 		IsLifetimePremium: false,
 		IsOAuthUser:       false,
+		AppNotification:   true,
+		MailNotification:  true,
 		FCMToken:          "",
 	}
 }
 
 func createOAuthUserObject(emailAddress string, refreshToken *string, oAuthType int) *User {
 	return &User{
-		EmailAddress: emailAddress,
-		Currency:     "USD",
-		CreatedAt:    time.Now().UTC(),
-		UpdatedAt:    time.Now().UTC(),
-		IsPremium:    false,
-		IsOAuthUser:  true,
-		OAuthType:    oAuthType,
-		RefreshToken: refreshToken,
+		EmailAddress:     emailAddress,
+		Currency:         "USD",
+		CreatedAt:        time.Now().UTC(),
+		UpdatedAt:        time.Now().UTC(),
+		IsPremium:        false,
+		IsOAuthUser:      true,
+		AppNotification:  true,
+		MailNotification: false,
+		OAuthType:        oAuthType,
+		RefreshToken:     refreshToken,
 	}
 }
 

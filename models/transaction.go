@@ -853,7 +853,6 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 		transaction.Title = *data.Title
 	}
 
-	fmt.Println(data.Description)
 	transaction.Description = data.Description
 
 	if data.Category != nil {

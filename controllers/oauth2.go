@@ -54,7 +54,6 @@ func (o *OAuth2Controller) OAuth2AppleLogin(jwt *jwt.GinJWTMiddleware) gin.Handl
 		keyID := os.Getenv("KEY_ID")
 		secretKey := os.Getenv("SECRET_KEY")
 
-		fmt.Println(secretKey)
 		secret, err := apple.GenerateClientSecret(secretKey, teamID, clientID, keyID)
 		if err != nil {
 			logrus.WithFields(logrus.Fields{

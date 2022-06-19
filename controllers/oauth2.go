@@ -14,6 +14,7 @@ import (
 	"github.com/Timothylock/go-signin-with-apple/apple"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 )
@@ -53,8 +54,12 @@ func (o *OAuth2Controller) OAuth2AppleLogin(jwt *jwt.GinJWTMiddleware) gin.Handl
 		keyID := os.Getenv("KEY_ID")
 		secretKey := os.Getenv("SECRET_KEY")
 
+		fmt.Println(secretKey)
 		secret, err := apple.GenerateClientSecret(secretKey, teamID, clientID, keyID)
 		if err != nil {
+			logrus.WithFields(logrus.Fields{
+				"secret_key": secretKey,
+			}).Error("Failed to generate secret key", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
 		}

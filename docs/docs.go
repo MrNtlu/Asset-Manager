@@ -44,6 +44,11 @@ const docTemplate = `{
                 "summary": "Get Assets \u0026 Stats by User ID",
                 "parameters": [
                     {
+                        "type": "string",
+                        "name": "assetType",
+                        "in": "query"
+                    },
+                    {
                         "enum": [
                             "name",
                             "percentage",

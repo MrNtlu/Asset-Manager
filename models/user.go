@@ -58,6 +58,7 @@ func createUserObject(emailAddress, currency, password string) *User {
 		IsOAuthUser:       false,
 		AppNotification:   true,
 		MailNotification:  true,
+		OAuthType:         -1,
 		FCMToken:          "",
 	}
 }

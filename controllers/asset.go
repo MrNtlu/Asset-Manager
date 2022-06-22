@@ -95,7 +95,7 @@ func (a *AssetController) CreateAssetLog(c *gin.Context) {
 // @Tags asset
 // @Accept application/json
 // @Produce application/json
-// @Param assetsort query requests.AssetSort true "Asset Sort"
+// @Param assetsort query requests.AssetSortFilter true "Asset Sort"
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
 // @Success 200 {object} responses.AssetAndStats

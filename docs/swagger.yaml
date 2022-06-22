@@ -785,6 +785,9 @@ paths:
       - application/json
       description: Returns assets and stats by user id
       parameters:
+      - in: query
+        name: assetType
+        type: string
       - enum:
         - name
         - percentage

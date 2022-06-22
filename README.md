@@ -30,12 +30,12 @@
 
 [Open API 2 Doc](http://rocky-reaches-65250.herokuapp.com/swagger/doc.json)
 
-### External API's
+### Github Actions
 
 <ul>
-    <li> Moved <s>Coinmarketcap - Cryptocurrencies</s>
-    <li> Removed <s>FinancialModelingPrep</s>
-    <li> Removed <s>Alphavantage</s>
+    <li> Golangci-Lint
+    <li> CodeQL
+    <li> SonarCloud
 </ul>
 
 &nbsp;

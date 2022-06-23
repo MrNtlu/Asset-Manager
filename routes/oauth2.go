@@ -1,11 +1,16 @@
 package routes
 
 import (
+	"asset_backend/controllers"
+	"asset_backend/db"
+
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-func oauth2Router(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
+func oauth2Router(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware, mongoDB *db.MongoDB) {
+	OAuth2Controller := controllers.NewOAuth2Controller(mongoDB)
+
 	google := router.Group("")
 	{
 		google.GET("/login", OAuth2Controller.GoogleLogin)

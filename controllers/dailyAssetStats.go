@@ -13,7 +13,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-type DailyAssetStatsController struct{}
+type DailyAssetStatsController struct {
+	Database *db.MongoDB
+}
+
+func NewDailyAssetStatsController(mongoDB *db.MongoDB) DailyAssetStatsController {
+	return DailyAssetStatsController{
+		Database: mongoDB,
+	}
+}
 
 // Daily Asset Stats
 // @Summary Get Daily Asset Stats by User ID
@@ -39,8 +47,9 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(d.Database)
 
-	isPremium := models.IsUserPremium(uid)
+	isPremium := userModel.IsUserPremium(uid)
 	if !isPremium && data.Interval != "weekly" {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": errPremiumFeature,
@@ -56,7 +65,9 @@ func (d *DailyAssetStatsController) GetAssetStatsByUserID(c *gin.Context) {
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		dailyAssetStats, err = models.GetAssetStatsByUserID(uid, data.Interval)
+		dasModel := models.NewDailyAssetStatsModel(d.Database)
+
+		dailyAssetStats, err = dasModel.GetAssetStatsByUserID(uid, data.Interval)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),

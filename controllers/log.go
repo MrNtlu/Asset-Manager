@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"net/http"
@@ -9,7 +10,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type LogController struct{}
+type LogController struct {
+	Database *db.MongoDB
+}
+
+func NewLogController(mongoDB *db.MongoDB) LogController {
+	return LogController{
+		Database: mongoDB,
+	}
+}
 
 // Create Log
 // @Summary Create Log
@@ -29,7 +38,9 @@ func (l *LogController) CreateLog(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	go models.CreateLog(uid, data)
+
+	logModel := models.NewLogModel(l.Database)
+	go logModel.CreateLog(uid, data)
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
 }

@@ -51,12 +51,12 @@ func main() {
 
 	controllers.SetOAuth2()
 
-	client, ctx, cancel := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
-	defer db.Close(ctx, client, cancel)
+	mongoDB, ctx, cancel := db.Connect(os.Getenv("MONGO_ATLAS_URI"))
+	defer db.Close(ctx, mongoDB.Client, cancel)
 
 	db.SetupRedis()
 
-	jwtHandler := helpers.SetupJWTHandler()
+	jwtHandler := helpers.SetupJWTHandler(mongoDB)
 
 	logrus.SetFormatter(&logrus.JSONFormatter{
 		TimestampFormat: time.RFC822,
@@ -78,7 +78,8 @@ func main() {
 	}, func(ctx *gin.Context) (*rate.Limiter, time.Duration) {
 		return rate.NewLimiter(rate.Every(burstTime), requestCount), restrictionTime
 	}, func(ctx *gin.Context) {
-		go models.CreateLog(ctx.ClientIP(), requests.CreateLog{
+		logModel := models.NewLogModel(mongoDB)
+		go logModel.CreateLog(ctx.ClientIP(), requests.CreateLog{
 			Log:     "Rate-Limit",
 			LogType: 0,
 		})
@@ -87,9 +88,9 @@ func main() {
 		ctx.Abort()
 	}))
 
-	routes.SetupRoutes(router, jwtHandler)
+	routes.SetupRoutes(router, jwtHandler, mongoDB)
 
-	dailyScheduler := helpers.CreateDailySchedule(func() { dailyTask() }, "05:00")
+	dailyScheduler := helpers.CreateDailySchedule(func() { dailyTask(mongoDB) }, "05:00")
 	scheduleLogger(dailyScheduler, "Daily")
 
 	port := os.Getenv("PORT")
@@ -101,8 +102,9 @@ func main() {
 	router.Run(":" + port)
 }
 
-func dailyTask() {
-	go models.CalculateDailyAssetStats()
+func dailyTask(mongoDB *db.MongoDB) {
+	dasModel := models.NewDailyAssetStatsModel(mongoDB)
+	go dasModel.CalculateDailyAssetStats()
 }
 
 func scheduleLogger(scheduler *gocron.Scheduler, tType string) {

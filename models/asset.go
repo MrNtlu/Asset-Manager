@@ -13,7 +13,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type AssetModel struct {
+	Collection *mongo.Collection
+}
+
+func NewAssetModel(mongoDB *db.MongoDB) *AssetModel {
+	return &AssetModel{
+		Collection: mongoDB.Database.Collection("assets"),
+	}
+}
 
 type Asset struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
@@ -52,7 +63,7 @@ func createAssetObject(
 	}
 }
 
-func CreateAsset(uid string, data requests.AssetCreate) error {
+func (assetModel *AssetModel) CreateAsset(uid string, data requests.AssetCreate) error {
 	currencyValue := data.Price * data.Amount
 
 	asset := createAssetObject(
@@ -67,7 +78,7 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 		currencyValue,
 	)
 
-	if _, err := db.AssetCollection.InsertOne(context.TODO(), asset); err != nil {
+	if _, err := assetModel.Collection.InsertOne(context.TODO(), asset); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"asset": asset,
 		}).Error("failed to create new asset: ", err)
@@ -78,10 +89,10 @@ func CreateAsset(uid string, data requests.AssetCreate) error {
 	return nil
 }
 
-func GetAssetByID(assetID string) (Asset, error) {
+func (assetModel *AssetModel) GetAssetByID(assetID string) (Asset, error) {
 	objectAssetID, _ := primitive.ObjectIDFromHex(assetID)
 
-	result := db.AssetCollection.FindOne(context.TODO(), bson.M{"_id": objectAssetID})
+	result := assetModel.Collection.FindOne(context.TODO(), bson.M{"_id": objectAssetID})
 
 	var asset Asset
 	if err := result.Decode(&asset); err != nil {
@@ -95,7 +106,7 @@ func GetAssetByID(assetID string) (Asset, error) {
 	return asset, nil
 }
 
-func GetUserAssetCount(uid string) int64 {
+func (assetModel *AssetModel) GetUserAssetCount(uid string) int64 {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
@@ -120,7 +131,7 @@ func GetUserAssetCount(uid string) int64 {
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{match, facet})
+	cursor, err := assetModel.Collection.Aggregate(context.TODO(), bson.A{match, facet})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -145,7 +156,7 @@ func GetUserAssetCount(uid string) int64 {
 	return 0
 }
 
-func GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.Asset, error) {
+func (assetModel *AssetModel) GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.Asset, error) {
 	var sort bson.M
 
 	switch data.Sort {
@@ -347,7 +358,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.A
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := assetModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, group, lookup, unwindInvesting, exchangeLookup,
 		unwindExchange, addInvestingField, project, addPercentageField, sort,
 	})
@@ -375,7 +386,7 @@ func GetAssetsByUserID(uid string, data requests.AssetSortFilter) ([]responses.A
 	return assets, nil
 }
 
-func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (responses.AssetDetails, error) {
+func (assetModel *AssetModel) GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (responses.AssetDetails, error) {
 	match := bson.M{"$match": bson.M{
 		"to_asset":     toAsset,
 		"from_asset":   fromAsset,
@@ -503,7 +514,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := assetModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, groupAssetsByToAssetFromAsset(), lookup, unwindInvesting, exchangeLookup,
 		unwindExchange, addInvestingField, project, addPercentageField,
 	})
@@ -535,7 +546,7 @@ func GetAssetStatsByAssetAndUserID(uid, toAsset, fromAsset, market string) (resp
 	return responses.AssetDetails{}, nil
 }
 
-func GetAllAssetStats(uid string) (responses.AssetStats, error) {
+func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
@@ -883,7 +894,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := assetModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, groupAssetsByToAssetFromAsset(), lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup, addPercentageFields,
@@ -912,7 +923,7 @@ func GetAllAssetStats(uid string) (responses.AssetStats, error) {
 	return responses.AssetStats{}, nil
 }
 
-func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {
+func (assetModel *AssetModel) GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, pagination.PaginationData, error) {
 	match := bson.M{
 		"to_asset":     data.ToAsset,
 		"from_asset":   data.FromAsset,
@@ -939,7 +950,7 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 
 	var assets []Asset
 
-	paginatedData, err := pagination.New(db.AssetCollection).Context(context.TODO()).
+	paginatedData, err := pagination.New(assetModel.Collection).Context(context.TODO()).
 		Limit(assetLogPaginationLimit).Sort(sortType, sortOrder).Page(data.Page).Filter(match).Decode(&assets).Find()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -956,7 +967,7 @@ func GetAssetLogsByUserID(uid string, data requests.AssetLog) ([]Asset, paginati
 	return assets, paginatedData.Pagination, nil
 }
 
-func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
+func (assetModel *AssetModel) UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	objectAssetID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Type != nil {
@@ -975,7 +986,7 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 		asset.CurrencyValue = asset.Price * asset.Amount
 	}
 
-	if _, err := db.AssetCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := assetModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectAssetID,
 	}, bson.M{"$set": asset}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -989,10 +1000,10 @@ func UpdateAssetLogByAssetID(data requests.AssetUpdate, asset Asset) error {
 	return nil
 }
 
-func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
+func (assetModel *AssetModel) DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 	objectAssetID, _ := primitive.ObjectIDFromHex(assetID)
 
-	count, err := db.AssetCollection.DeleteOne(context.TODO(), bson.M{
+	count, err := assetModel.Collection.DeleteOne(context.TODO(), bson.M{
 		"_id":     objectAssetID,
 		"user_id": uid,
 	})
@@ -1008,8 +1019,8 @@ func DeleteAssetLogByAssetID(uid, assetID string) (bool, error) {
 	return count.DeletedCount > 0, nil
 }
 
-func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
-	if _, err := db.AssetCollection.DeleteMany(context.TODO(), bson.M{
+func (assetModel *AssetModel) DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
+	if _, err := assetModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"to_asset":     data.ToAsset,
 		"from_asset":   data.FromAsset,
 		"asset_market": data.AssetMarket,
@@ -1027,8 +1038,8 @@ func DeleteAssetLogsByUserID(uid string, data requests.AssetLogsDelete) error {
 	return nil
 }
 
-func DeleteAllAssetsByUserID(uid string) error {
-	if _, err := db.AssetCollection.DeleteMany(context.TODO(), bson.M{
+func (assetModel *AssetModel) DeleteAllAssetsByUserID(uid string) error {
+	if _, err := assetModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{

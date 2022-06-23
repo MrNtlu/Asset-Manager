@@ -15,6 +15,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+type TransactionModel struct {
+	Collection *mongo.Collection
+}
+
+func NewTransactionModel(mongoDB *db.MongoDB) *TransactionModel {
+	return &TransactionModel{
+		Collection: mongoDB.Database.Collection("transactions"),
+	}
+}
+
 // Categories
 const (
 	Food int64 = iota
@@ -81,7 +91,7 @@ func createTransactionMethod(data requests.TransactionMethod) *TransactionMethod
 	}
 }
 
-func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction, error) {
+func (transactionModel *TransactionModel) CreateTransaction(uid string, data requests.TransactionCreate) (Transaction, error) {
 	var transactionMethod *TransactionMethod
 	if data.TransactionMethod != nil {
 		transactionMethod = createTransactionMethod(*data.TransactionMethod)
@@ -103,7 +113,7 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 		err        error
 	)
 
-	if insertedID, err = db.TransactionCollection.InsertOne(context.TODO(), transaction); err != nil {
+	if insertedID, err = transactionModel.Collection.InsertOne(context.TODO(), transaction); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
@@ -117,7 +127,7 @@ func CreateTransaction(uid string, data requests.TransactionCreate) (Transaction
 	return *transaction, nil
 }
 
-func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInterval) (responses.TransactionTotal, error) {
+func (transactionModel *TransactionModel) GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInterval) (responses.TransactionTotal, error) {
 	var match bson.M
 	if data.Interval == "day" {
 		match = bson.M{"$match": bson.M{
@@ -229,7 +239,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := transactionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
 	})
 	if err != nil {
@@ -256,7 +266,7 @@ func GetTotalTransactionByInterval(uid string, data requests.TransactionTotalInt
 	return responses.TransactionTotal{}, nil
 }
 
-func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses.TransactionTotal, error) {
+func (transactionModel *TransactionModel) GetMethodStatistics(uid string, data requests.TransactionMethod) (responses.TransactionTotal, error) {
 	match := bson.M{"$match": bson.M{
 		"method.type":      data.Type,
 		"method.method_id": data.MethodID,
@@ -323,7 +333,7 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := transactionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, uidToObject, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group,
 	})
 	if err != nil {
@@ -352,7 +362,7 @@ func GetMethodStatistics(uid string, data requests.TransactionMethod) (responses
 	return responses.TransactionTotal{}, nil
 }
 
-func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionDailyStats, error) {
+func (transactionModel *TransactionModel) GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]responses.TransactionDailyStats, error) {
 	var intervalDate time.Time
 
 	switch data.Interval {
@@ -486,7 +496,7 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 		"_id": 1,
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := transactionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, addFields, userLookup, unwindUser, userCurrencyExchangeLookup, unwindUserCurrency, addExhangeValue, group, sort,
 	})
 	if err != nil {
@@ -509,8 +519,8 @@ func GetTransactionStats(uid string, data requests.TransactionStatsInterval) ([]
 	return transactionStats, nil
 }
 
-func GetUserTransactionCountByTime(uid string, date time.Time) int64 {
-	count, err := db.TransactionCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid, "$expr": bson.M{
+func (transactionModel *TransactionModel) GetUserTransactionCountByTime(uid string, date time.Time) int64 {
+	count, err := transactionModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid, "$expr": bson.M{
 		"$and": bson.A{
 			bson.M{
 				"$eq": bson.A{
@@ -544,10 +554,10 @@ func GetUserTransactionCountByTime(uid string, date time.Time) int64 {
 	return count
 }
 
-func GetTransactionByID(transactionID string) (Transaction, error) {
+func (transactionModel *TransactionModel) GetTransactionByID(transactionID string) (Transaction, error) {
 	objectTransactionID, _ := primitive.ObjectIDFromHex(transactionID)
 
-	result := db.TransactionCollection.FindOne(context.TODO(), bson.M{"_id": objectTransactionID})
+	result := transactionModel.Collection.FindOne(context.TODO(), bson.M{"_id": objectTransactionID})
 
 	var transaction Transaction
 	if err := result.Decode(&transaction); err != nil {
@@ -561,7 +571,7 @@ func GetTransactionByID(transactionID string) (Transaction, error) {
 	return transaction, nil
 }
 
-func GetTransactionCategoryDistribution(uid string, data requests.TransactionStatsInterval) (responses.TransactionCategoryStats, error) {
+func (transactionModel *TransactionModel) GetTransactionCategoryDistribution(uid string, data requests.TransactionStatsInterval) (responses.TransactionCategoryStats, error) {
 	var (
 		today = time.Now()
 		match bson.M
@@ -716,7 +726,7 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 		},
 	}}
 
-	cursor, err := db.TransactionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := transactionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, set, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, addExhangeValue, facet, setResponse,
 	})
@@ -745,7 +755,9 @@ func GetTransactionCategoryDistribution(uid string, data requests.TransactionSta
 	return responses.TransactionCategoryStats{}, nil
 }
 
-func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionSortFilter) ([]Transaction, pagination.PaginationData, error) {
+func (transactionModel *TransactionModel) GetTransactionsByUserIDAndFilterSort(
+	uid string, data requests.TransactionSortFilter,
+) ([]Transaction, pagination.PaginationData, error) {
 	match := bson.M{}
 	match["user_id"] = uid
 
@@ -832,7 +844,7 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 
 	var transactions []Transaction
 
-	paginatedData, err := pagination.New(db.TransactionCollection).Context(context.TODO()).
+	paginatedData, err := pagination.New(transactionModel.Collection).Context(context.TODO()).
 		Limit(transactionPaginationLimit).Sort(sortOrder, sortType).Page(data.Page).Filter(match).Decode(&transactions).Find()
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -846,7 +858,7 @@ func GetTransactionsByUserIDAndFilterSort(uid string, data requests.TransactionS
 	return transactions, paginatedData.Pagination, nil
 }
 
-func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction) (Transaction, error) {
+func (transactionModel *TransactionModel) UpdateTransaction(data requests.TransactionUpdate, transaction Transaction) (Transaction, error) {
 	objectTransactionID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Title != nil {
@@ -879,7 +891,7 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 		transaction.TransactionMethod = nil
 	}
 
-	if _, err := db.TransactionCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := transactionModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectTransactionID,
 	}, bson.M{"$set": transaction}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -893,7 +905,7 @@ func UpdateTransaction(data requests.TransactionUpdate, transaction Transaction)
 	return transaction, nil
 }
 
-func UpdateTransactionMethodIDToNull(uid string, id *string, methodType int64) {
+func (transactionModel *TransactionModel) UpdateTransactionMethodIDToNull(uid string, id *string, methodType int64) {
 	var match bson.M
 	if id != nil {
 		match = bson.M{
@@ -907,7 +919,7 @@ func UpdateTransactionMethodIDToNull(uid string, id *string, methodType int64) {
 		}
 	}
 
-	if _, err := db.TransactionCollection.UpdateMany(context.TODO(), match,
+	if _, err := transactionModel.Collection.UpdateMany(context.TODO(), match,
 		bson.M{"$set": bson.M{
 			"method": nil,
 		}}); err != nil {
@@ -915,10 +927,10 @@ func UpdateTransactionMethodIDToNull(uid string, id *string, methodType int64) {
 	}
 }
 
-func DeleteTransactionByTransactionID(uid, transactionID string) (bool, error) {
+func (transactionModel *TransactionModel) DeleteTransactionByTransactionID(uid, transactionID string) (bool, error) {
 	objectTransactionID, _ := primitive.ObjectIDFromHex(transactionID)
 
-	count, err := db.TransactionCollection.DeleteOne(context.TODO(), bson.M{
+	count, err := transactionModel.Collection.DeleteOne(context.TODO(), bson.M{
 		"_id":     objectTransactionID,
 		"user_id": uid,
 	})
@@ -934,8 +946,8 @@ func DeleteTransactionByTransactionID(uid, transactionID string) (bool, error) {
 	return count.DeletedCount > 0, nil
 }
 
-func DeleteAllTransactionsByUserID(uid string) error {
-	if _, err := db.TransactionCollection.DeleteMany(context.TODO(), bson.M{
+func (transactionModel *TransactionModel) DeleteAllTransactionsByUserID(uid string) error {
+	if _, err := transactionModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -948,7 +960,7 @@ func DeleteAllTransactionsByUserID(uid string) error {
 	return nil
 }
 
-func GetTotalFromCategoryStats(stats responses.TransactionCategoryStats, isIncome bool) float64 {
+func (transactionModel *TransactionModel) GetTotalFromCategoryStats(stats responses.TransactionCategoryStats, isIncome bool) float64 {
 	var total float64 = 0
 
 	for _, item := range stats.CategoryList {

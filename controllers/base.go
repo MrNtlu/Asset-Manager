@@ -9,7 +9,7 @@ import (
 	"github.com/go-playground/validator/v10"
 )
 
-var ErrUnauthorized = "unauthorized access"
+var ErrUnauthorized = "Unauthorized access."
 
 func bindJSONData(data interface{}, c *gin.Context) bool {
 	if err := c.ShouldBindJSON(&data); err != nil {

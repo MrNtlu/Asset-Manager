@@ -1,11 +1,18 @@
 package routes
 
 import (
+	"asset_backend/controllers"
+	"asset_backend/db"
+
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-func userRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
+func userRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware, mongoDB *db.MongoDB) {
+	userController := controllers.NewUserController(mongoDB)
+
+	router.GET("/confirm-password-reset", userController.ConfirmPasswordReset)
+
 	auth := router.Group("/auth")
 	{
 		auth.POST("/login", jwtToken.LoginHandler)

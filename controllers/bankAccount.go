@@ -12,7 +12,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-type BankAccountController struct{}
+type BankAccountController struct {
+	Database *db.MongoDB
+}
+
+func NewBankAccountController(mongoDB *db.MongoDB) BankAccountController {
+	return BankAccountController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errBankAccountPremium = "Free members can add up to 2 bank accounts, you can get premium membership for unlimited access."
@@ -39,9 +47,11 @@ func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
+	userModel := models.NewUserModel(ba.Database)
+	isPremium := userModel.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserBankAccountCount(uid) >= 2 {
+	bankAccModel := models.NewBankAccountModel(ba.Database)
+	if !isPremium && bankAccModel.GetUserBankAccountCount(uid) >= 2 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errBankAccountPremium,
 		})
@@ -54,7 +64,7 @@ func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
 		err                error
 	)
 
-	if createdBankAccount, err = models.CreateBankAccount(uid, data); err != nil {
+	if createdBankAccount, err = bankAccModel.CreateBankAccount(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -88,7 +98,9 @@ func (ba *BankAccountController) GetBankAccountsByUserID(c *gin.Context) {
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		bankAccounts, err = models.GetBankAccountsByUserID(uid)
+		bankAccModel := models.NewBankAccountModel(ba.Database)
+		bankAccounts, err = bankAccModel.GetBankAccountsByUserID(uid)
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -132,8 +144,9 @@ func (ba *BankAccountController) GetBankAccountStatistics(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionModel := models.NewTransactionModel(ba.Database)
 
-	bankAccountStats, err := models.GetMethodStatistics(uid, data)
+	bankAccountStats, err := transactionModel.GetMethodStatistics(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -166,7 +179,9 @@ func (ba *BankAccountController) UpdateBankAccount(c *gin.Context) {
 		return
 	}
 
-	bankAccount, err := models.GetBankAccountByID(data.ID)
+	bankAccModel := models.NewBankAccountModel(ba.Database)
+
+	bankAccount, err := bankAccModel.GetBankAccountByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -185,7 +200,7 @@ func (ba *BankAccountController) UpdateBankAccount(c *gin.Context) {
 
 	var updatedBankAccount models.BankAccount
 
-	if updatedBankAccount, err = models.UpdateBankAccount(data, bankAccount); err != nil {
+	if updatedBankAccount, err = bankAccModel.UpdateBankAccount(data, bankAccount); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -217,8 +232,9 @@ func (ba *BankAccountController) DeleteBankAccountByBAID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	bankAccModel := models.NewBankAccountModel(ba.Database)
 
-	isDeleted, err := models.DeleteBankAccountByBAID(uid, data.ID)
+	isDeleted, err := bankAccModel.DeleteBankAccountByBAID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -229,8 +245,9 @@ func (ba *BankAccountController) DeleteBankAccountByBAID(c *gin.Context) {
 
 	if isDeleted {
 		ba.clearCache(uid)
+		transactionModel := models.NewTransactionModel(ba.Database)
 
-		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.BankAcc)
+		go transactionModel.UpdateTransactionMethodIDToNull(uid, &data.ID, models.BankAcc)
 		c.JSON(http.StatusOK, gin.H{"message": "Bank account deleted successfully."})
 
 		return
@@ -252,7 +269,9 @@ func (ba *BankAccountController) DeleteBankAccountByBAID(c *gin.Context) {
 // @Router /ba/all [delete]
 func (ba *BankAccountController) DeleteAllBankAccountsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllBankAccountsByUserID(uid); err != nil {
+
+	bankAccModel := models.NewBankAccountModel(ba.Database)
+	if err := bankAccModel.DeleteAllBankAccountsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -260,7 +279,8 @@ func (ba *BankAccountController) DeleteAllBankAccountsByUserID(c *gin.Context) {
 		return
 	}
 
-	go models.UpdateTransactionMethodIDToNull(uid, nil, models.BankAcc)
+	transactionModel := models.NewTransactionModel(ba.Database)
+	go transactionModel.UpdateTransactionMethodIDToNull(uid, nil, models.BankAcc)
 	ba.clearCache(uid)
 	c.JSON(http.StatusOK, gin.H{"message": "Bank accounts deleted successfully by user id."})
 }

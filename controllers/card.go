@@ -13,7 +13,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-type CardController struct{}
+type CardController struct {
+	Database *db.MongoDB
+}
+
+func NewCardController(mongoDB *db.MongoDB) CardController {
+	return CardController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errCardPremium  = "Free members can add up to 3 credit cards, you can get premium membership for unlimited access."
@@ -40,9 +48,11 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(cc.Database)
+	isPremium := userModel.IsUserPremium(uid)
 
-	isPremium := models.IsUserPremium(uid)
-	if !isPremium && models.GetUserCardCount(uid) >= 3 {
+	cardModel := models.NewCardModel(cc.Database)
+	if !isPremium && cardModel.GetUserCardCount(uid) >= 3 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errCardPremium,
 		})
@@ -55,7 +65,7 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 		err         error
 	)
 
-	if createdCard, err = models.CreateCard(uid, data); err != nil {
+	if createdCard, err = cardModel.CreateCard(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -89,7 +99,9 @@ func (cc *CardController) GetCardsByUserID(c *gin.Context) {
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		cards, err = models.GetCardsByUserID(uid)
+		cardModel := models.NewCardModel(cc.Database)
+		cards, err = cardModel.GetCardsByUserID(uid)
+
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -133,8 +145,10 @@ func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(cc.Database)
+	transactionModel := models.NewTransactionModel(cc.Database)
 
-	cardSubscriptionStats, err := models.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
+	cardSubscriptionStats, err := subscriptionModel.GetCardStatisticsByUserIDAndCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -145,7 +159,7 @@ func (cc *CardController) GetCardStatisticsByUserIDAndCardID(c *gin.Context) {
 
 	var tType int64 = 1
 
-	cardTransactionStats, err := models.GetMethodStatistics(uid, requests.TransactionMethod{
+	cardTransactionStats, err := transactionModel.GetMethodStatistics(uid, requests.TransactionMethod{
 		MethodID: data.ID,
 		Type:     &tType,
 	})
@@ -184,7 +198,9 @@ func (cc *CardController) UpdateCard(c *gin.Context) {
 		return
 	}
 
-	card, err := models.GetCardByID(data.ID)
+	cardModel := models.NewCardModel(cc.Database)
+
+	card, err := cardModel.GetCardByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -203,7 +219,7 @@ func (cc *CardController) UpdateCard(c *gin.Context) {
 
 	var updatedCard models.Card
 
-	if updatedCard, err = models.UpdateCard(data, card); err != nil {
+	if updatedCard, err = cardModel.UpdateCard(data, card); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -235,8 +251,9 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	cardModel := models.NewCardModel(cc.Database)
 
-	isDeleted, err := models.DeleteCardByCardID(uid, data.ID)
+	isDeleted, err := cardModel.DeleteCardByCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -248,8 +265,11 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 	if isDeleted {
 		cc.clearCache(uid)
 
-		go models.UpdateSubscriptionCardIDToNull(uid, &data.ID)
-		go models.UpdateTransactionMethodIDToNull(uid, &data.ID, models.CreditCard)
+		subscriptionModel := models.NewSubscriptionModel(cc.Database)
+		transactionModel := models.NewTransactionModel(cc.Database)
+
+		go subscriptionModel.UpdateSubscriptionCardIDToNull(uid, &data.ID)
+		go transactionModel.UpdateTransactionMethodIDToNull(uid, &data.ID, models.CreditCard)
 		c.JSON(http.StatusOK, gin.H{"message": "Card deleted successfully."})
 
 		return
@@ -271,7 +291,9 @@ func (cc *CardController) DeleteCardByCardID(c *gin.Context) {
 // @Router /card/all [delete]
 func (cc *CardController) DeleteAllCardsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllCardsByUserID(uid); err != nil {
+	cardModel := models.NewCardModel(cc.Database)
+
+	if err := cardModel.DeleteAllCardsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -279,8 +301,11 @@ func (cc *CardController) DeleteAllCardsByUserID(c *gin.Context) {
 		return
 	}
 
-	go models.UpdateSubscriptionCardIDToNull(uid, nil)
-	go models.UpdateTransactionMethodIDToNull(uid, nil, models.CreditCard)
+	subscriptionModel := models.NewSubscriptionModel(cc.Database)
+	transactionModel := models.NewTransactionModel(cc.Database)
+
+	go subscriptionModel.UpdateSubscriptionCardIDToNull(uid, nil)
+	go transactionModel.UpdateTransactionMethodIDToNull(uid, nil, models.CreditCard)
 	cc.clearCache(uid)
 	c.JSON(http.StatusOK, gin.H{"message": "Cards deleted successfully by user id."})
 }

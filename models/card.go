@@ -14,6 +14,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type CardModel struct {
+	Collection *mongo.Collection
+}
+
+func NewCardModel(mongoDB *db.MongoDB) *CardModel {
+	return &CardModel{
+		Collection: mongoDB.Database.Collection("cards"),
+	}
+}
+
 type Card struct {
 	ID         primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID     string             `bson:"user_id" json:"user_id"`
@@ -41,7 +51,7 @@ func createCardObject(uid, name, last4Digit, cardHolder, color, cardType, curren
 	}
 }
 
-func CreateCard(uid string, data requests.Card) (Card, error) {
+func (cardModel *CardModel) CreateCard(uid string, data requests.Card) (Card, error) {
 	card := createCardObject(uid, data.Name, data.Last4Digit, data.CardHolder, data.Color, data.CardType, data.Currency)
 
 	var (
@@ -49,7 +59,7 @@ func CreateCard(uid string, data requests.Card) (Card, error) {
 		err        error
 	)
 
-	if insertedID, err = db.CardCollection.InsertOne(context.TODO(), card); err != nil {
+	if insertedID, err = cardModel.Collection.InsertOne(context.TODO(), card); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to create new card: ", err)
@@ -62,8 +72,8 @@ func CreateCard(uid string, data requests.Card) (Card, error) {
 	return *card, nil
 }
 
-func GetUserCardCount(uid string) int64 {
-	count, err := db.CardCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+func (cardModel *CardModel) GetUserCardCount(uid string) int64 {
+	count, err := cardModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -75,10 +85,10 @@ func GetUserCardCount(uid string) int64 {
 	return count
 }
 
-func GetCardByID(cardID string) (Card, error) {
+func (cardModel *CardModel) GetCardByID(cardID string) (Card, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
 
-	result := db.CardCollection.FindOne(context.TODO(), bson.M{"_id": objectCardID})
+	result := cardModel.Collection.FindOne(context.TODO(), bson.M{"_id": objectCardID})
 
 	var card Card
 	if err := result.Decode(&card); err != nil {
@@ -92,7 +102,7 @@ func GetCardByID(cardID string) (Card, error) {
 	return card, nil
 }
 
-func GetCardsByUserID(uid string) ([]Card, error) {
+func (cardModel *CardModel) GetCardsByUserID(uid string) ([]Card, error) {
 	match := bson.M{
 		"user_id": uid,
 	}
@@ -101,7 +111,7 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 	}
 	options := options.Find().SetSort(sort)
 
-	cursor, err := db.CardCollection.Find(context.TODO(), match, options)
+	cursor, err := cardModel.Collection.Find(context.TODO(), match, options)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -122,7 +132,7 @@ func GetCardsByUserID(uid string) ([]Card, error) {
 	return cards, nil
 }
 
-func UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
+func (cardModel *CardModel) UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Last4Digit != nil {
@@ -149,7 +159,7 @@ func UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
 		card.Currency = *data.Currency
 	}
 
-	if _, err := db.CardCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := cardModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectCardID,
 	}, bson.M{"$set": card}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -163,10 +173,10 @@ func UpdateCard(data requests.CardUpdate, card Card) (Card, error) {
 	return card, nil
 }
 
-func DeleteCardByCardID(uid, cardID string) (bool, error) {
+func (cardModel *CardModel) DeleteCardByCardID(uid, cardID string) (bool, error) {
 	objectCardID, _ := primitive.ObjectIDFromHex(cardID)
 
-	count, err := db.CardCollection.DeleteOne(context.TODO(), bson.M{
+	count, err := cardModel.Collection.DeleteOne(context.TODO(), bson.M{
 		"_id":     objectCardID,
 		"user_id": uid,
 	})
@@ -182,8 +192,8 @@ func DeleteCardByCardID(uid, cardID string) (bool, error) {
 	return count.DeletedCount > 0, nil
 }
 
-func DeleteAllCardsByUserID(uid string) error {
-	if _, err := db.CardCollection.DeleteMany(context.TODO(), bson.M{
+func (cardModel *CardModel) DeleteAllCardsByUserID(uid string) error {
+	if _, err := cardModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{

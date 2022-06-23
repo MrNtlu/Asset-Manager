@@ -8,19 +8,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-var (
-	Database                 *mongo.Database
-	AssetCollection          *mongo.Collection
-	SubscriptionCollection   *mongo.Collection
-	CardCollection           *mongo.Collection
-	BankAccountCollection    *mongo.Collection
-	TransactionCollection    *mongo.Collection
-	UserCollection           *mongo.Collection
-	InvestingCollection      *mongo.Collection
-	ExchangeCollection       *mongo.Collection
-	DailyAssetStatCollection *mongo.Collection
-	LogCollection            *mongo.Collection
-)
+type MongoDB struct {
+	Client   *mongo.Client
+	Database *mongo.Database
+}
 
 func Close(ctx context.Context, client *mongo.Client, cancel context.CancelFunc) {
 	defer cancel()
@@ -32,7 +23,7 @@ func Close(ctx context.Context, client *mongo.Client, cancel context.CancelFunc)
 	}()
 }
 
-func Connect(uri string) (*mongo.Client, context.Context, context.CancelFunc) {
+func Connect(uri string) (*MongoDB, context.Context, context.CancelFunc) {
 	const timeOut = 10 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), timeOut)
 
@@ -41,17 +32,10 @@ func Connect(uri string) (*mongo.Client, context.Context, context.CancelFunc) {
 		panic(err)
 	}
 
-	Database = client.Database("asset-manager")
-	AssetCollection = Database.Collection("assets")
-	SubscriptionCollection = Database.Collection("subscriptions")
-	CardCollection = Database.Collection("cards")
-	BankAccountCollection = Database.Collection("bank-accounts")
-	TransactionCollection = Database.Collection("transactions")
-	UserCollection = Database.Collection("users")
-	InvestingCollection = Database.Collection("investings")
-	ExchangeCollection = Database.Collection("exchanges")
-	DailyAssetStatCollection = Database.Collection("daily-asset-stats")
-	LogCollection = Database.Collection("logs")
+	database := client.Database("asset-manager")
 
-	return client, ctx, cancel
+	return &MongoDB{
+		Client:   client,
+		Database: database,
+	}, ctx, cancel
 }

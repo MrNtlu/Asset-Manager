@@ -36,6 +36,7 @@
     <li> Golangci-Lint
     <li> CodeQL
     <li> SonarCloud
+    <li> Dependency Review
 </ul>
 
 &nbsp;

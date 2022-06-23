@@ -12,7 +12,18 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
+
+type UserModel struct {
+	Collection *mongo.Collection
+}
+
+func NewUserModel(mongoDB *db.MongoDB) *UserModel {
+	return &UserModel{
+		Collection: mongoDB.Database.Collection("users"),
+	}
+}
 
 /**
 * !Premium Features
@@ -78,10 +89,10 @@ func createOAuthUserObject(emailAddress string, refreshToken *string, oAuthType 
 	}
 }
 
-func CreateUser(data requests.Register) error {
+func (userModel *UserModel) CreateUser(data requests.Register) error {
 	user := createUserObject(data.EmailAddress, data.Currency, data.Password)
 
-	if _, err := db.UserCollection.InsertOne(context.TODO(), user); err != nil {
+	if _, err := userModel.Collection.InsertOne(context.TODO(), user); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"email": data.EmailAddress,
 		}).Error("failed to create new user: ", err)
@@ -92,10 +103,10 @@ func CreateUser(data requests.Register) error {
 	return nil
 }
 
-func CreateOAuthUser(email string, refreshToken *string, oAuthType int) (*User, error) {
+func (userModel *UserModel) CreateOAuthUser(email string, refreshToken *string, oAuthType int) (*User, error) {
 	user := createOAuthUserObject(email, refreshToken, oAuthType)
 
-	result, err := db.UserCollection.InsertOne(context.TODO(), user)
+	result, err := userModel.Collection.InsertOne(context.TODO(), user)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"email": email,
@@ -109,10 +120,10 @@ func CreateOAuthUser(email string, refreshToken *string, oAuthType int) (*User, 
 	return user, nil
 }
 
-func UpdateUser(user User) error {
+func (userModel *UserModel) UpdateUser(user User) error {
 	user.UpdatedAt = time.Now().UTC()
 
-	if _, err := db.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": user.ID}, bson.M{"$set": user}); err != nil {
+	if _, err := userModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": user.ID}, bson.M{"$set": user}); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": user.ID,
 		}).Error("failed to update user: ", err)
@@ -123,10 +134,10 @@ func UpdateUser(user User) error {
 	return nil
 }
 
-func UpdateUserMembership(uid string, data requests.ChangeMembership) error {
+func (userModel *UserModel) UpdateUserMembership(uid string, data requests.ChangeMembership) error {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
-	if _, err := db.UserCollection.UpdateOne(context.TODO(), bson.M{"_id": objectUID}, bson.M{"$set": bson.M{
+	if _, err := userModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectUID}, bson.M{"$set": bson.M{
 		"is_premium":          data.IsPremium,
 		"is_lifetime_premium": data.IsLifetimePremium,
 		"updated_at":          time.Now().UTC(),
@@ -143,10 +154,10 @@ func UpdateUserMembership(uid string, data requests.ChangeMembership) error {
 	return nil
 }
 
-func IsUserPremium(uid string) bool {
+func (userModel *UserModel) IsUserPremium(uid string) bool {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
-	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+	result := userModel.Collection.FindOne(context.TODO(), bson.M{
 		"_id": objectUID,
 	})
 
@@ -162,10 +173,10 @@ func IsUserPremium(uid string) bool {
 	return isUserPremium.IsPremium || isUserPremium.IsLifetimePremium
 }
 
-func FindUserByID(uid string) (User, error) {
+func (userModel *UserModel) FindUserByID(uid string) (User, error) {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
-	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+	result := userModel.Collection.FindOne(context.TODO(), bson.M{
 		"_id": objectUID,
 	})
 
@@ -181,8 +192,8 @@ func FindUserByID(uid string) (User, error) {
 	return user, nil
 }
 
-func FindUserByRefreshToken(refreshToken string) (User, error) {
-	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+func (userModel *UserModel) FindUserByRefreshToken(refreshToken string) (User, error) {
+	result := userModel.Collection.FindOne(context.TODO(), bson.M{
 		"refresh_token": refreshToken,
 	})
 
@@ -198,8 +209,8 @@ func FindUserByRefreshToken(refreshToken string) (User, error) {
 	return user, nil
 }
 
-func FindUserByResetTokenAndEmail(token, email string) (User, error) {
-	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+func (userModel *UserModel) FindUserByResetTokenAndEmail(token, email string) (User, error) {
+	result := userModel.Collection.FindOne(context.TODO(), bson.M{
 		"reset_token":   token,
 		"email_address": email,
 	})
@@ -217,8 +228,8 @@ func FindUserByResetTokenAndEmail(token, email string) (User, error) {
 	return user, nil
 }
 
-func FindUserByEmail(email string) (User, error) {
-	result := db.UserCollection.FindOne(context.TODO(), bson.M{
+func (userModel *UserModel) FindUserByEmail(email string) (User, error) {
+	result := userModel.Collection.FindOne(context.TODO(), bson.M{
 		"email_address": email,
 	})
 
@@ -234,10 +245,10 @@ func FindUserByEmail(email string) (User, error) {
 	return user, nil
 }
 
-func DeleteUserByID(uid string) error {
+func (userModel *UserModel) DeleteUserByID(uid string) error {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
-	if _, err := db.UserCollection.DeleteOne(context.TODO(), bson.M{"_id": objectUID}); err != nil {
+	if _, err := userModel.Collection.DeleteOne(context.TODO(), bson.M{"_id": objectUID}); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
 		}).Error("failed to delete user: ", err)

@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
@@ -12,7 +13,15 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-type AssetController struct{}
+type AssetController struct {
+	Database *db.MongoDB
+}
+
+func NewAssetController(mongoDB *db.MongoDB) AssetController {
+	return AssetController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errAssetNotFound = "Asset not found."
@@ -38,9 +47,12 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserAssetCount(uid) >= 10 {
+	userModel := models.NewUserModel(a.Database)
+	isPremium := userModel.IsUserPremium(uid)
+
+	assetModel := models.NewAssetModel(a.Database)
+	if !isPremium && assetModel.GetUserAssetCount(uid) >= 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errAssetPremium,
 		})
@@ -48,7 +60,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 		return
 	}
 
-	if err := models.CreateAsset(uid, data); err != nil {
+	if err := assetModel.CreateAsset(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -78,7 +90,9 @@ func (a *AssetController) CreateAssetLog(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.CreateAsset(uid, data); err != nil {
+	assetModel := models.NewAssetModel(a.Database)
+
+	if err := assetModel.CreateAsset(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -113,6 +127,7 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetModel := models.NewAssetModel(a.Database)
 
 	var (
 		assetAndStats responses.AssetAndStats
@@ -123,12 +138,12 @@ func (a *AssetController) GetAssetsAndStatsByUserID(c *gin.Context) {
 	)
 
 	errs.Go(func() error {
-		assets, err = models.GetAssetsByUserID(uid, data)
+		assets, err = assetModel.GetAssetsByUserID(uid, data)
 		return err
 	})
 
 	errs.Go(func() error {
-		assetStat, err = models.GetAllAssetStats(uid)
+		assetStat, err = assetModel.GetAllAssetStats(uid)
 		return err
 	})
 
@@ -173,8 +188,9 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetModel := models.NewAssetModel(a.Database)
 
-	assetDetails, err := models.GetAssetStatsByAssetAndUserID(uid, data.ToAsset, data.FromAsset, data.AssetMarket)
+	assetDetails, err := assetModel.GetAssetStatsByAssetAndUserID(uid, data.ToAsset, data.FromAsset, data.AssetMarket)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -200,8 +216,9 @@ func (a *AssetController) GetAssetStatsByAssetAndUserID(c *gin.Context) {
 // @Router /asset/stats [get]
 func (a *AssetController) GetAllAssetStatsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetModel := models.NewAssetModel(a.Database)
 
-	assetStat, err := models.GetAllAssetStats(uid)
+	assetStat, err := assetModel.GetAllAssetStats(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -237,8 +254,9 @@ func (a *AssetController) GetAssetLogsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetModel := models.NewAssetModel(a.Database)
 
-	assets, pagination, err := models.GetAssetLogsByUserID(uid, data)
+	assets, pagination, err := assetModel.GetAssetLogsByUserID(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -271,7 +289,9 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	asset, err := models.GetAssetByID(data.ID)
+	assetModel := models.NewAssetModel(a.Database)
+
+	asset, err := assetModel.GetAssetByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -288,7 +308,7 @@ func (a *AssetController) UpdateAssetLogByAssetID(c *gin.Context) {
 		return
 	}
 
-	if err := models.UpdateAssetLogByAssetID(data, asset); err != nil {
+	if err := assetModel.UpdateAssetLogByAssetID(data, asset); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -319,8 +339,9 @@ func (a *AssetController) DeleteAssetLogByAssetID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	assetModel := models.NewAssetModel(a.Database)
 
-	isDeleted, err := models.DeleteAssetLogByAssetID(uid, data.ID)
+	isDeleted, err := assetModel.DeleteAssetLogByAssetID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -357,7 +378,9 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAssetLogsByUserID(uid, data); err != nil {
+	assetModel := models.NewAssetModel(a.Database)
+
+	if err := assetModel.DeleteAssetLogsByUserID(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -381,7 +404,9 @@ func (a *AssetController) DeleteAssetLogsByUserID(c *gin.Context) {
 // @Router /asset [delete]
 func (a *AssetController) DeleteAllAssetsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllAssetsByUserID(uid); err != nil {
+	assetModel := models.NewAssetModel(a.Database)
+
+	if err := assetModel.DeleteAllAssetsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

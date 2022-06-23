@@ -1,44 +1,30 @@
 package routes
 
 import (
-	"asset_backend/controllers"
+	"asset_backend/db"
 	"net/http"
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-var (
-	userController            = new(controllers.UserController)
-	assetController           = new(controllers.AssetController)
-	dailyAssetStatsController = new(controllers.DailyAssetStatsController)
-	subscriptionController    = new(controllers.SubscriptionController)
-	cardController            = new(controllers.CardController)
-	bankAccountController     = new(controllers.BankAccountController)
-	transactionController     = new(controllers.TransactionController)
-	investingController       = new(controllers.InvestingController)
-	OAuth2Controller          = new(controllers.OAuth2Controller)
-	logController             = new(controllers.LogController)
-)
-
-func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware) {
+func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware, mongoDB *db.MongoDB) {
 	apiRouter := router.Group("/api/v1")
 
-	userRouter(apiRouter, jwtToken)
-	assetRouter(apiRouter, jwtToken)
-	subscriptionRouter(apiRouter, jwtToken)
-	cardRouter(apiRouter, jwtToken)
-	bankAccountRouter(apiRouter, jwtToken)
-	transactionRouter(apiRouter, jwtToken)
-	oauth2Router(apiRouter, jwtToken)
+	userRouter(apiRouter, jwtToken, mongoDB)
+	assetRouter(apiRouter, jwtToken, mongoDB)
+	subscriptionRouter(apiRouter, jwtToken, mongoDB)
+	cardRouter(apiRouter, jwtToken, mongoDB)
+	bankAccountRouter(apiRouter, jwtToken, mongoDB)
+	transactionRouter(apiRouter, jwtToken, mongoDB)
+	oauth2Router(apiRouter, jwtToken, mongoDB)
+	logRouter(apiRouter, jwtToken, mongoDB)
 
-	apiRouter.Use(jwtToken.MiddlewareFunc()).POST("/log", logController.CreateLog)
-	router.GET("/confirm-password-reset", userController.ConfirmPasswordReset)
 	router.GET("/privacy", privacyPolicy)
 	router.GET("/terms", termsConditions)
 
 	router.NoRoute(func(c *gin.Context) {
-		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "all routes lead to rome"})
+		c.AbortWithStatusJSON(http.StatusNotFound, gin.H{"message": "All routes lead to rome"})
 	})
 }
 

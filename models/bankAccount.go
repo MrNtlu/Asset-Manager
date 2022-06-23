@@ -14,6 +14,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type BankAccountModel struct {
+	Collection *mongo.Collection
+}
+
+func NewBankAccountModel(mongoDB *db.MongoDB) *BankAccountModel {
+	return &BankAccountModel{
+		Collection: mongoDB.Database.Collection("bank-accounts"),
+	}
+}
+
 type BankAccount struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID        string             `bson:"user_id" json:"user_id"`
@@ -37,7 +47,7 @@ func createBankAccount(uid, name, iban, accoutHolder, currency string) *BankAcco
 	}
 }
 
-func CreateBankAccount(uid string, data requests.BankAccountCreate) (BankAccount, error) {
+func (bankAccModel *BankAccountModel) CreateBankAccount(uid string, data requests.BankAccountCreate) (BankAccount, error) {
 	bankAccount := createBankAccount(uid, data.Name, data.Iban, data.AccountHolder, data.Currency)
 
 	var (
@@ -45,7 +55,7 @@ func CreateBankAccount(uid string, data requests.BankAccountCreate) (BankAccount
 		err        error
 	)
 
-	if insertedID, err = db.BankAccountCollection.InsertOne(context.TODO(), bankAccount); err != nil {
+	if insertedID, err = bankAccModel.Collection.InsertOne(context.TODO(), bankAccount); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
@@ -59,8 +69,8 @@ func CreateBankAccount(uid string, data requests.BankAccountCreate) (BankAccount
 	return *bankAccount, nil
 }
 
-func GetUserBankAccountCount(uid string) int64 {
-	count, err := db.BankAccountCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+func (bankAccModel *BankAccountModel) GetUserBankAccountCount(uid string) int64 {
+	count, err := bankAccModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -72,10 +82,10 @@ func GetUserBankAccountCount(uid string) int64 {
 	return count
 }
 
-func GetBankAccountByID(baID string) (BankAccount, error) {
+func (bankAccModel *BankAccountModel) GetBankAccountByID(baID string) (BankAccount, error) {
 	objectBankAccountID, _ := primitive.ObjectIDFromHex(baID)
 
-	result := db.BankAccountCollection.FindOne(context.TODO(), bson.M{"_id": objectBankAccountID})
+	result := bankAccModel.Collection.FindOne(context.TODO(), bson.M{"_id": objectBankAccountID})
 
 	var bankAccount BankAccount
 	if err := result.Decode(&bankAccount); err != nil {
@@ -89,7 +99,7 @@ func GetBankAccountByID(baID string) (BankAccount, error) {
 	return bankAccount, nil
 }
 
-func GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
+func (bankAccModel *BankAccountModel) GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
 	match := bson.M{
 		"user_id": uid,
 	}
@@ -98,7 +108,7 @@ func GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
 	}
 	options := options.Find().SetSort(sort)
 
-	cursor, err := db.BankAccountCollection.Find(context.TODO(), match, options)
+	cursor, err := bankAccModel.Collection.Find(context.TODO(), match, options)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -119,7 +129,7 @@ func GetBankAccountsByUserID(uid string) ([]BankAccount, error) {
 	return bankAccounts, nil
 }
 
-func UpdateBankAccount(data requests.BankAccountUpdate, bankAccount BankAccount) (BankAccount, error) {
+func (bankAccModel *BankAccountModel) UpdateBankAccount(data requests.BankAccountUpdate, bankAccount BankAccount) (BankAccount, error) {
 	objectBankAccountID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.AccountHolder != nil {
@@ -138,7 +148,7 @@ func UpdateBankAccount(data requests.BankAccountUpdate, bankAccount BankAccount)
 		bankAccount.Iban = *data.Iban
 	}
 
-	if _, err := db.BankAccountCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := bankAccModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectBankAccountID,
 	}, bson.M{"$set": bankAccount}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -152,10 +162,10 @@ func UpdateBankAccount(data requests.BankAccountUpdate, bankAccount BankAccount)
 	return bankAccount, nil
 }
 
-func DeleteBankAccountByBAID(uid, baID string) (bool, error) {
+func (bankAccModel *BankAccountModel) DeleteBankAccountByBAID(uid, baID string) (bool, error) {
 	objectBankAccountID, _ := primitive.ObjectIDFromHex(baID)
 
-	count, err := db.BankAccountCollection.DeleteOne(context.TODO(), bson.M{
+	count, err := bankAccModel.Collection.DeleteOne(context.TODO(), bson.M{
 		"_id":     objectBankAccountID,
 		"user_id": uid,
 	})
@@ -171,8 +181,8 @@ func DeleteBankAccountByBAID(uid, baID string) (bool, error) {
 	return count.DeletedCount > 0, nil
 }
 
-func DeleteAllBankAccountsByUserID(uid string) error {
-	if _, err := db.BankAccountCollection.DeleteMany(context.TODO(), bson.M{
+func (bankAccModel *BankAccountModel) DeleteAllBankAccountsByUserID(uid string) error {
+	if _, err := bankAccModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{

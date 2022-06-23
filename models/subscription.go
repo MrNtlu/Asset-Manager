@@ -16,6 +16,16 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+type SubscriptionModel struct {
+	Collection *mongo.Collection
+}
+
+func NewSubscriptionModel(mongoDB *db.MongoDB) *SubscriptionModel {
+	return &SubscriptionModel{
+		Collection: mongoDB.Database.Collection("subscriptions"),
+	}
+}
+
 type Subscription struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID      string             `bson:"user_id" json:"user_id"`
@@ -67,7 +77,7 @@ func createBillCycle(billCycle requests.BillCycle) *BillCycle {
 	}
 }
 
-func CreateSubscription(uid string, data requests.Subscription) (responses.Subscription, error) {
+func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data requests.Subscription) (responses.Subscription, error) {
 	subscription := createSubscriptionObject(
 		uid,
 		data.Name,
@@ -86,7 +96,7 @@ func CreateSubscription(uid string, data requests.Subscription) (responses.Subsc
 		err        error
 	)
 
-	if insertedID, err = db.SubscriptionCollection.InsertOne(context.TODO(), subscription); err != nil {
+	if insertedID, err = subscriptionModel.Collection.InsertOne(context.TODO(), subscription); err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":  uid,
 			"data": data,
@@ -100,8 +110,8 @@ func CreateSubscription(uid string, data requests.Subscription) (responses.Subsc
 	return convertModelToResponse(*subscription), nil
 }
 
-func GetUserSubscriptionCount(uid string) int64 {
-	count, err := db.SubscriptionCollection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+func (subscriptionModel *SubscriptionModel) GetUserSubscriptionCount(uid string) int64 {
+	count, err := subscriptionModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid": uid,
@@ -113,10 +123,10 @@ func GetUserSubscriptionCount(uid string) int64 {
 	return count
 }
 
-func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
+func (subscriptionModel *SubscriptionModel) GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
-	result := db.SubscriptionCollection.FindOne(context.TODO(), bson.M{"_id": objectSubscriptionID})
+	result := subscriptionModel.Collection.FindOne(context.TODO(), bson.M{"_id": objectSubscriptionID})
 
 	var subscription Subscription
 	if err := result.Decode(&subscription); err != nil {
@@ -130,7 +140,7 @@ func GetSubscriptionByID(subscriptionID string) (Subscription, error) {
 	return subscription, nil
 }
 
-func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, error) {
+func (subscriptionModel *SubscriptionModel) GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, error) {
 	match := bson.M{
 		"card_id": cardID,
 		"user_id": uid,
@@ -140,7 +150,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 	}
 	options := options.Find().SetSort(sort)
 
-	cursor, err := db.SubscriptionCollection.Find(context.TODO(), match, options)
+	cursor, err := subscriptionModel.Collection.Find(context.TODO(), match, options)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":     uid,
@@ -170,7 +180,7 @@ func GetSubscriptionsByCardID(uid, cardID string) ([]responses.Subscription, err
 	return subscriptions, nil
 }
 
-func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]responses.Subscription, error) {
+func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]responses.Subscription, error) {
 	match := bson.M{
 		"user_id": uid,
 	}
@@ -189,7 +199,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 
 	options := options.Find().SetSort(sort)
 
-	cursor, err := db.SubscriptionCollection.Find(context.TODO(), match, options)
+	cursor, err := subscriptionModel.Collection.Find(context.TODO(), match, options)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":       uid,
@@ -221,7 +231,7 @@ func GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]res
 	return subscriptions, nil
 }
 
-func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionDetails, error) {
+func (subscriptionModel *SubscriptionModel) GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionDetails, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
 	match := bson.M{"$match": bson.M{
@@ -229,7 +239,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 		"user_id": uid,
 	}}
 
-	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{match, addSubscriptionMonthlyAndTotalPaymentFields()})
+	cursor, err := subscriptionModel.Collection.Aggregate(context.TODO(), bson.A{match, addSubscriptionMonthlyAndTotalPaymentFields()})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":             uid,
@@ -262,7 +272,7 @@ func GetSubscriptionDetails(uid, subscriptionID string) (responses.SubscriptionD
 	return responses.SubscriptionDetails{}, nil
 }
 
-func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStatistics, error) {
+func (subscriptionModel *SubscriptionModel) GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStatistics, error) {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
@@ -276,7 +286,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 		},
 	}}
 
-	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := subscriptionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, addSubscriptionMonthlyAndTotalPaymentFields(), group,
 	})
 	if err != nil {
@@ -299,7 +309,7 @@ func GetSubscriptionStatisticsByUserID(uid string) ([]responses.SubscriptionStat
 	return subscriptionStats, nil
 }
 
-func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubscriptionStatistics, error) {
+func (subscriptionModel *SubscriptionModel) GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubscriptionStatistics, error) {
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 		"card_id": cardID,
@@ -382,7 +392,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubsc
 		},
 	}}
 
-	cursor, err := db.SubscriptionCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := subscriptionModel.Collection.Aggregate(context.TODO(), bson.A{
 		match, set, lookup, unwind, exchangeLookup, unwindExchange, project, addSubscriptionMonthlyAndTotalPaymentFields(), group,
 	})
 	if err != nil {
@@ -409,7 +419,7 @@ func GetCardStatisticsByUserIDAndCardID(uid, cardID string) (responses.CardSubsc
 	return responses.CardSubscriptionStatistics{}, nil
 }
 
-func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) (responses.Subscription, error) {
+func (subscriptionModel *SubscriptionModel) UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) (responses.Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(data.ID)
 
 	if data.Name != nil {
@@ -446,7 +456,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 
 	subscription.CardID = data.CardID
 
-	if _, err := db.SubscriptionCollection.UpdateOne(context.TODO(), bson.M{
+	if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectSubscriptionID,
 	}, bson.M{"$set": subscription}); err != nil {
 		logrus.WithFields(logrus.Fields{
@@ -460,7 +470,7 @@ func UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscript
 	return convertModelToResponse(subscription), nil
 }
 
-func UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
+func (subscriptionModel *SubscriptionModel) UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
 	var match bson.M
 	if cardID != nil {
 		match = bson.M{
@@ -473,7 +483,7 @@ func UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
 		}
 	}
 
-	if _, err := db.SubscriptionCollection.UpdateMany(context.TODO(), match,
+	if _, err := subscriptionModel.Collection.UpdateMany(context.TODO(), match,
 		bson.M{"$set": bson.M{
 			"card_id": nil,
 		}}); err != nil {
@@ -481,10 +491,10 @@ func UpdateSubscriptionCardIDToNull(uid string, cardID *string) {
 	}
 }
 
-func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error) {
+func (subscriptionModel *SubscriptionModel) DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(subscriptionID)
 
-	count, err := db.SubscriptionCollection.DeleteOne(context.TODO(), bson.M{
+	count, err := subscriptionModel.Collection.DeleteOne(context.TODO(), bson.M{
 		"_id":     objectSubscriptionID,
 		"user_id": uid,
 	})
@@ -500,8 +510,8 @@ func DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error
 	return count.DeletedCount > 0, nil
 }
 
-func DeleteAllSubscriptionsByUserID(uid string) error {
-	if _, err := db.SubscriptionCollection.DeleteMany(context.TODO(), bson.M{
+func (subscriptionModel *SubscriptionModel) DeleteAllSubscriptionsByUserID(uid string) error {
+	if _, err := subscriptionModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{

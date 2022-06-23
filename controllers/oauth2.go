@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
@@ -19,7 +20,15 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
-type OAuth2Controller struct{}
+type OAuth2Controller struct {
+	Database *db.MongoDB
+}
+
+func NewOAuth2Controller(mongoDB *db.MongoDB) OAuth2Controller {
+	return OAuth2Controller{
+		Database: mongoDB,
+	}
+}
 
 var (
 	googleOauthConfig *oauth2.Config
@@ -85,8 +94,10 @@ func (o *OAuth2Controller) OAuth2AppleLogin(jwt *jwt.GinJWTMiddleware) gin.Handl
 				return
 			}
 
+			userModel := models.NewUserModel(o.Database)
+
 			var user models.User
-			user, err = models.FindUserByRefreshToken(data.Code)
+			user, err = userModel.FindUserByRefreshToken(data.Code)
 
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -136,10 +147,12 @@ func (o *OAuth2Controller) OAuth2AppleLogin(jwt *jwt.GinJWTMiddleware) gin.Handl
 
 			email := (*claim)["email"].(string)
 
+			userModel := models.NewUserModel(o.Database)
+
 			var user models.User
-			user, _ = models.FindUserByEmail(email)
+			user, _ = userModel.FindUserByEmail(email)
 			if user.EmailAddress == "" {
-				oAuthUser, err := models.CreateOAuthUser(email, &resp.RefreshToken, 1)
+				oAuthUser, err := userModel.CreateOAuthUser(email, &resp.RefreshToken, 1)
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
@@ -154,7 +167,7 @@ func (o *OAuth2Controller) OAuth2AppleLogin(jwt *jwt.GinJWTMiddleware) gin.Handl
 			}
 
 			user.RefreshToken = &resp.RefreshToken
-			if err := models.UpdateUser(user); err != nil {
+			if err := userModel.UpdateUser(user); err != nil {
 				if err != nil {
 					c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 					return
@@ -213,11 +226,13 @@ func (o *OAuth2Controller) OAuth2GoogleLogin(jwt *jwt.GinJWTMiddleware) gin.Hand
 			return
 		}
 
+		userModel := models.NewUserModel(o.Database)
+
 		var user models.User
-		user, _ = models.FindUserByEmail(googleToken.Email)
+		user, _ = userModel.FindUserByEmail(googleToken.Email)
 
 		if user.EmailAddress == "" {
-			oAuthUser, err := models.CreateOAuthUser(googleToken.Email, nil, 0)
+			oAuthUser, err := userModel.CreateOAuthUser(googleToken.Email, nil, 0)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return
@@ -287,11 +302,13 @@ func (o *OAuth2Controller) GoogleCallback(jwt *jwt.GinJWTMiddleware) gin.Handler
 			return
 		}
 
+		userModel := models.NewUserModel(o.Database)
+
 		var user models.User
-		user, _ = models.FindUserByEmail(authGoogle.Email)
+		user, _ = userModel.FindUserByEmail(authGoogle.Email)
 
 		if user.EmailAddress == "" {
-			oAuthUser, err := models.CreateOAuthUser(authGoogle.Email, nil, 0)
+			oAuthUser, err := userModel.CreateOAuthUser(authGoogle.Email, nil, 0)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 				return

@@ -12,7 +12,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-type InvestingController struct{}
+type InvestingController struct {
+	Database *db.MongoDB
+}
+
+func NewInvestingController(mongoDB *db.MongoDB) InvestingController {
+	return InvestingController{
+		Database: mongoDB,
+	}
+}
 
 // Investings
 // @Summary Get Investings by Type and Market
@@ -57,7 +65,9 @@ func (i *InvestingController) GetInvestingsByTypeAndMarket(c *gin.Context) {
 		}
 	}
 
-	investings, err := models.GetInvestingsByTypeAndMarket(data.Type, data.Market)
+	investingModel := models.NewInvestingModel(i.Database)
+
+	investings, err := investingModel.GetInvestingsByTypeAndMarket(data.Type, data.Market)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -104,7 +114,9 @@ func (i *InvestingController) GetInvestingPriceTableByTypeAndMarket(c *gin.Conte
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		investings, err = models.GetInvestingPriceTableByTypeAndMarket(data.Type, data.Market)
+		investingModel := models.NewInvestingModel(i.Database)
+
+		investings, err = investingModel.GetInvestingPriceTableByTypeAndMarket(data.Type, data.Market)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),

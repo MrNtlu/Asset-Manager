@@ -11,7 +11,19 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingResponse, error) {
+type InvestingModel struct {
+	Collection         *mongo.Collection
+	ExchangeCollection *mongo.Collection
+}
+
+func NewInvestingModel(mongoDB *db.MongoDB) *InvestingModel {
+	return &InvestingModel{
+		Collection:         mongoDB.Database.Collection("investings"),
+		ExchangeCollection: mongoDB.Database.Collection("exchanges"),
+	}
+}
+
+func (investingModel *InvestingModel) GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingResponse, error) {
 	match := bson.M{"$match": bson.M{
 		"_id.type":   tType,
 		"_id.market": market,
@@ -21,7 +33,7 @@ func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingRe
 		"symbol": "$_id.symbol",
 	}}
 
-	cursor, err := db.InvestingCollection.Aggregate(context.TODO(), bson.A{match, project})
+	cursor, err := investingModel.Collection.Aggregate(context.TODO(), bson.A{match, project})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"type": tType,
@@ -42,7 +54,7 @@ func GetInvestingsByTypeAndMarket(tType, market string) ([]responses.InvestingRe
 	return investings, nil
 }
 
-func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.InvestingTableResponse, error) {
+func (investingModel *InvestingModel) GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.InvestingTableResponse, error) {
 	var (
 		cursor *mongo.Cursor
 		err    error
@@ -57,7 +69,7 @@ func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.In
 			"currency": "$to_exchange",
 		}}
 
-		cursor, err = db.ExchangeCollection.Aggregate(context.TODO(), bson.A{project})
+		cursor, err = investingModel.ExchangeCollection.Aggregate(context.TODO(), bson.A{project})
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"type": tType,
@@ -78,7 +90,7 @@ func GetInvestingPriceTableByTypeAndMarket(tType, market string) ([]responses.In
 			"currency": "$_id.stock_currency",
 		}}
 
-		cursor, err = db.InvestingCollection.Aggregate(context.TODO(), bson.A{match, project})
+		cursor, err = investingModel.Collection.Aggregate(context.TODO(), bson.A{match, project})
 		if err != nil {
 			logrus.WithFields(logrus.Fields{
 				"type": tType,

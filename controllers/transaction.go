@@ -1,6 +1,7 @@
 package controllers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
@@ -10,7 +11,15 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type TransactionController struct{}
+type TransactionController struct {
+	Database *db.MongoDB
+}
+
+func NewTransactionController(mongoDB *db.MongoDB) TransactionController {
+	return TransactionController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errTransactionMethodUnauthorized = "Unauthorized method access. You're not authorized for this method."
@@ -37,9 +46,11 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
+	userModel := models.NewUserModel(t.Database)
+	isPremium := userModel.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserTransactionCountByTime(uid, data.TransactionDate) >= 10 {
+	transactionModel := models.NewTransactionModel(t.Database)
+	if !isPremium && transactionModel.GetUserTransactionCountByTime(uid, data.TransactionDate) >= 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errTransactionPremium,
 		})
@@ -50,7 +61,9 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 	if data.TransactionMethod != nil {
 		switch *data.TransactionMethod.Type {
 		case 0:
-			bankAccount, err := models.GetBankAccountByID(data.TransactionMethod.MethodID)
+			bankAccModel := models.NewBankAccountModel(t.Database)
+
+			bankAccount, err := bankAccModel.GetBankAccountByID(data.TransactionMethod.MethodID)
 			if err == nil && bankAccount.UserID != uid {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error": errTransactionMethodUnauthorized,
@@ -65,7 +78,9 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 				return
 			}
 		case 1:
-			creditCard, err := models.GetCardByID(data.TransactionMethod.MethodID)
+			cardModel := models.NewCardModel(t.Database)
+
+			creditCard, err := cardModel.GetCardByID(data.TransactionMethod.MethodID)
 			if err == nil && creditCard.UserID != uid {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error": errTransactionMethodUnauthorized,
@@ -87,7 +102,7 @@ func (t *TransactionController) CreateTransaction(c *gin.Context) {
 		err                error
 	)
 
-	if createdTransaction, err = models.CreateTransaction(uid, data); err != nil {
+	if createdTransaction, err = transactionModel.CreateTransaction(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -120,8 +135,9 @@ func (t *TransactionController) GetTotalTransactionByInterval(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionModel := models.NewTransactionModel(t.Database)
 
-	transactionTotal, err := models.GetTotalTransactionByInterval(uid, data)
+	transactionTotal, err := transactionModel.GetTotalTransactionByInterval(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -155,8 +171,9 @@ func (t *TransactionController) GetTransactionStats(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionModel := models.NewTransactionModel(t.Database)
 
-	transactionDailyStats, err := models.GetTransactionStats(uid, data)
+	transactionDailyStats, err := transactionModel.GetTransactionStats(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -165,7 +182,7 @@ func (t *TransactionController) GetTransactionStats(c *gin.Context) {
 		return
 	}
 
-	categoryDistStats, err := models.GetTransactionCategoryDistribution(uid, data)
+	categoryDistStats, err := transactionModel.GetTransactionCategoryDistribution(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -177,8 +194,8 @@ func (t *TransactionController) GetTransactionStats(c *gin.Context) {
 	transactionStats := responses.TransactionStats{
 		TransactionDailyStats:    transactionDailyStats,
 		TransactionCategoryStats: categoryDistStats,
-		TotalExpense:             models.GetTotalFromCategoryStats(categoryDistStats, false),
-		TotalIncome:              models.GetTotalFromCategoryStats(categoryDistStats, true),
+		TotalExpense:             transactionModel.GetTotalFromCategoryStats(categoryDistStats, false),
+		TotalIncome:              transactionModel.GetTotalFromCategoryStats(categoryDistStats, true),
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": transactionStats})
@@ -206,8 +223,9 @@ func (t *TransactionController) GetTransactionsByUserIDAndFilterSort(c *gin.Cont
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionModel := models.NewTransactionModel(t.Database)
 
-	transactions, pagination, err := models.GetTransactionsByUserIDAndFilterSort(uid, data)
+	transactions, pagination, err := transactionModel.GetTransactionsByUserIDAndFilterSort(uid, data)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -240,7 +258,9 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	transaction, err := models.GetTransactionByID(data.ID)
+	transactionModel := models.NewTransactionModel(t.Database)
+
+	transaction, err := transactionModel.GetTransactionByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -252,8 +272,10 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 		return
 	}
 
-	isPremium := models.IsUserPremium(uid)
-	if data.TransactionDate != nil && !isPremium && models.GetUserTransactionCountByTime(uid, *data.TransactionDate) >= 10 {
+	userModel := models.NewUserModel(t.Database)
+	isPremium := userModel.IsUserPremium(uid)
+
+	if data.TransactionDate != nil && !isPremium && transactionModel.GetUserTransactionCountByTime(uid, *data.TransactionDate) >= 10 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errTransactionPremium,
 		})
@@ -264,7 +286,9 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 	if data.TransactionMethod != nil {
 		switch *data.TransactionMethod.Type {
 		case 0:
-			bankAccount, err := models.GetBankAccountByID(data.TransactionMethod.MethodID)
+			bankAccModel := models.NewBankAccountModel(t.Database)
+
+			bankAccount, err := bankAccModel.GetBankAccountByID(data.TransactionMethod.MethodID)
 			if err == nil && bankAccount.UserID != uid {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error": errTransactionMethodUnauthorized,
@@ -279,7 +303,9 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 				return
 			}
 		case 1:
-			creditCard, err := models.GetCardByID(data.TransactionMethod.MethodID)
+			cardModel := models.NewCardModel(t.Database)
+
+			creditCard, err := cardModel.GetCardByID(data.TransactionMethod.MethodID)
 			if err == nil && creditCard.UserID != uid {
 				c.JSON(http.StatusBadRequest, gin.H{
 					"error": errTransactionMethodUnauthorized,
@@ -298,7 +324,7 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 
 	var updatedTransaction models.Transaction
 
-	if updatedTransaction, err = models.UpdateTransaction(data, transaction); err != nil {
+	if updatedTransaction, err = transactionModel.UpdateTransaction(data, transaction); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -328,8 +354,9 @@ func (t *TransactionController) DeleteTransactionByTransactionID(c *gin.Context)
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	transactionModel := models.NewTransactionModel(t.Database)
 
-	isDeleted, err := models.DeleteTransactionByTransactionID(uid, data.ID)
+	isDeleted, err := transactionModel.DeleteTransactionByTransactionID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -359,7 +386,9 @@ func (t *TransactionController) DeleteTransactionByTransactionID(c *gin.Context)
 // @Router /transaction/all [delete]
 func (t *TransactionController) DeleteAllTransactionsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllTransactionsByUserID(uid); err != nil {
+
+	transactionModel := models.NewTransactionModel(t.Database)
+	if err := transactionModel.DeleteAllTransactionsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"asset_backend/db"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/utils"
@@ -16,12 +17,12 @@ import (
 
 var identityKey = "id"
 var (
-	errMissingAuth   = errors.New("missing Email or Password")
-	errIncorrectAuth = errors.New("incorrect Email or Password")
-	errEmptyPassword = errors.New("password is empty")
+	errMissingAuth   = errors.New("Missing email or password")
+	errIncorrectAuth = errors.New("Incorrect email or password")
+	errEmptyPassword = errors.New("Password is empty")
 )
 
-func SetupJWTHandler() *jwt.GinJWTMiddleware {
+func SetupJWTHandler(mongoDB *db.MongoDB) *jwt.GinJWTMiddleware {
 	// port := os.Getenv("PORT")
 	r := gin.New()
 	r.Use(gin.Logger())
@@ -38,7 +39,8 @@ func SetupJWTHandler() *jwt.GinJWTMiddleware {
 				return "", errMissingAuth
 			}
 
-			user, err := models.FindUserByEmail(data.EmailAddress)
+			userModel := models.NewUserModel(mongoDB)
+			user, err := userModel.FindUserByEmail(data.EmailAddress)
 			if err != nil {
 				return "", errIncorrectAuth
 			}

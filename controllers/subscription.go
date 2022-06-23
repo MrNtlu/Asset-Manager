@@ -14,7 +14,15 @@ import (
 	"github.com/vmihailenco/msgpack/v5"
 )
 
-type SubscriptionController struct{}
+type SubscriptionController struct {
+	Database *db.MongoDB
+}
+
+func NewSubscriptionController(mongoDB *db.MongoDB) SubscriptionController {
+	return SubscriptionController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errSubscriptionNotFound   = "Subscription not found."
@@ -42,9 +50,11 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	isPremium := models.IsUserPremium(uid)
+	userModel := models.NewUserModel(s.Database)
+	isPremium := userModel.IsUserPremium(uid)
 
-	if !isPremium && models.GetUserSubscriptionCount(uid) >= 5 {
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+	if !isPremium && subscriptionModel.GetUserSubscriptionCount(uid) >= 5 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errSubscriptionPremium,
 		})
@@ -53,7 +63,9 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	}
 
 	if data.CardID != nil {
-		creditCard, tempErr := models.GetCardByID(*data.CardID)
+		cardModel := models.NewCardModel(s.Database)
+
+		creditCard, tempErr := cardModel.GetCardByID(*data.CardID)
 		if tempErr == nil && creditCard.UserID != uid {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": errUnauthorizedCreditCard,
@@ -74,7 +86,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 		err                 error
 	)
 
-	if createdSubscription, err = models.CreateSubscription(uid, data); err != nil {
+	if createdSubscription, err = subscriptionModel.CreateSubscription(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -111,8 +123,9 @@ func (s *SubscriptionController) GetSubscriptionsByCardID(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
 
-	subscriptions, err := models.GetSubscriptionsByCardID(uid, data.ID)
+	subscriptions, err := subscriptionModel.GetSubscriptionsByCardID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -156,7 +169,9 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 
 	result, err := db.RedisDB.Get(context.TODO(), cacheKey).Result()
 	if err != nil || result == "" {
-		subscriptions, err := models.GetSubscriptionsByUserID(uid, data)
+		subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+		subscriptions, err := subscriptionModel.GetSubscriptionsByUserID(uid, data)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -165,7 +180,7 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 			return
 		}
 
-		subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
+		subscriptionStats, err := subscriptionModel.GetSubscriptionStatisticsByUserID(uid)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
@@ -237,8 +252,9 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
 
-	subscription, err := models.GetSubscriptionDetails(uid, data.ID)
+	subscription, err := subscriptionModel.GetSubscriptionDetails(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -268,8 +284,9 @@ func (s *SubscriptionController) GetSubscriptionDetails(c *gin.Context) {
 // @Router /subscription/stats [get]
 func (s *SubscriptionController) GetSubscriptionStatisticsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
 
-	subscriptionStats, err := models.GetSubscriptionStatisticsByUserID(uid)
+	subscriptionStats, err := subscriptionModel.GetSubscriptionStatisticsByUserID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -302,7 +319,9 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 		return
 	}
 
-	subscription, err := models.GetSubscriptionByID(data.ID)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	subscription, err := subscriptionModel.GetSubscriptionByID(data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -321,7 +340,7 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 
 	var updatedSubscription responses.Subscription
 
-	if updatedSubscription, err = models.UpdateSubscription(data, subscription); err != nil {
+	if updatedSubscription, err = subscriptionModel.UpdateSubscription(data, subscription); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -353,8 +372,9 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
 
-	isDeleted, err := models.DeleteSubscriptionBySubscriptionID(uid, data.ID)
+	isDeleted, err := subscriptionModel.DeleteSubscriptionBySubscriptionID(uid, data.ID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -386,7 +406,9 @@ func (s *SubscriptionController) DeleteSubscriptionBySubscriptionID(c *gin.Conte
 // @Router /subscription/all [delete]
 func (s *SubscriptionController) DeleteAllSubscriptionsByUserID(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	if err := models.DeleteAllSubscriptionsByUserID(uid); err != nil {
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	if err := subscriptionModel.DeleteAllSubscriptionsByUserID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})

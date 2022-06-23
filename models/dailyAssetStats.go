@@ -10,10 +10,21 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetStats, error) {
+type DailyAssetStatsModel struct {
+	Collection *mongo.Collection
+}
+
+func NewDailyAssetStatsModel(mongoDB *db.MongoDB) *DailyAssetStatsModel {
+	return &DailyAssetStatsModel{
+		Collection: mongoDB.Database.Collection("daily-asset-stats"),
+	}
+}
+
+func (dasModel *DailyAssetStatsModel) GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetStats, error) {
 	objectUID, _ := primitive.ObjectIDFromHex(uid)
 
 	var intervalDate time.Time
@@ -182,7 +193,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 		}
 	}
 
-	cursor, err := db.DailyAssetStatCollection.Aggregate(context.TODO(), aggregationList)
+	cursor, err := dasModel.Collection.Aggregate(context.TODO(), aggregationList)
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":      uid,
@@ -209,7 +220,7 @@ func GetAssetStatsByUserID(uid string, interval string) (responses.DailyAssetSta
 	return responses.DailyAssetStats{}, nil
 }
 
-func CalculateDailyAssetStats() {
+func (dasModel *DailyAssetStatsModel) CalculateDailyAssetStats() {
 	group := bson.M{"$group": bson.M{
 		"_id": bson.M{
 			"to_asset":   "$to_asset",
@@ -460,7 +471,7 @@ func CalculateDailyAssetStats() {
 		},
 	}}
 
-	cursor, err := db.AssetCollection.Aggregate(context.TODO(), bson.A{
+	cursor, err := dasModel.Collection.Aggregate(context.TODO(), bson.A{
 		group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup,
@@ -484,7 +495,7 @@ func CalculateDailyAssetStats() {
 		insertDASList[i] = dailyAssetStat
 	}
 
-	if _, err := db.DailyAssetStatCollection.InsertMany(
+	if _, err := dasModel.Collection.InsertMany(
 		context.TODO(),
 		insertDASList,
 		options.InsertMany().SetOrdered(false),
@@ -493,8 +504,8 @@ func CalculateDailyAssetStats() {
 	}
 }
 
-func DeleteAllAssetStatsByUserID(uid string) error {
-	if _, err := db.DailyAssetStatCollection.DeleteMany(context.TODO(), bson.M{
+func (dasModel *DailyAssetStatsModel) DeleteAllAssetStatsByUserID(uid string) error {
+	if _, err := dasModel.Collection.DeleteMany(context.TODO(), bson.M{
 		"user_id": uid,
 	}); err != nil {
 		logrus.WithFields(logrus.Fields{

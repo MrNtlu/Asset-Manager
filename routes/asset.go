@@ -1,11 +1,18 @@
 package routes
 
 import (
+	"asset_backend/controllers"
+	"asset_backend/db"
+
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-func assetRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware) {
+func assetRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware, mongoDB *db.MongoDB) {
+	assetController := controllers.NewAssetController(mongoDB)
+	dailyAssetStatsController := controllers.NewDailyAssetStatsController(mongoDB)
+	investingController := controllers.NewInvestingController(mongoDB)
+
 	asset := router.Group("/asset").Use(jwtToken.MiddlewareFunc())
 	{
 		asset.DELETE("/log", assetController.DeleteAssetLogByAssetID)

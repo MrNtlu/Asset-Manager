@@ -18,7 +18,15 @@ import (
 	"github.com/sethvargo/go-password/password"
 )
 
-type UserController struct{}
+type UserController struct {
+	Database *db.MongoDB
+}
+
+func NewUserController(mongoDB *db.MongoDB) UserController {
+	return UserController{
+		Database: mongoDB,
+	}
+}
 
 var (
 	errAlreadyRegistered = "User already registered."
@@ -46,7 +54,8 @@ func (u *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	user, _ := models.FindUserByEmail(data.EmailAddress)
+	userModel := models.NewUserModel(u.Database)
+	user, _ := userModel.FindUserByEmail(data.EmailAddress)
 
 	if user.EmailAddress != "" {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -56,7 +65,7 @@ func (u *UserController) Register(c *gin.Context) {
 		return
 	}
 
-	if err := models.CreateUser(data); err != nil {
+	if err := userModel.CreateUser(data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -86,8 +95,9 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(u.Database)
 
-	user, err := models.FindUserByID(uid)
+	user, err := userModel.FindUserByID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -97,7 +107,7 @@ func (u *UserController) ChangeCurrency(c *gin.Context) {
 	}
 
 	user.Currency = data.Currency
-	if err = models.UpdateUser(user); err != nil {
+	if err = userModel.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -129,8 +139,9 @@ func (u *UserController) UpdateFCMToken(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(u.Database)
 
-	user, err := models.FindUserByID(uid)
+	user, err := userModel.FindUserByID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -141,7 +152,7 @@ func (u *UserController) UpdateFCMToken(c *gin.Context) {
 
 	if user.FCMToken != data.FCMToken {
 		user.FCMToken = data.FCMToken
-		if err = models.UpdateUser(user); err != nil {
+		if err = userModel.UpdateUser(user); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -173,7 +184,8 @@ func (u *UserController) ChangeUserMembership(c *gin.Context) {
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
-	if err := models.UpdateUserMembership(uid, data); err != nil {
+	userModel := models.NewUserModel(u.Database)
+	if err := userModel.UpdateUserMembership(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -204,8 +216,9 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 	}
 
 	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(u.Database)
 
-	user, err := models.FindUserByID(uid)
+	user, err := userModel.FindUserByID(uid)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -231,7 +244,7 @@ func (u *UserController) ChangePassword(c *gin.Context) {
 	}
 
 	user.Password = utils.HashPassword(data.NewPassword)
-	if err = models.UpdateUser(user); err != nil {
+	if err = userModel.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -259,7 +272,9 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		return
 	}
 
-	user, err := models.FindUserByEmail(data.EmailAddress)
+	userModel := models.NewUserModel(u.Database)
+
+	user, err := userModel.FindUserByEmail(data.EmailAddress)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errNoUser,
@@ -289,7 +304,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 		resetToken = uuid.NewString()
 		user.PasswordResetToken = resetToken
 
-		if err = models.UpdateUser(user); err != nil {
+		if err = userModel.UpdateUser(user); err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
@@ -301,7 +316,7 @@ func (u *UserController) ForgotPassword(c *gin.Context) {
 
 		time.AfterFunc(scheduleTime, func() {
 			user.PasswordResetToken = ""
-			go models.UpdateUser(user)
+			go userModel.UpdateUser(user)
 		})
 	} else {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -326,7 +341,9 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 	token := c.Query("token")
 	email := c.Query("mail")
 
-	user, err := models.FindUserByResetTokenAndEmail(token, email)
+	userModel := models.NewUserModel(u.Database)
+
+	user, err := userModel.FindUserByResetTokenAndEmail(token, email)
 	if err != nil {
 		http.ServeFile(c.Writer, c.Request, "assets/error_password_reset.html")
 		return
@@ -355,7 +372,7 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 	user.Password = utils.HashPassword(generatedPass)
 	user.PasswordResetToken = ""
 
-	if err = models.UpdateUser(user); err != nil {
+	if err = userModel.UpdateUser(user); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -386,9 +403,14 @@ func (u *UserController) ConfirmPasswordReset(c *gin.Context) {
 // @Router /user/info [get]
 func (u *UserController) GetUserInfo(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
-	info, _ := models.FindUserByID(uid)
-	assetCount := models.GetUserAssetCount(uid)
-	subscritionCount := models.GetUserSubscriptionCount(uid)
+
+	userModel := models.NewUserModel(u.Database)
+	assetModel := models.NewAssetModel(u.Database)
+	subscriptionModel := models.NewSubscriptionModel(u.Database)
+
+	info, _ := userModel.FindUserByID(uid)
+	assetCount := assetModel.GetUserAssetCount(uid)
+	subscritionCount := subscriptionModel.GetUserSubscriptionCount(uid)
 
 	var (
 		investingLimit    string
@@ -431,7 +453,8 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 func (u *UserController) DeleteUser(c *gin.Context) {
 	uid := jwt.ExtractClaims(c)["id"].(string)
 
-	if err := models.DeleteUserByID(uid); err != nil {
+	userModel := models.NewUserModel(u.Database)
+	if err := userModel.DeleteUserByID(uid); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
 		})
@@ -439,13 +462,21 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 		return
 	}
 
-	go models.DeleteAllAssetsByUserID(uid)
-	go models.DeleteAllCardsByUserID(uid)
-	go models.DeleteAllSubscriptionsByUserID(uid)
-	go models.DeleteAllAssetStatsByUserID(uid)
-	go models.DeleteAllLogsByUserID(uid)
-	go models.DeleteAllTransactionsByUserID(uid)
-	go models.DeleteAllBankAccountsByUserID(uid)
+	assetModel := models.NewAssetModel(u.Database)
+	dasModel := models.NewDailyAssetStatsModel(u.Database)
+	cardModel := models.NewCardModel(u.Database)
+	subscriptionModel := models.NewSubscriptionModel(u.Database)
+	logModel := models.NewLogModel(u.Database)
+	transactionModel := models.NewTransactionModel(u.Database)
+	bankAccModel := models.NewBankAccountModel(u.Database)
+
+	go assetModel.DeleteAllAssetsByUserID(uid)
+	go cardModel.DeleteAllCardsByUserID(uid)
+	go subscriptionModel.DeleteAllSubscriptionsByUserID(uid)
+	go dasModel.DeleteAllAssetStatsByUserID(uid)
+	go logModel.DeleteAllLogsByUserID(uid)
+	go transactionModel.DeleteAllTransactionsByUserID(uid)
+	go bankAccModel.DeleteAllBankAccountsByUserID(uid)
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully deleted user."})
 }

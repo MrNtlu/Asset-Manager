@@ -218,6 +218,12 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 				}
 
 				return subscriptionAndStats.Data[i].Price < subscriptionAndStats.Data[j].Price
+			case "date":
+				if data.SortType == 1 {
+					return subscriptionAndStats.Data[i].NextBillDate.After(subscriptionAndStats.Data[j].NextBillDate)
+				}
+
+				return subscriptionAndStats.Data[i].NextBillDate.Before(subscriptionAndStats.Data[j].NextBillDate)
 			default:
 				return true
 			}

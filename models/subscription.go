@@ -6,6 +6,7 @@ import (
 	"asset_backend/responses"
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/sirupsen/logrus"
@@ -185,19 +186,19 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(uid string,
 		"user_id": uid,
 	}
 
-	var sort bson.D
+	var sortOptions bson.D
 	if data.Sort == "price" {
-		sort = bson.D{
+		sortOptions = bson.D{
 			primitive.E{Key: "currency", Value: 1},
 			primitive.E{Key: data.Sort, Value: data.SortType},
 		}
 	} else {
-		sort = bson.D{
+		sortOptions = bson.D{
 			{Key: data.Sort, Value: data.SortType},
 		}
 	}
 
-	options := options.Find().SetSort(sort)
+	options := options.Find().SetSort(sortOptions)
 
 	cursor, err := subscriptionModel.Collection.Find(context.TODO(), match, options)
 	if err != nil {
@@ -228,6 +229,16 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(uid string,
 		)
 	}
 
+	if data.Sort == "date" {
+		sort.Slice(subscriptions, func(i, j int) bool {
+			if data.SortType == -1 {
+				return subscriptions[i].NextBillDate.Before(subscriptions[j].NextBillDate)
+			} else {
+				return subscriptions[i].NextBillDate.After(subscriptions[j].NextBillDate)
+			}
+		})
+	}
+
 	return subscriptions, nil
 }
 
@@ -238,8 +249,24 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionDetails(uid, subscrip
 		"_id":     objectSubscriptionID,
 		"user_id": uid,
 	}}
+	set := bson.M{"$set": bson.M{
+		"card_id": bson.M{
+			"$toObjectId": "$card_id",
+		},
+	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from":         "cards",
+		"localField":   "card_id",
+		"foreignField": "_id",
+		"as":           "card",
+	}}
+	unwind := bson.M{"$unwind": bson.M{
+		"path":                       "$card",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": true,
+	}}
 
-	cursor, err := subscriptionModel.Collection.Aggregate(context.TODO(), bson.A{match, addSubscriptionMonthlyAndTotalPaymentFields()})
+	cursor, err := subscriptionModel.Collection.Aggregate(context.TODO(), bson.A{match, addSubscriptionMonthlyAndTotalPaymentFields(), set, lookup, unwind})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{
 			"uid":             uid,

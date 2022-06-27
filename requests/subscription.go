@@ -34,6 +34,6 @@ type SubscriptionUpdate struct {
 }
 
 type SubscriptionSort struct {
-	Sort     string `form:"sort" binding:"required,oneof=name currency price"`
+	Sort     string `form:"sort" binding:"required,oneof=name currency price date"`
 	SortType int    `form:"type" json:"type" binding:"required,oneof=1 -1"`
 }

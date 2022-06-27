@@ -35,6 +35,13 @@ type SubscriptionDetails struct {
 	Currency       string             `bson:"currency" json:"currency"`
 	MonthlyPayment float64            `bson:"monthly_payment" json:"monthly_payment"`
 	TotalPayment   float64            `bson:"total_payment" json:"total_payment"`
+	Card           *Card              `bson:"card" json:"card"`
+}
+
+type Card struct {
+	Name       string `bson:"name" json:"name"`
+	Last4Digit string `bson:"last_digit" json:"last_digit"`
+	Type       string `bson:"type" json:"type"`
 }
 
 type BillCycle struct {

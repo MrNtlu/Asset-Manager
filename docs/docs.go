@@ -1608,7 +1608,8 @@ const docTemplate = `{
                         "enum": [
                             "name",
                             "currency",
-                            "price"
+                            "price",
+                            "date"
                         ],
                         "type": "string",
                         "name": "sort",
@@ -3544,6 +3545,20 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.Card": {
+            "type": "object",
+            "properties": {
+                "last_digit": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.CardStats": {
             "type": "object",
             "properties": {
@@ -3695,6 +3710,9 @@ const docTemplate = `{
                 },
                 "bill_date": {
                     "type": "string"
+                },
+                "card": {
+                    "$ref": "#/definitions/responses.Card"
                 },
                 "card_id": {
                     "type": "string"

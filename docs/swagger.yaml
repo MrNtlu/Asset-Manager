@@ -547,6 +547,15 @@ definitions:
       year:
         type: integer
     type: object
+  responses.Card:
+    properties:
+      last_digit:
+        type: string
+      name:
+        type: string
+      type:
+        type: string
+    type: object
   responses.CardStats:
     properties:
       subscription_stats:
@@ -646,6 +655,8 @@ definitions:
         $ref: '#/definitions/responses.BillCycle'
       bill_date:
         type: string
+      card:
+        $ref: '#/definitions/responses.Card'
       card_id:
         type: string
       currency:
@@ -1799,6 +1810,7 @@ paths:
         - name
         - currency
         - price
+        - date
         in: query
         name: sort
         required: true

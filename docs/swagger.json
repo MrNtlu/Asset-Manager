@@ -1604,7 +1604,8 @@
                         "enum": [
                             "name",
                             "currency",
-                            "price"
+                            "price",
+                            "date"
                         ],
                         "type": "string",
                         "name": "sort",
@@ -3540,6 +3541,20 @@
                 }
             }
         },
+        "responses.Card": {
+            "type": "object",
+            "properties": {
+                "last_digit": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "type": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.CardStats": {
             "type": "object",
             "properties": {
@@ -3691,6 +3706,9 @@
                 },
                 "bill_date": {
                     "type": "string"
+                },
+                "card": {
+                    "$ref": "#/definitions/responses.Card"
                 },
                 "card_id": {
                     "type": "string"

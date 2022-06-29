@@ -15,12 +15,14 @@ import (
 )
 
 type DailyAssetStatsModel struct {
-	Collection *mongo.Collection
+	Collection      *mongo.Collection
+	AssetCollection *mongo.Collection
 }
 
 func NewDailyAssetStatsModel(mongoDB *db.MongoDB) *DailyAssetStatsModel {
 	return &DailyAssetStatsModel{
-		Collection: mongoDB.Database.Collection("daily-asset-stats"),
+		Collection:      mongoDB.Database.Collection("daily-asset-stats"),
+		AssetCollection: mongoDB.Database.Collection("assets"),
 	}
 }
 
@@ -349,7 +351,9 @@ func (dasModel *DailyAssetStatsModel) CalculateDailyAssetStats() {
 		},
 	}}
 	project := bson.M{"$project": bson.M{
-		"user_id":      true,
+		"user_id": bson.M{
+			"$toObjectId": "$user_id",
+		},
 		"total_bought": true,
 		"total_sold":   true,
 		"asset_type":   true,
@@ -405,7 +409,7 @@ func (dasModel *DailyAssetStatsModel) CalculateDailyAssetStats() {
 	unwindUserCurrency := bson.M{"$unwind": bson.M{
 		"path":                       "$user_exchange_rate",
 		"includeArrayIndex":          "index",
-		"preserveNullAndEmptyArrays": true,
+		"preserveNullAndEmptyArrays": false,
 	}}
 	userCurrencyProject := bson.M{"$project": bson.M{
 		"user_id": bson.M{
@@ -471,7 +475,7 @@ func (dasModel *DailyAssetStatsModel) CalculateDailyAssetStats() {
 		},
 	}}
 
-	cursor, err := dasModel.Collection.Aggregate(context.TODO(), bson.A{
+	cursor, err := dasModel.AssetCollection.Aggregate(context.TODO(), bson.A{
 		group, lookup, unwindInvesting, exchangeLookup, unwindExchange,
 		addInvestingField, project, userLookup, unwindUser, userCurrencyExchangeLookup,
 		unwindUserCurrency, userCurrencyProject, assetGroup, statsGroup,

@@ -6,7 +6,6 @@ import (
 	"asset_backend/docs"
 	"asset_backend/helpers"
 	"asset_backend/models"
-	"asset_backend/requests"
 	"asset_backend/routes"
 	"log"
 	"net/http"
@@ -78,11 +77,6 @@ func main() {
 	}, func(ctx *gin.Context) (*rate.Limiter, time.Duration) {
 		return rate.NewLimiter(rate.Every(burstTime), requestCount), restrictionTime
 	}, func(ctx *gin.Context) {
-		logModel := models.NewLogModel(mongoDB)
-		go logModel.CreateLog(ctx.ClientIP(), requests.CreateLog{
-			Log:     "Rate-Limit",
-			LogType: 0,
-		})
 		const tooManyRequestError = "Too many requests. Rescricted for 5 seconds."
 		ctx.JSON(http.StatusTooManyRequests, gin.H{"error": tooManyRequestError, "message": tooManyRequestError})
 		ctx.Abort()

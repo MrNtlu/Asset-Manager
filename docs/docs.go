@@ -3874,7 +3874,7 @@ var SwaggerInfo = &swag.Spec{
 	Version:          "1.0",
 	Host:             "rocky-reaches-65250.herokuapp.com",
 	BasePath:         "/api/v1",
-	Schemes:          []string{"http"},
+	Schemes:          []string{"https"},
 	Title:            "Kantan Investment Manager API",
 	Description:      "REST Api of Kantan.",
 	InfoInstanceName: "swagger",

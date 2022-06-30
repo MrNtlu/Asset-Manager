@@ -26,9 +26,9 @@
     <li> appleboy/Go-FCM
 </ul>
 
-[Swagger UI](http://rocky-reaches-65250.herokuapp.com/swagger/index.html)
+[Swagger UI](https://rocky-reaches-65250.herokuapp.com/swagger/index.html)
 
-[Open API 2 Doc](http://rocky-reaches-65250.herokuapp.com/swagger/doc.json)
+[Open API 2 Doc](https://rocky-reaches-65250.herokuapp.com/swagger/doc.json)
 
 ### Github Actions
 

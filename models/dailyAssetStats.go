@@ -409,7 +409,7 @@ func (dasModel *DailyAssetStatsModel) CalculateDailyAssetStats() {
 	unwindUserCurrency := bson.M{"$unwind": bson.M{
 		"path":                       "$user_exchange_rate",
 		"includeArrayIndex":          "index",
-		"preserveNullAndEmptyArrays": false,
+		"preserveNullAndEmptyArrays": true,
 	}}
 	userCurrencyProject := bson.M{"$project": bson.M{
 		"user_id": bson.M{

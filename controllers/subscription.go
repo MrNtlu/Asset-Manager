@@ -26,6 +26,7 @@ func NewSubscriptionController(mongoDB *db.MongoDB) SubscriptionController {
 
 var (
 	errSubscriptionNotFound   = "Subscription not found."
+	errSubscriptionInviteSelf = "You cannot invite yourself."
 	errUnauthorizedCreditCard = "Unauthorized credit card access. You're not the owner of this credit card."
 	errSubscriptionPremium    = "Free members can add up to 5 subscriptions, you can get premium membership for unlimited access."
 )
@@ -97,6 +98,78 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	go db.RedisDB.Del(context.TODO(), ("subscription/" + uid))
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created.", "data": createdSubscription})
+}
+
+// Invite Subscription To User
+// @Summary Sents invitation to another user for access to subscription.
+// @Description Invites another user by email to subscription, if accepted they can view it
+// @Tags subscription
+// @Accept application/json
+// @Produce application/json
+// @Param subscriptioninvite body requests.SubscriptionInvite true "SubscriptionInvite"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /subscription/invite [post]
+func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
+	var data requests.SubscriptionInvite
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(s.Database)
+
+	user, err := userModel.FindUserByEmail(data.InvitedUserMail)
+	if err != nil {
+		c.JSON(http.StatusOK, gin.H{
+			"message": "Invitation sent. Please ask them to check their invitation & accept it.",
+		})
+
+		return
+	}
+
+	if user.ID.Hex() == uid {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errSubscriptionInviteSelf,
+		})
+
+		return
+	}
+
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	subscription, err := subscriptionModel.GetSubscriptionByID(data.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	if subscription.UserID != uid {
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": ErrUnauthorized,
+		})
+
+		return
+	}
+
+	if err := subscriptionModel.InviteSubscriptionToUser(uid, user.ID.Hex(), data.ID); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	// TODO Send FCM notification
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Invitation sent. Please ask them to check their invitation & accept it.",
+	})
 }
 
 // Subscriptions By Card

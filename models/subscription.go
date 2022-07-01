@@ -4,6 +4,7 @@ import (
 	"asset_backend/db"
 	"asset_backend/requests"
 	"asset_backend/responses"
+	"asset_backend/utils"
 	"context"
 	"fmt"
 	"sort"
@@ -18,28 +19,46 @@ import (
 )
 
 type SubscriptionModel struct {
-	Collection *mongo.Collection
+	Collection       *mongo.Collection
+	InviteCollection *mongo.Collection
 }
 
 func NewSubscriptionModel(mongoDB *db.MongoDB) *SubscriptionModel {
 	return &SubscriptionModel{
-		Collection: mongoDB.Database.Collection("subscriptions"),
+		Collection:       mongoDB.Database.Collection("subscriptions"),
+		InviteCollection: mongoDB.Database.Collection("subscription-invites"),
 	}
 }
 
 type Subscription struct {
-	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserID      string             `bson:"user_id" json:"user_id"`
-	CardID      *string            `bson:"card_id" json:"card_id"`
-	Name        string             `bson:"name" json:"name"`
-	Description *string            `bson:"description" json:"description"`
-	BillDate    time.Time          `bson:"bill_date" json:"bill_date"`
-	BillCycle   BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
-	Price       float64            `bson:"price" json:"price"`
-	Currency    string             `bson:"currency" json:"currency"`
-	Color       string             `bson:"color" json:"color"`
-	Image       string             `bson:"image" json:"image"`
-	CreatedAt   time.Time          `bson:"created_at" json:"-"`
+	ID           primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
+	UserID       string               `bson:"user_id" json:"user_id"`
+	CardID       *string              `bson:"card_id" json:"card_id"`
+	Name         string               `bson:"name" json:"name"`
+	Description  *string              `bson:"description" json:"description"`
+	BillDate     time.Time            `bson:"bill_date" json:"bill_date"`
+	BillCycle    BillCycle            `bson:"bill_cycle" json:"bill_cycle"`
+	Price        float64              `bson:"price" json:"price"`
+	Currency     string               `bson:"currency" json:"currency"`
+	Color        string               `bson:"color" json:"color"`
+	Image        string               `bson:"image" json:"image"`
+	Account      *SubscriptionAccount `bson:"account" json:"account"`
+	SharedUsers  []string             `bson:"shared_users" json:"shared_users"`
+	InvitedUsers []string             `bson:"invited_users" json:"invited_users"`
+	CreatedAt    time.Time            `bson:"created_at" json:"-"`
+}
+
+type SubscriptionAccount struct {
+	EmailAddress string  `bson:"email_address" json:"email_address"`
+	Password     *string `bson:"password" json:"password"`
+}
+
+type SubscriptionInvite struct {
+	ID             primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
+	UserID         string             `bson:"user_id" json:"user_id"`
+	InvitedUserID  string             `bson:"invited_user_id" json:"invited_user_id"`
+	SubscriptionID string             `bson:"subscription_id" json:"subscription_id"`
+	CreatedAt      time.Time          `bson:"created_at" json:"-"`
 }
 
 type BillCycle struct {
@@ -53,20 +72,38 @@ const subscriptionPremiumLimit = 5
 func createSubscriptionObject(
 	uid, name, currency, color, image string,
 	cardID, description *string, price float64,
-	billDate time.Time, billCycle BillCycle,
+	billDate time.Time, billCycle BillCycle, account *SubscriptionAccount,
 ) *Subscription {
 	return &Subscription{
-		UserID:      uid,
-		CardID:      cardID,
-		Name:        name,
-		Description: description,
-		BillDate:    billDate,
-		BillCycle:   billCycle,
-		Price:       price,
-		Currency:    currency,
-		Color:       color,
-		Image:       image,
-		CreatedAt:   time.Now().UTC(),
+		UserID:       uid,
+		CardID:       cardID,
+		Name:         name,
+		Description:  description,
+		BillDate:     billDate,
+		BillCycle:    billCycle,
+		Price:        price,
+		Currency:     currency,
+		Color:        color,
+		Image:        image,
+		SharedUsers:  make([]string, 0),
+		InvitedUsers: make([]string, 0),
+		Account:      account,
+		CreatedAt:    time.Now().UTC(),
+	}
+}
+
+func createSubscriptionAccount(account *requests.SubscriptionAccount) *SubscriptionAccount {
+	if account.Password != nil {
+		hashedPassword := utils.Encrypt(*account.Password)
+
+		return &SubscriptionAccount{
+			EmailAddress: account.EmailAddress,
+			Password:     &hashedPassword,
+		}
+	}
+
+	return &SubscriptionAccount{
+		EmailAddress: account.EmailAddress,
 	}
 }
 
@@ -75,6 +112,15 @@ func createBillCycle(billCycle requests.BillCycle) *BillCycle {
 		Day:   billCycle.Day,
 		Month: billCycle.Month,
 		Year:  billCycle.Year,
+	}
+}
+
+func createSubscriptionInvite(uid, invitedUID, subscriptionID string) *SubscriptionInvite {
+	return &SubscriptionInvite{
+		UserID:         uid,
+		InvitedUserID:  invitedUID,
+		SubscriptionID: subscriptionID,
+		CreatedAt:      time.Now().UTC(),
 	}
 }
 
@@ -90,6 +136,7 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 		data.Price,
 		data.BillDate,
 		*createBillCycle(data.BillCycle),
+		createSubscriptionAccount(data.Account),
 	)
 
 	var (
@@ -109,6 +156,54 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 	subscription.ID = insertedID.InsertedID.(primitive.ObjectID)
 
 	return convertModelToResponse(*subscription), nil
+}
+
+// Send notification to user via FCM
+// Delete invitation after a day?
+// User can accept || deny invitation
+func (subscriptionModel *SubscriptionModel) InviteSubscriptionToUser(uid, invitedUID, subscriptionID string) error {
+	subscriptionInvite := createSubscriptionInvite(uid, invitedUID, subscriptionID)
+
+	if isInviteSent := subscriptionModel.isInviteSentToUser(uid, invitedUID, subscriptionID); isInviteSent {
+		return fmt.Errorf("Invitation already sent.")
+	}
+
+	if _, err := subscriptionModel.InviteCollection.InsertOne(context.TODO(), subscriptionInvite); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":             uid,
+			"invited_uid":     invitedUID,
+			"subscription_id": subscriptionID,
+		}).Error("failed to invite user: ", err)
+
+		return fmt.Errorf("Failed to invite user.")
+	}
+
+	if err := subscriptionModel.UpdateSubscriptionInvite(invitedUID, subscriptionID, true); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (subscriptionModel *SubscriptionModel) UpdateSubscriptionInvite(invitedUID, subscriptionID string, isPush bool) error {
+	objectID, _ := primitive.ObjectIDFromHex(subscriptionID)
+
+	var operation bson.M
+	if isPush {
+		operation = bson.M{"$push": bson.M{
+			"invited_users": invitedUID,
+		}}
+	} else {
+		operation = bson.M{"$pull": bson.M{
+			"invited_users": invitedUID,
+		}}
+	}
+
+	if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectID}, operation); err != nil {
+		return fmt.Errorf("Failed to set subscription.")
+	}
+
+	return nil
 }
 
 func (subscriptionModel *SubscriptionModel) GetUserSubscriptionCount(uid string) int64 {
@@ -292,6 +387,11 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionDetails(uid, subscrip
 			subscription.BillCycle,
 			subscription.BillDate,
 		)
+
+		if subscription.Account != nil && subscription.Account.Password != nil {
+			decryptedPassword := utils.Decrypt(*subscription.Account.Password)
+			subscription.Account.Password = &decryptedPassword
+		}
 
 		return subscription, nil
 	}
@@ -483,6 +583,12 @@ func (subscriptionModel *SubscriptionModel) UpdateSubscription(data requests.Sub
 
 	subscription.CardID = data.CardID
 
+	if data.Account != nil {
+		subscription.Account = createSubscriptionAccount(data.Account)
+	} else {
+		subscription.Account = nil
+	}
+
 	if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{
 		"_id": objectSubscriptionID,
 	}, bson.M{"$set": subscription}); err != nil {
@@ -549,6 +655,25 @@ func (subscriptionModel *SubscriptionModel) DeleteAllSubscriptionsByUserID(uid s
 	}
 
 	return nil
+}
+
+func (subscriptionModel *SubscriptionModel) isInviteSentToUser(uid, invitedUID, subscriptionID string) bool {
+	count, err := subscriptionModel.InviteCollection.CountDocuments(context.TODO(), bson.M{
+		"user_id":         uid,
+		"invited_user_id": invitedUID,
+		"subscription_id": subscriptionID,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":             uid,
+			"invited_uid":     invitedUID,
+			"subscription_id": subscriptionID,
+		}).Error("failed to count user invites: ", err)
+
+		return true
+	}
+
+	return count > 0
 }
 
 func getNextBillDate(billCycle responses.BillCycle, initialBillDate time.Time) time.Time {

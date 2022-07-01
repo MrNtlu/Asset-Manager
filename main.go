@@ -7,6 +7,7 @@ import (
 	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/routes"
+	"asset_backend/utils"
 	"log"
 	"net/http"
 	"os"
@@ -54,6 +55,7 @@ func main() {
 	defer db.Close(ctx, mongoDB.Client, cancel)
 
 	db.SetupRedis()
+	utils.InitCipher()
 
 	jwtHandler := helpers.SetupJWTHandler(mongoDB)
 

@@ -23,19 +23,25 @@ type Subscription struct {
 }
 
 type SubscriptionDetails struct {
-	ID             primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
-	UserID         string             `bson:"user_id" json:"user_id"`
-	CardID         *string            `bson:"card_id" json:"card_id"`
-	Name           string             `bson:"name" json:"name"`
-	Description    *string            `bson:"description" json:"description"`
-	BillDate       time.Time          `bson:"bill_date" json:"bill_date"`
-	NextBillDate   time.Time          `bson:"next_bill_date" json:"next_bill_date"`
-	BillCycle      BillCycle          `bson:"bill_cycle" json:"bill_cycle"`
-	Price          float64            `bson:"price" json:"price"`
-	Currency       string             `bson:"currency" json:"currency"`
-	MonthlyPayment float64            `bson:"monthly_payment" json:"monthly_payment"`
-	TotalPayment   float64            `bson:"total_payment" json:"total_payment"`
-	Card           *Card              `bson:"card" json:"card"`
+	ID             primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
+	UserID         string               `bson:"user_id" json:"user_id"`
+	CardID         *string              `bson:"card_id" json:"card_id"`
+	Name           string               `bson:"name" json:"name"`
+	Description    *string              `bson:"description" json:"description"`
+	BillDate       time.Time            `bson:"bill_date" json:"bill_date"`
+	NextBillDate   time.Time            `bson:"next_bill_date" json:"next_bill_date"`
+	BillCycle      BillCycle            `bson:"bill_cycle" json:"bill_cycle"`
+	Price          float64              `bson:"price" json:"price"`
+	Currency       string               `bson:"currency" json:"currency"`
+	MonthlyPayment float64              `bson:"monthly_payment" json:"monthly_payment"`
+	TotalPayment   float64              `bson:"total_payment" json:"total_payment"`
+	Card           *Card                `bson:"card" json:"card"`
+	Account        *SubscriptionAccount `json:"account"`
+}
+
+type SubscriptionAccount struct {
+	EmailAddress string  `bson:"email_address" json:"email_address"`
+	Password     *string `bson:"password" json:"password"`
 }
 
 type Card struct {

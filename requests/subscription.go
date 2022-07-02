@@ -49,3 +49,8 @@ type SubscriptionInvite struct {
 	ID              string `json:"id" binding:"required"`
 	InvitedUserMail string `json:"invited_user_mail" binding:"required"`
 }
+
+type SubscriptionInvitation struct {
+	ID         string `json:"id" binding:"required"`
+	IsAccepted *bool  `json:"is_accepted" binding:"required"`
+}

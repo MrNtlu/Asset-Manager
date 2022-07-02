@@ -1992,6 +1992,122 @@ const docTemplate = `{
                 }
             }
         },
+        "/subscription/invitation": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invited users can accept/deny invitation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Handles subscription invitation response",
+                "parameters": [
+                    {
+                        "description": "SubscriptionInvitation",
+                        "name": "subscriptioninvitation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.SubscriptionInvitation"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invites another user by email to subscription, if accepted they can view it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Sents invitation to another user for access to subscription.",
+                "parameters": [
+                    {
+                        "description": "SubscriptionInvite",
+                        "name": "subscriptioninvite",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.SubscriptionInvite"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/subscription/stats": {
             "get": {
                 "security": [
@@ -2836,6 +2952,9 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
+                "account": {
+                    "$ref": "#/definitions/models.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/models.BillCycle"
                 },
@@ -2857,13 +2976,36 @@ const docTemplate = `{
                 "image": {
                     "type": "string"
                 },
+                "invited_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
                     "type": "string"
                 },
                 "price": {
                     "type": "number"
                 },
+                "shared_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
                     "type": "string"
                 }
             }
@@ -3232,6 +3374,9 @@ const docTemplate = `{
                 "price"
             ],
             "properties": {
+                "account": {
+                    "$ref": "#/definitions/requests.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/requests.BillCycle"
                 },
@@ -3261,12 +3406,56 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "requests.SubscriptionInvitation": {
+            "type": "object",
+            "required": [
+                "id",
+                "is_accepted"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_accepted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "requests.SubscriptionInvite": {
+            "type": "object",
+            "required": [
+                "id",
+                "invited_user_mail"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "invited_user_mail": {
+                    "type": "string"
+                }
+            }
+        },
         "requests.SubscriptionUpdate": {
             "type": "object",
             "required": [
                 "id"
             ],
             "properties": {
+                "account": {
+                    "$ref": "#/definitions/requests.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/requests.BillCycle"
                 },
@@ -3682,6 +3871,17 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.SubscriptionAndStats": {
             "type": "object",
             "properties": {
@@ -3704,6 +3904,9 @@ const docTemplate = `{
             "properties": {
                 "_id": {
                     "type": "string"
+                },
+                "account": {
+                    "$ref": "#/definitions/responses.SubscriptionAccount"
                 },
                 "bill_cycle": {
                     "$ref": "#/definitions/responses.BillCycle"

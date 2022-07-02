@@ -72,6 +72,8 @@ definitions:
     properties:
       _id:
         type: string
+      account:
+        $ref: '#/definitions/models.SubscriptionAccount'
       bill_cycle:
         $ref: '#/definitions/models.BillCycle'
       bill_date:
@@ -86,11 +88,26 @@ definitions:
         type: string
       image:
         type: string
+      invited_users:
+        items:
+          type: string
+        type: array
       name:
         type: string
       price:
         type: number
+      shared_users:
+        items:
+          type: string
+        type: array
       user_id:
+        type: string
+    type: object
+  models.SubscriptionAccount:
+    properties:
+      email_address:
+        type: string
+      password:
         type: string
     type: object
   models.Transaction:
@@ -333,6 +350,8 @@ definitions:
     type: object
   requests.Subscription:
     properties:
+      account:
+        $ref: '#/definitions/requests.SubscriptionAccount'
       bill_cycle:
         $ref: '#/definitions/requests.BillCycle'
       bill_date:
@@ -359,8 +378,37 @@ definitions:
     - name
     - price
     type: object
+  requests.SubscriptionAccount:
+    properties:
+      email_address:
+        type: string
+      password:
+        type: string
+    type: object
+  requests.SubscriptionInvitation:
+    properties:
+      id:
+        type: string
+      is_accepted:
+        type: boolean
+    required:
+    - id
+    - is_accepted
+    type: object
+  requests.SubscriptionInvite:
+    properties:
+      id:
+        type: string
+      invited_user_mail:
+        type: string
+    required:
+    - id
+    - invited_user_mail
+    type: object
   requests.SubscriptionUpdate:
     properties:
+      account:
+        $ref: '#/definitions/requests.SubscriptionAccount'
       bill_cycle:
         $ref: '#/definitions/requests.BillCycle'
       bill_date:
@@ -636,6 +684,13 @@ definitions:
       user_id:
         type: string
     type: object
+  responses.SubscriptionAccount:
+    properties:
+      email_address:
+        type: string
+      password:
+        type: string
+    type: object
   responses.SubscriptionAndStats:
     properties:
       data:
@@ -651,6 +706,8 @@ definitions:
     properties:
       _id:
         type: string
+      account:
+        $ref: '#/definitions/responses.SubscriptionAccount'
       bill_cycle:
         $ref: '#/definitions/responses.BillCycle'
       bill_date:
@@ -2028,6 +2085,81 @@ paths:
       security:
       - BearerAuth: []
       summary: Get Subscription Details
+      tags:
+      - subscription
+  /subscription/invitation:
+    post:
+      consumes:
+      - application/json
+      description: Invited users can accept/deny invitation
+      parameters:
+      - description: SubscriptionInvitation
+        in: body
+        name: subscriptioninvitation
+        required: true
+        schema:
+          $ref: '#/definitions/requests.SubscriptionInvitation'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Handles subscription invitation response
+      tags:
+      - subscription
+  /subscription/invite:
+    post:
+      consumes:
+      - application/json
+      description: Invites another user by email to subscription, if accepted they
+        can view it
+      parameters:
+      - description: SubscriptionInvite
+        in: body
+        name: subscriptioninvite
+        required: true
+        schema:
+          $ref: '#/definitions/requests.SubscriptionInvite'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Sents invitation to another user for access to subscription.
       tags:
       - subscription
   /subscription/stats:

@@ -158,9 +158,7 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 	return convertModelToResponse(*subscription), nil
 }
 
-// Send notification to user via FCM
-// Delete invitation after a day?
-// User can accept || deny invitation
+// TODO Delete invitation after a day?
 func (subscriptionModel *SubscriptionModel) InviteSubscriptionToUser(uid, invitedUID, subscriptionID string) error {
 	subscriptionInvite := createSubscriptionInvite(uid, invitedUID, subscriptionID)
 
@@ -178,32 +176,15 @@ func (subscriptionModel *SubscriptionModel) InviteSubscriptionToUser(uid, invite
 		return fmt.Errorf("Failed to invite user.")
 	}
 
-	if err := subscriptionModel.UpdateSubscriptionInvite(invitedUID, subscriptionID, true); err != nil {
+	if err := subscriptionModel.UpdateSubscriptionInvite(invitedUID, subscriptionID, true, false); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (subscriptionModel *SubscriptionModel) UpdateSubscriptionInvite(invitedUID, subscriptionID string, isPush bool) error {
-	objectID, _ := primitive.ObjectIDFromHex(subscriptionID)
-
-	var operation bson.M
-	if isPush {
-		operation = bson.M{"$push": bson.M{
-			"invited_users": invitedUID,
-		}}
-	} else {
-		operation = bson.M{"$pull": bson.M{
-			"invited_users": invitedUID,
-		}}
-	}
-
-	if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectID}, operation); err != nil {
-		return fmt.Errorf("Failed to set subscription.")
-	}
-
-	return nil
+func (subscriptionModel *SubscriptionModel) GetSharedSubscriptions() {
+	// TODO Implement get shared subscriptions
 }
 
 func (subscriptionModel *SubscriptionModel) GetUserSubscriptionCount(uid string) int64 {
@@ -546,6 +527,37 @@ func (subscriptionModel *SubscriptionModel) GetCardStatisticsByUserIDAndCardID(u
 	return responses.CardSubscriptionStatistics{}, nil
 }
 
+func (subscriptionModel *SubscriptionModel) UpdateSubscriptionInvite(invitedUID, subscriptionID string, isPush, isInvitationAccepted bool) error {
+	objectID, _ := primitive.ObjectIDFromHex(subscriptionID)
+
+	var operation bson.M
+	if isPush {
+		operation = bson.M{"$push": bson.M{
+			"invited_users": invitedUID,
+		}}
+	} else {
+		operation = bson.M{"$pull": bson.M{
+			"invited_users": invitedUID,
+		}}
+	}
+
+	if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectID}, operation); err != nil {
+		return fmt.Errorf("Failed to set subscription.")
+	}
+
+	if isInvitationAccepted {
+		if _, err := subscriptionModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectID}, bson.M{
+			"$push": bson.M{
+				"shared_users": invitedUID,
+			},
+		}); err != nil {
+			return fmt.Errorf("Failed to set subscription.")
+		}
+	}
+
+	return nil
+}
+
 func (subscriptionModel *SubscriptionModel) UpdateSubscription(data requests.SubscriptionUpdate, subscription Subscription) (responses.Subscription, error) {
 	objectSubscriptionID, _ := primitive.ObjectIDFromHex(data.ID)
 
@@ -622,6 +634,40 @@ func (subscriptionModel *SubscriptionModel) UpdateSubscriptionCardIDToNull(uid s
 		}}); err != nil {
 		return
 	}
+}
+
+func (subscriptionModel *SubscriptionModel) HandleSubscriptionInvitation(id, uid string, isAccepted bool) error {
+	objectID, _ := primitive.ObjectIDFromHex(id)
+
+	result := subscriptionModel.InviteCollection.FindOne(context.TODO(), bson.M{"_id": objectID})
+
+	var subscriptionInvite SubscriptionInvite
+	if err := result.Decode(&subscriptionInvite); err != nil {
+		return fmt.Errorf("Failed to decode invitation.")
+	}
+
+	if subscriptionInvite.InvitedUserID != uid {
+		return fmt.Errorf("Unauthorized access.")
+	}
+
+	if _, err := subscriptionModel.InviteCollection.DeleteOne(context.TODO(), bson.M{"_id": objectID}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"id": id,
+		}).Error("failed to delete invitation")
+
+		return fmt.Errorf("Failed to delete invitation.")
+	}
+
+	if err := subscriptionModel.UpdateSubscriptionInvite(subscriptionInvite.InvitedUserID, subscriptionInvite.SubscriptionID, false, isAccepted); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"invited_uid":     subscriptionInvite.InvitedUserID,
+			"subscription_id": subscriptionInvite.SubscriptionID,
+		}).Error("failed to set subscription")
+
+		return err
+	}
+
+	return nil
 }
 
 func (subscriptionModel *SubscriptionModel) DeleteSubscriptionBySubscriptionID(uid, subscriptionID string) (bool, error) {
@@ -766,13 +812,13 @@ func addSubscriptionMonthlyAndTotalPaymentFields() bson.M {
 								"case": bson.M{"$gt": bson.A{"$bill_cycle.year", 0}},
 								"then": bson.M{
 									"$divide": bson.A{
+										"$price",
 										bson.M{
 											"$multiply": bson.A{
 												12,
 												"$bill_cycle.year",
 											},
 										},
-										"$price",
 									},
 								},
 							},

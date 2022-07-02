@@ -28,6 +28,7 @@ var (
 	errSubscriptionNotFound   = "Subscription not found."
 	errSubscriptionInviteSelf = "You cannot invite yourself."
 	errUnauthorizedCreditCard = "Unauthorized credit card access. You're not the owner of this credit card."
+	errAlreadyShared          = "This user already has access to subscription."
 	errSubscriptionPremium    = "Free members can add up to 5 subscriptions, you can get premium membership for unlimited access."
 )
 
@@ -158,6 +159,16 @@ func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
 		return
 	}
 
+	for _, userID := range subscription.SharedUsers {
+		if userID == user.ID.Hex() {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errAlreadyShared,
+			})
+
+			return
+		}
+	}
+
 	if err := subscriptionModel.InviteSubscriptionToUser(uid, user.ID.Hex(), data.ID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -169,6 +180,45 @@ func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
 	// TODO Send FCM notification
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Invitation sent. Please ask them to check their invitation & accept it.",
+	})
+}
+
+func (s *SubscriptionController) CancelSubscriptionInvitation(c *gin.Context) {
+	// TODO Implement cancel subscription invitation
+}
+
+// Handles Subscription Share Invitation
+// @Summary Handles subscription invitation response
+// @Description Invited users can accept/deny invitation
+// @Tags subscription
+// @Accept application/json
+// @Produce application/json
+// @Param subscriptioninvitation body requests.SubscriptionInvitation true "SubscriptionInvitation"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /subscription/invitation [post]
+func (s *SubscriptionController) HandleSubscriptionInvitation(c *gin.Context) {
+	var data requests.SubscriptionInvitation
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	if err := subscriptionModel.HandleSubscriptionInvitation(data.ID, uid, *data.IsAccepted); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Operation successful.",
 	})
 }
 

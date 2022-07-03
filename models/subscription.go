@@ -183,10 +183,6 @@ func (subscriptionModel *SubscriptionModel) InviteSubscriptionToUser(uid, invite
 	return nil
 }
 
-func (subscriptionModel *SubscriptionModel) GetSharedSubscriptions() {
-	// TODO Implement get shared subscriptions
-}
-
 func (subscriptionModel *SubscriptionModel) GetUserSubscriptionCount(uid string) int64 {
 	count, err := subscriptionModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
 	if err != nil {
@@ -257,9 +253,19 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionsByCardID(uid, cardID
 	return subscriptions, nil
 }
 
-func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(uid string, data requests.SubscriptionSort) ([]responses.Subscription, error) {
-	match := bson.M{
-		"user_id": uid,
+func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(
+	uid string, data requests.SubscriptionSort, isSharedSubscriptions bool,
+) ([]responses.Subscription, error) {
+	var match bson.M
+
+	if isSharedSubscriptions {
+		match = bson.M{"shared_users": bson.M{
+			"$in": bson.A{uid},
+		}}
+	} else {
+		match = bson.M{
+			"user_id": uid,
+		}
 	}
 
 	var sortOptions bson.D
@@ -634,6 +640,37 @@ func (subscriptionModel *SubscriptionModel) UpdateSubscriptionCardIDToNull(uid s
 		}}); err != nil {
 		return
 	}
+}
+
+func (subscriptionModel *SubscriptionModel) CancelSubscriptionInvitation(id, uid string) error {
+	objectID, _ := primitive.ObjectIDFromHex(id)
+
+	result := subscriptionModel.InviteCollection.FindOne(context.TODO(), bson.M{"_id": objectID})
+
+	var subscriptionInvite SubscriptionInvite
+	if err := result.Decode(&subscriptionInvite); err != nil {
+		return fmt.Errorf("Failed to decode invitation.")
+	}
+
+	if subscriptionInvite.UserID != uid {
+		return fmt.Errorf("Unauthorized access.")
+	}
+
+	if err := subscriptionModel.UpdateSubscriptionInvite(
+		subscriptionInvite.InvitedUserID, subscriptionInvite.SubscriptionID, false, false,
+	); err != nil {
+		return err
+	}
+
+	if _, err := subscriptionModel.InviteCollection.DeleteOne(context.TODO(), bson.M{"_id": objectID}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"id": id,
+		}).Error("failed to delete invitation")
+
+		return fmt.Errorf("Failed to delete invitation.")
+	}
+
+	return nil
 }
 
 func (subscriptionModel *SubscriptionModel) HandleSubscriptionInvitation(id, uid string, isAccepted bool) error {

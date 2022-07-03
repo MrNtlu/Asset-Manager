@@ -2011,6 +2011,41 @@ paths:
       summary: Delete all subscriptions by user id
       tags:
       - subscription
+  /subscription/cancel:
+    post:
+      consumes:
+      - application/json
+      description: Cancels subscription invitation
+      parameters:
+      - in: query
+        name: id
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Cancel Subscription Invitation
+      tags:
+      - subscription
   /subscription/card:
     get:
       consumes:
@@ -2160,6 +2195,43 @@ paths:
       security:
       - BearerAuth: []
       summary: Sents invitation to another user for access to subscription.
+      tags:
+      - subscription
+  /subscription/shared:
+    get:
+      consumes:
+      - application/json
+      description: Returns shared subscriptions by user id
+      parameters:
+      - in: query
+        name: id
+        required: true
+        type: string
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.Subscription'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Shared Subscriptions by User ID
       tags:
       - subscription
   /subscription/stats:

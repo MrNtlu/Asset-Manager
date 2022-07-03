@@ -183,8 +183,77 @@ func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
 	})
 }
 
+// Cancel Subscription Invitation
+// @Summary Cancel Subscription Invitation
+// @Description Cancels subscription invitation
+// @Tags subscription
+// @Accept application/json
+// @Produce application/json
+// @Param ID query requests.ID true "ID"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /subscription/cancel [post]
 func (s *SubscriptionController) CancelSubscriptionInvitation(c *gin.Context) {
-	// TODO Implement cancel subscription invitation
+	var data requests.ID
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	if err := subscriptionModel.CancelSubscriptionInvitation(data.ID, uid); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{
+		"message": "Invitation cancelled successfully.",
+	})
+}
+
+// Shared Subscriptions By User ID
+// @Summary Get Shared Subscriptions by User ID
+// @Description Returns shared subscriptions by user id
+// @Tags subscription
+// @Accept application/json
+// @Produce application/json
+// @Param ID query requests.ID true "ID"
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {array} models.Subscription
+// @Failure 400 {string} string
+// @Failure 500 {string} string
+// @Router /subscription/shared [get]
+func (s *SubscriptionController) GetSharedSubscriptionsByUserID(c *gin.Context) {
+	var data requests.SubscriptionSort
+	if err := c.ShouldBindQuery(&data); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": validatorErrorHandler(err),
+		})
+
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	subscriptionModel := models.NewSubscriptionModel(s.Database)
+
+	sharedSubscriptions, err := subscriptionModel.GetSubscriptionsByUserID(uid, data, true)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched.", "data": sharedSubscriptions})
 }
 
 // Handles Subscription Share Invitation
@@ -294,7 +363,7 @@ func (s *SubscriptionController) GetSubscriptionsAndStatsByUserID(c *gin.Context
 	if err != nil || result == "" {
 		subscriptionModel := models.NewSubscriptionModel(s.Database)
 
-		subscriptions, err := subscriptionModel.GetSubscriptionsByUserID(uid, data)
+		subscriptions, err := subscriptionModel.GetSubscriptionsByUserID(uid, data, false)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),

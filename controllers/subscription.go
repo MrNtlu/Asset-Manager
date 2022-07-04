@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"asset_backend/db"
+	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/requests"
 	"asset_backend/responses"
@@ -177,7 +178,8 @@ func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
 		return
 	}
 
-	// TODO Send FCM notification
+	go helpers.SendNotification(user.FCMToken, "Subscription Invitation", "Subscription share invitation received.")
+
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Invitation sent. Please ask them to check their invitation & accept it.",
 	})

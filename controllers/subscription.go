@@ -26,11 +26,12 @@ func NewSubscriptionController(mongoDB *db.MongoDB) SubscriptionController {
 }
 
 var (
-	errSubscriptionNotFound   = "Subscription not found."
-	errSubscriptionInviteSelf = "You cannot invite yourself."
-	errUnauthorizedCreditCard = "Unauthorized credit card access. You're not the owner of this credit card."
-	errAlreadyShared          = "This user already has access to subscription."
-	errSubscriptionPremium    = "Free members can add up to 5 subscriptions, you can get premium membership for unlimited access."
+	errSubscriptionNotFound            = "Subscription not found."
+	errSubscriptionInviteSelf          = "You cannot invite yourself."
+	errUnauthorizedCreditCard          = "Unauthorized credit card access. You're not the owner of this credit card."
+	errAlreadyShared                   = "This user already has access to subscription."
+	errSubscriptionPremium             = "Free members can add up to 5 subscriptions, you can get premium membership for unlimited access."
+	errSubscriptionNotificationPremium = "You should be premium user for this feature."
 )
 
 // Create Subscription
@@ -60,6 +61,14 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	if !isPremium && subscriptionModel.GetUserSubscriptionCount(uid) >= 5 {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": errSubscriptionPremium,
+		})
+
+		return
+	}
+
+	if data.NotificationTime != nil && !isPremium {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": errSubscriptionNotificationPremium,
 		})
 
 		return
@@ -539,6 +548,17 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 	}
 
 	var updatedSubscription responses.Subscription
+
+	// if data.NotificationTime != nil {
+	// 	userModel := models.NewUserModel(s.Database)
+	// 	if isPremium := userModel.IsUserPremium(uid); !isPremium {
+	// 		c.JSON(http.StatusBadRequest, gin.H{
+	// 			"error": errSubscriptionNotificationPremium,
+	// 		})
+
+	// 		return
+	// 	}
+	// }
 
 	if updatedSubscription, err = subscriptionModel.UpdateSubscription(data, subscription); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

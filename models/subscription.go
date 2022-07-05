@@ -31,21 +31,22 @@ func NewSubscriptionModel(mongoDB *db.MongoDB) *SubscriptionModel {
 }
 
 type Subscription struct {
-	ID           primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
-	UserID       string               `bson:"user_id" json:"user_id"`
-	CardID       *string              `bson:"card_id" json:"card_id"`
-	Name         string               `bson:"name" json:"name"`
-	Description  *string              `bson:"description" json:"description"`
-	BillDate     time.Time            `bson:"bill_date" json:"bill_date"`
-	BillCycle    BillCycle            `bson:"bill_cycle" json:"bill_cycle"`
-	Price        float64              `bson:"price" json:"price"`
-	Currency     string               `bson:"currency" json:"currency"`
-	Color        string               `bson:"color" json:"color"`
-	Image        string               `bson:"image" json:"image"`
-	Account      *SubscriptionAccount `bson:"account" json:"account"`
-	SharedUsers  []string             `bson:"shared_users" json:"shared_users"`
-	InvitedUsers []string             `bson:"invited_users" json:"invited_users"`
-	CreatedAt    time.Time            `bson:"created_at" json:"-"`
+	ID               primitive.ObjectID   `bson:"_id,omitempty" json:"_id"`
+	UserID           string               `bson:"user_id" json:"user_id"`
+	CardID           *string              `bson:"card_id" json:"card_id"`
+	Name             string               `bson:"name" json:"name"`
+	Description      *string              `bson:"description" json:"description"`
+	BillDate         time.Time            `bson:"bill_date" json:"bill_date"`
+	BillCycle        BillCycle            `bson:"bill_cycle" json:"bill_cycle"`
+	Price            float64              `bson:"price" json:"price"`
+	Currency         string               `bson:"currency" json:"currency"`
+	Color            string               `bson:"color" json:"color"`
+	Image            string               `bson:"image" json:"image"`
+	Account          *SubscriptionAccount `bson:"account" json:"account"`
+	SharedUsers      []string             `bson:"shared_users" json:"shared_users"`
+	InvitedUsers     []string             `bson:"invited_users" json:"invited_users"`
+	NotificationTime *time.Time           `bson:"notification_time" json:"notification_time"`
+	CreatedAt        time.Time            `bson:"created_at" json:"-"`
 }
 
 type SubscriptionAccount struct {
@@ -73,22 +74,24 @@ func createSubscriptionObject(
 	uid, name, currency, color, image string,
 	cardID, description *string, price float64,
 	billDate time.Time, billCycle BillCycle, account *SubscriptionAccount,
+	notification *time.Time,
 ) *Subscription {
 	return &Subscription{
-		UserID:       uid,
-		CardID:       cardID,
-		Name:         name,
-		Description:  description,
-		BillDate:     billDate,
-		BillCycle:    billCycle,
-		Price:        price,
-		Currency:     currency,
-		Color:        color,
-		Image:        image,
-		SharedUsers:  make([]string, 0),
-		InvitedUsers: make([]string, 0),
-		Account:      account,
-		CreatedAt:    time.Now().UTC(),
+		UserID:           uid,
+		CardID:           cardID,
+		Name:             name,
+		Description:      description,
+		BillDate:         billDate,
+		BillCycle:        billCycle,
+		Price:            price,
+		Currency:         currency,
+		Color:            color,
+		Image:            image,
+		SharedUsers:      make([]string, 0),
+		InvitedUsers:     make([]string, 0),
+		Account:          account,
+		NotificationTime: notification,
+		CreatedAt:        time.Now().UTC(),
 	}
 }
 
@@ -137,6 +140,7 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 		data.BillDate,
 		*createBillCycle(data.BillCycle),
 		createSubscriptionAccount(data.Account),
+		data.NotificationTime,
 	)
 
 	var (
@@ -571,10 +575,6 @@ func (subscriptionModel *SubscriptionModel) UpdateSubscription(data requests.Sub
 		subscription.Name = *data.Name
 	}
 
-	if data.Description != nil {
-		subscription.Description = data.Description
-	}
-
 	if data.Color != nil {
 		subscription.Color = *data.Color
 	}
@@ -599,7 +599,11 @@ func (subscriptionModel *SubscriptionModel) UpdateSubscription(data requests.Sub
 		subscription.Currency = *data.Currency
 	}
 
+	subscription.NotificationTime = data.NotificationTime
+
 	subscription.CardID = data.CardID
+
+	subscription.Description = data.Description
 
 	if data.Account != nil {
 		subscription.Account = createSubscriptionAccount(data.Account)

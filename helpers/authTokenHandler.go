@@ -13,6 +13,7 @@ import (
 
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"github.com/sirupsen/logrus"
 )
 
 var identityKey = "id"
@@ -50,6 +51,11 @@ func SetupJWTHandler(mongoDB *db.MongoDB) *jwt.GinJWTMiddleware {
 			}
 
 			if err := utils.CheckPassword([]byte(user.Password), []byte(data.Password)); err != nil {
+				logrus.WithFields(logrus.Fields{
+					"email_address": data.EmailAddress,
+					"uid":           user.ID,
+				}).Error("failed to check password: ", err)
+
 				return "", errIncorrectAuth
 			}
 

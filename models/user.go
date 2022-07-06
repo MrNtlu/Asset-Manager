@@ -173,9 +173,23 @@ func (userModel *UserModel) GetSubscriptionNotifications() []responses.Notificat
 		return nil
 	}
 
-	// TODO Either filter by today or send notification & update notification date
+	var notificationList []responses.NotificationSubscription
 
-	return notificationSubs
+	for _, notificationSub := range notificationSubs {
+		notificationSub.Subscription.NextBillDate = getNextBillDate(
+			notificationSub.Subscription.BillCycle,
+			notificationSub.Subscription.BillDate,
+		)
+
+		billDate := notificationSub.Subscription.NextBillDate
+		today := time.Now()
+
+		if billDate.Year() == today.Year() && billDate.Month() == today.Month() && billDate.Day() == today.Day() {
+			notificationList = append(notificationList, notificationSub)
+		}
+	}
+
+	return notificationList
 }
 
 func (userModel *UserModel) UpdateUser(user User) error {

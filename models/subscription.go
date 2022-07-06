@@ -162,7 +162,6 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 	return convertModelToResponse(*subscription), nil
 }
 
-// TODO Delete invitation after a day?
 func (subscriptionModel *SubscriptionModel) InviteSubscriptionToUser(uid, invitedUID, subscriptionID string) error {
 	subscriptionInvite := createSubscriptionInvite(uid, invitedUID, subscriptionID)
 
@@ -739,6 +738,20 @@ func (subscriptionModel *SubscriptionModel) DeleteAllSubscriptionsByUserID(uid s
 		}).Error("failed to delete all subscriptions by user id: ", err)
 
 		return fmt.Errorf("Failed to delete all subscriptions by user id.")
+	}
+
+	return nil
+}
+
+func (subscriptionModel *SubscriptionModel) DeleteAllSubscriptionInvitesByUserID(uid string) error {
+	if _, err := subscriptionModel.InviteCollection.DeleteMany(context.TODO(), bson.M{
+		"user_id": uid,
+	}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all subscription invites by user id: ", err)
+
+		return fmt.Errorf("Failed to delete all subscription invites by user id.")
 	}
 
 	return nil

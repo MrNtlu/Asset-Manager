@@ -2708,6 +2708,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/change-notification": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Users can change their notification preference",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Change User Notification Preference",
+                "parameters": [
+                    {
+                        "description": "Set notification",
+                        "name": "changenotification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ChangeNotification"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user/change-password": {
             "put": {
                 "security": [
@@ -3098,6 +3150,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "notification_time": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 },
@@ -3402,6 +3457,21 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.ChangeNotification": {
+            "type": "object",
+            "required": [
+                "app_notification",
+                "mail_notification"
+            ],
+            "properties": {
+                "app_notification": {
+                    "type": "boolean"
+                },
+                "mail_notification": {
+                    "type": "boolean"
+                }
+            }
+        },
         "requests.ChangePassword": {
             "type": "object",
             "required": [
@@ -3514,6 +3584,9 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "notification_time": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
                 }
@@ -3594,6 +3667,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {
@@ -4046,6 +4122,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "next_bill_date": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {

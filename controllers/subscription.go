@@ -549,16 +549,16 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 
 	var updatedSubscription responses.Subscription
 
-	// if data.NotificationTime != nil {
-	// 	userModel := models.NewUserModel(s.Database)
-	// 	if isPremium := userModel.IsUserPremium(uid); !isPremium {
-	// 		c.JSON(http.StatusBadRequest, gin.H{
-	// 			"error": errSubscriptionNotificationPremium,
-	// 		})
+	if data.NotificationTime != nil {
+		userModel := models.NewUserModel(s.Database)
+		if isPremium := userModel.IsUserPremium(uid); !isPremium {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": errSubscriptionNotificationPremium,
+			})
 
-	// 		return
-	// 	}
-	// }
+			return
+		}
+	}
 
 	if updatedSubscription, err = subscriptionModel.UpdateSubscription(data, subscription); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

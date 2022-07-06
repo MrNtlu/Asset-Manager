@@ -45,7 +45,6 @@ const (
 
 const transactionPremiumLimit = 10
 
-// TODO: Allow receipt photo and keep it also get price from receipt via ML or something research (Premium feature only).
 type Transaction struct {
 	ID                primitive.ObjectID `bson:"_id,omitempty" json:"_id"`
 	UserID            string             `bson:"user_id" json:"user_id"`

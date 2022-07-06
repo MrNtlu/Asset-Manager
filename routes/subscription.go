@@ -21,5 +21,10 @@ func subscriptionRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddleware,
 		subscription.GET("", subscriptionController.GetSubscriptionsAndStatsByUserID)
 		subscription.GET("/details", subscriptionController.GetSubscriptionDetails)
 		subscription.GET("/stats", subscriptionController.GetSubscriptionStatisticsByUserID)
+
+		subscription.POST("/invite", subscriptionController.InviteSubscriptionToUser)
+		subscription.POST("/invitation", subscriptionController.HandleSubscriptionInvitation)
+		subscription.POST("/cancel", subscriptionController.CancelSubscriptionInvitation)
+		subscription.GET("/shared", subscriptionController.GetSharedSubscriptionsByUserID)
 	}
 }

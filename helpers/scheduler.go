@@ -34,3 +34,17 @@ func CreateDailySchedule(task interface{}, atTime string) *gocron.Scheduler {
 
 	return scheduler
 }
+
+func CreateSubscriptionNotificationSchedule(task interface{}, atTime string) *gocron.Scheduler {
+	scheduler := gocron.NewScheduler(time.UTC)
+
+	if _, err := scheduler.Every(1).Day().At(atTime).LimitRunsTo(1).Do(task); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"time": atTime,
+		}).Error("error notification schedule ", err)
+	}
+
+	scheduler.StartAsync()
+
+	return scheduler
+}

@@ -196,6 +196,50 @@ func (u *UserController) ChangeUserMembership(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully updated membership."})
 }
 
+// Change Notification Preference
+// @Summary Change User Notification Preference
+// @Description Users can change their notification preference
+// @Tags user
+// @Accept application/json
+// @Produce application/json
+// @Param changenotification body requests.ChangeNotification true "Set notification"
+// @Security ApiKeyAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 500 {string} string
+// @Router /user/change-notification [put]
+func (u *UserController) ChangeNotificationPreference(c *gin.Context) {
+	var data requests.ChangeNotification
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+	userModel := models.NewUserModel(u.Database)
+
+	user, err := userModel.FindUserByID(uid)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	user.AppNotification = *data.AppNotification
+	user.MailNotification = *data.MailNotification
+
+	if err = userModel.UpdateUser(user); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	c.JSON(http.StatusOK, gin.H{"message": "Successfully changed notification preference."})
+}
+
 // Change Password
 // @Summary Change User Password
 // @Description Users can change their password
@@ -473,6 +517,7 @@ func (u *UserController) DeleteUser(c *gin.Context) {
 	go assetModel.DeleteAllAssetsByUserID(uid)
 	go cardModel.DeleteAllCardsByUserID(uid)
 	go subscriptionModel.DeleteAllSubscriptionsByUserID(uid)
+	go subscriptionModel.DeleteAllSubscriptionInvitesByUserID(uid)
 	go dasModel.DeleteAllAssetStatsByUserID(uid)
 	go logModel.DeleteAllLogsByUserID(uid)
 	go transactionModel.DeleteAllTransactionsByUserID(uid)

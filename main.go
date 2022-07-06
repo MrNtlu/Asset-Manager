@@ -7,9 +7,11 @@ import (
 	"asset_backend/helpers"
 	"asset_backend/models"
 	"asset_backend/routes"
+	"asset_backend/utils"
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -54,6 +56,7 @@ func main() {
 	defer db.Close(ctx, mongoDB.Client, cancel)
 
 	db.SetupRedis()
+	utils.InitCipher()
 
 	jwtHandler := helpers.SetupJWTHandler(mongoDB)
 
@@ -84,8 +87,11 @@ func main() {
 
 	routes.SetupRoutes(router, jwtHandler, mongoDB)
 
-	dailyScheduler := helpers.CreateDailySchedule(func() { dailyTask(mongoDB) }, "05:00")
-	scheduleLogger(dailyScheduler, "Daily")
+	var dailyScheduler *gocron.Scheduler
+	dailyScheduler = helpers.CreateDailySchedule(func() {
+		dailyTask(mongoDB)
+		scheduleLogger(dailyScheduler, "Daily")
+	}, "05:00")
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -99,6 +105,48 @@ func main() {
 func dailyTask(mongoDB *db.MongoDB) {
 	dasModel := models.NewDailyAssetStatsModel(mongoDB)
 	go dasModel.CalculateDailyAssetStats()
+
+	userModel := models.NewUserModel(mongoDB)
+	notificationSubs := userModel.GetSubscriptionNotifications()
+
+	for _, notificationSubscription := range notificationSubs {
+		const (
+			numCheck  = 10
+			floatPrec = 2
+			floatBit  = 64
+		)
+
+		var (
+			hourString   string
+			minuteString string
+		)
+
+		subscription := notificationSubscription.Subscription
+
+		hour, min, _ := subscription.NotificationTime.Clock()
+
+		if min < numCheck {
+			minuteString = "0" + strconv.Itoa(min)
+		} else {
+			minuteString = strconv.Itoa(min)
+		}
+
+		if hour < numCheck {
+			hourString = "0" + strconv.Itoa(hour)
+		} else {
+			hourString = strconv.Itoa(hour)
+		}
+
+		fcmToken := notificationSubscription.FCMToken
+
+		helpers.CreateSubscriptionNotificationSchedule(func() {
+			go helpers.SendNotification(
+				fcmToken,
+				subscription.Name+"'s Payment",
+				"Upcoming "+subscription.Name+" Payment: "+subscription.Currency+" "+strconv.FormatFloat(subscription.Price, 'f', floatPrec, floatBit),
+			)
+		}, (hourString + ":" + minuteString))
+	}
 }
 
 func scheduleLogger(scheduler *gocron.Scheduler, tType string) {

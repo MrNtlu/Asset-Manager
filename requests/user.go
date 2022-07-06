@@ -24,6 +24,11 @@ type ChangeFCMToken struct {
 	FCMToken string `json:"fcm_token" binding:"required"`
 }
 
+type ChangeNotification struct {
+	AppNotification  *bool `json:"app_notification" binding:"required"`
+	MailNotification *bool `json:"mail_notification" binding:"required"`
+}
+
 type ChangeMembership struct {
 	IsPremium         bool `json:"is_premium"`
 	IsLifetimePremium bool `json:"is_lifetime_premium"`

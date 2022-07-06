@@ -14,7 +14,7 @@ func HashPassword(password string) string {
 
 func CheckPassword(hashedPassword, databasePassword []byte) error {
 	err := bcrypt.CompareHashAndPassword(hashedPassword, databasePassword)
-	logrus.Error("failed to compare hash", err)
+	logrus.Error("failed to compare hash ", err)
 
 	return err
 }

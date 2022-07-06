@@ -120,6 +120,78 @@ func (userModel *UserModel) CreateOAuthUser(email string, refreshToken *string, 
 	return user, nil
 }
 
+func (userModel *UserModel) GetSubscriptionNotifications() []responses.NotificationSubscription {
+	match := bson.M{"$match": bson.M{
+		"is_premium":       true,
+		"app_notification": true,
+	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from": "subscriptions",
+		"let": bson.M{
+			"uid": bson.M{
+				"$toString": "$_id",
+			},
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"notification_time": bson.M{"$exists": true},
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$user_id", "$$uid"}},
+							bson.M{"$ne": bson.A{"$notification_time", nil}},
+						},
+					},
+				},
+			},
+		},
+		"as": "subscriptions",
+	}}
+	unwindSubscription := bson.M{"$unwind": bson.M{
+		"path":                       "$subscriptions",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": false,
+	}}
+	project := bson.M{"$project": bson.M{
+		"subscription": "$subscriptions",
+		"fcm_token":    true,
+	}}
+
+	cursor, err := userModel.Collection.Aggregate(context.TODO(), bson.A{
+		match, lookup, unwindSubscription, project,
+	})
+	if err != nil {
+		logrus.Error("failed to aggregate users on subscription notification: ", err)
+
+		return nil
+	}
+
+	var notificationSubs []responses.NotificationSubscription
+	if err = cursor.All(context.TODO(), &notificationSubs); err != nil {
+		logrus.Error("failed to decode subscriptions: ", err)
+
+		return nil
+	}
+
+	var notificationList []responses.NotificationSubscription
+
+	for _, notificationSub := range notificationSubs {
+		notificationSub.Subscription.NextBillDate = getNextBillDate(
+			notificationSub.Subscription.BillCycle,
+			notificationSub.Subscription.BillDate,
+		)
+
+		billDate := notificationSub.Subscription.NextBillDate
+		today := time.Now()
+
+		if billDate.Year() == today.Year() && billDate.Month() == today.Month() && billDate.Day() == today.Day() {
+			notificationList = append(notificationList, notificationSub)
+		}
+	}
+
+	return notificationList
+}
+
 func (userModel *UserModel) UpdateUser(user User) error {
 	user.UpdatedAt = time.Now().UTC()
 

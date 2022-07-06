@@ -1873,6 +1873,61 @@ const docTemplate = `{
                 }
             }
         },
+        "/subscription/cancel": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Cancels subscription invitation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Cancel Subscription Invitation",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/subscription/card": {
             "get": {
                 "security": [
@@ -1979,6 +2034,180 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/invitation": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invited users can accept/deny invitation",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Handles subscription invitation response",
+                "parameters": [
+                    {
+                        "description": "SubscriptionInvitation",
+                        "name": "subscriptioninvitation",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.SubscriptionInvitation"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/invite": {
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Invites another user by email to subscription, if accepted they can view it",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Sents invitation to another user for access to subscription.",
+                "parameters": [
+                    {
+                        "description": "SubscriptionInvite",
+                        "name": "subscriptioninvite",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.SubscriptionInvite"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/subscription/shared": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Returns shared subscriptions by user id",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "subscription"
+                ],
+                "summary": "Get Shared Subscriptions by User ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/models.Subscription"
+                            }
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
                         "schema": {
                             "type": "string"
                         }
@@ -2479,6 +2708,58 @@ const docTemplate = `{
                 }
             }
         },
+        "/user/change-notification": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Users can change their notification preference",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "user"
+                ],
+                "summary": "Change User Notification Preference",
+                "parameters": [
+                    {
+                        "description": "Set notification",
+                        "name": "changenotification",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/requests.ChangeNotification"
+                        }
+                    },
+                    {
+                        "type": "string",
+                        "description": "Authentication header",
+                        "name": "Authorization",
+                        "in": "header",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/user/change-password": {
             "put": {
                 "security": [
@@ -2836,6 +3117,9 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
+                "account": {
+                    "$ref": "#/definitions/models.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/models.BillCycle"
                 },
@@ -2857,13 +3141,39 @@ const docTemplate = `{
                 "image": {
                     "type": "string"
                 },
+                "invited_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "name": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {
                     "type": "number"
                 },
+                "shared_users": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
                 "user_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "models.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
                     "type": "string"
                 }
             }
@@ -3147,6 +3457,21 @@ const docTemplate = `{
                 }
             }
         },
+        "requests.ChangeNotification": {
+            "type": "object",
+            "required": [
+                "app_notification",
+                "mail_notification"
+            ],
+            "properties": {
+                "app_notification": {
+                    "type": "boolean"
+                },
+                "mail_notification": {
+                    "type": "boolean"
+                }
+            }
+        },
         "requests.ChangePassword": {
             "type": "object",
             "required": [
@@ -3232,6 +3557,9 @@ const docTemplate = `{
                 "price"
             ],
             "properties": {
+                "account": {
+                    "$ref": "#/definitions/requests.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/requests.BillCycle"
                 },
@@ -3256,8 +3584,52 @@ const docTemplate = `{
                 "name": {
                     "type": "string"
                 },
+                "notification_time": {
+                    "type": "string"
+                },
                 "price": {
                     "type": "number"
+                }
+            }
+        },
+        "requests.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
+        "requests.SubscriptionInvitation": {
+            "type": "object",
+            "required": [
+                "id",
+                "is_accepted"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "is_accepted": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "requests.SubscriptionInvite": {
+            "type": "object",
+            "required": [
+                "id",
+                "invited_user_mail"
+            ],
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "invited_user_mail": {
+                    "type": "string"
                 }
             }
         },
@@ -3267,6 +3639,9 @@ const docTemplate = `{
                 "id"
             ],
             "properties": {
+                "account": {
+                    "$ref": "#/definitions/requests.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/requests.BillCycle"
                 },
@@ -3292,6 +3667,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "name": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {
@@ -3682,6 +4060,17 @@ const docTemplate = `{
                 }
             }
         },
+        "responses.SubscriptionAccount": {
+            "type": "object",
+            "properties": {
+                "email_address": {
+                    "type": "string"
+                },
+                "password": {
+                    "type": "string"
+                }
+            }
+        },
         "responses.SubscriptionAndStats": {
             "type": "object",
             "properties": {
@@ -3704,6 +4093,9 @@ const docTemplate = `{
             "properties": {
                 "_id": {
                     "type": "string"
+                },
+                "account": {
+                    "$ref": "#/definitions/responses.SubscriptionAccount"
                 },
                 "bill_cycle": {
                     "$ref": "#/definitions/responses.BillCycle"
@@ -3730,6 +4122,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "next_bill_date": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {

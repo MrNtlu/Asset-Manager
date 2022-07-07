@@ -826,6 +826,7 @@ func convertModelToResponse(subscription Subscription) responses.Subscription {
 	}
 
 	var account *responses.SubscriptionAccount
+
 	if subscription.Account != nil {
 		var decryptedPassword string
 		if subscription.Account.Password != nil {

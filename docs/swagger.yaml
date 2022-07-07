@@ -677,6 +677,8 @@ definitions:
     properties:
       _id:
         type: string
+      account:
+        $ref: '#/definitions/responses.SubscriptionAccount'
       bill_cycle:
         $ref: '#/definitions/responses.BillCycle'
       bill_date:
@@ -694,6 +696,8 @@ definitions:
       name:
         type: string
       next_bill_date:
+        type: string
+      notification_time:
         type: string
       price:
         type: number
@@ -809,6 +813,8 @@ definitions:
     type: object
   responses.UserInfo:
     properties:
+      app_notification:
+        type: boolean
       currency:
         type: string
       email_address:

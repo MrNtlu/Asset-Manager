@@ -4025,6 +4025,9 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
+                "account": {
+                    "$ref": "#/definitions/responses.SubscriptionAccount"
+                },
                 "bill_cycle": {
                     "$ref": "#/definitions/responses.BillCycle"
                 },
@@ -4050,6 +4053,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "next_bill_date": {
+                    "type": "string"
+                },
+                "notification_time": {
                     "type": "string"
                 },
                 "price": {
@@ -4228,6 +4234,9 @@ const docTemplate = `{
         "responses.UserInfo": {
             "type": "object",
             "properties": {
+                "app_notification": {
+                    "type": "boolean"
+                },
                 "currency": {
                     "type": "string"
                 },

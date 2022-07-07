@@ -473,6 +473,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 		IsPremium:         info.IsPremium,
 		IsLifetimePremium: info.IsLifetimePremium,
 		IsOAuth:           info.IsOAuthUser,
+		AppNotification:   info.AppNotification,
 		EmailAddress:      info.EmailAddress,
 		Currency:          info.Currency,
 		FCMToken:          info.FCMToken,

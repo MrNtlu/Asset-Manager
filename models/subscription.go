@@ -128,6 +128,11 @@ func createSubscriptionInvite(uid, invitedUID, subscriptionID string) *Subscript
 }
 
 func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data requests.Subscription) (responses.Subscription, error) {
+	var subscriptionAccount *SubscriptionAccount
+	if data.Account != nil {
+		subscriptionAccount = createSubscriptionAccount(data.Account)
+	}
+
 	subscription := createSubscriptionObject(
 		uid,
 		data.Name,
@@ -139,7 +144,7 @@ func (subscriptionModel *SubscriptionModel) CreateSubscription(uid string, data 
 		data.Price,
 		data.BillDate,
 		*createBillCycle(data.BillCycle),
-		createSubscriptionAccount(data.Account),
+		subscriptionAccount,
 		data.NotificationTime,
 	)
 
@@ -312,6 +317,11 @@ func (subscriptionModel *SubscriptionModel) GetSubscriptionsByUserID(
 			subscription.BillCycle,
 			subscription.BillDate,
 		)
+
+		if subscription.Account != nil && subscription.Account.Password != nil {
+			decryptedPassword := utils.Decrypt(*subscription.Account.Password)
+			subscriptions[index].Account.Password = &decryptedPassword
+		}
 	}
 
 	if data.Sort == "date" {
@@ -815,6 +825,19 @@ func convertModelToResponse(subscription Subscription) responses.Subscription {
 		Year:  subscription.BillCycle.Year,
 	}
 
+	var account *responses.SubscriptionAccount
+	if subscription.Account != nil {
+		var decryptedPassword string
+		if subscription.Account.Password != nil {
+			decryptedPassword = utils.Decrypt(*subscription.Account.Password)
+		}
+
+		account = &responses.SubscriptionAccount{
+			EmailAddress: subscription.Account.EmailAddress,
+			Password:     &decryptedPassword,
+		}
+	}
+
 	return responses.Subscription{
 		ID:          subscription.ID,
 		UserID:      subscription.UserID,
@@ -826,12 +849,14 @@ func convertModelToResponse(subscription Subscription) responses.Subscription {
 			billCycle,
 			subscription.BillDate,
 		),
-		BillCycle: billCycle,
-		Price:     subscription.Price,
-		Currency:  subscription.Currency,
-		Color:     subscription.Color,
-		Image:     &subscription.Image,
-		CreatedAt: subscription.CreatedAt,
+		BillCycle:        billCycle,
+		Price:            subscription.Price,
+		Currency:         subscription.Currency,
+		Color:            subscription.Color,
+		Image:            &subscription.Image,
+		CreatedAt:        subscription.CreatedAt,
+		NotificationTime: subscription.NotificationTime,
+		Account:          account,
 	}
 }
 

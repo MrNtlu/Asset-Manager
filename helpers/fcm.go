@@ -7,18 +7,32 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-func SendNotification(deviceToken, title, message string) error {
-	notification := &fcm.Message{
-		To: deviceToken,
-		Data: map[string]interface{}{
-			"type": "subscription",
-			"id":   "test",
-		},
-		Notification: &fcm.Notification{
-			Title: title,
-			Body:  message,
-			Badge: "1",
-		},
+func SendNotification(deviceToken, title, message string, dataType, dataID *string) error {
+	var notification *fcm.Message
+
+	if dataType != nil && dataID != nil {
+		notification = &fcm.Message{
+			To: deviceToken,
+			Data: map[string]interface{}{
+				"type": &dataType,
+				"id":   &dataID,
+			},
+			Notification: &fcm.Notification{
+				Title: title,
+				Body:  message,
+				Badge: "1",
+			},
+		}
+	} else {
+		notification = &fcm.Message{
+			To:   deviceToken,
+			Data: nil,
+			Notification: &fcm.Notification{
+				Title: title,
+				Body:  message,
+				Badge: "1",
+			},
+		}
 	}
 
 	client, err := fcm.NewClient(os.Getenv("FCM_KEY"))

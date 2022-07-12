@@ -140,10 +140,15 @@ func dailyTask(mongoDB *db.MongoDB) {
 		fcmToken := notificationSubscription.FCMToken
 
 		helpers.CreateSubscriptionNotificationSchedule(func() {
+			dataType := "subscription"
+			dataID := subscription.ID.Hex()
+
 			go helpers.SendNotification(
 				fcmToken,
 				subscription.Name+"'s Payment",
 				"Upcoming "+subscription.Name+" Payment: "+subscription.Currency+" "+strconv.FormatFloat(subscription.Price, 'f', floatPrec, floatBit),
+				&dataType,
+				&dataID,
 			)
 		}, (hourString + ":" + minuteString))
 	}

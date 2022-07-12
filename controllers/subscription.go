@@ -187,7 +187,7 @@ func (s *SubscriptionController) InviteSubscriptionToUser(c *gin.Context) {
 		return
 	}
 
-	go helpers.SendNotification(user.FCMToken, "Subscription Invitation", "Subscription share invitation received.")
+	go helpers.SendNotification(user.FCMToken, "Subscription Invitation", "Subscription share invitation received.", nil, nil)
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "Invitation sent. Please ask them to check their invitation & accept it.",

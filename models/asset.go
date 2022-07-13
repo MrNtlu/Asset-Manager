@@ -847,7 +847,11 @@ func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats
 		"total_pl_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{
-					"$divide": bson.A{"$total_p/l", "$total_bought"},
+					"$cond": bson.A{
+						bson.M{"$ne": bson.A{"$total_bought", 0}},
+						bson.M{"$divide": bson.A{"$total_p/l", "$total_bought"}},
+						0,
+					},
 				},
 				100,
 			},
@@ -855,8 +859,12 @@ func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats
 		"stock_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{
-					"$divide": bson.A{
-						"$stock_assets", "$total_assets",
+					"$cond": bson.A{
+						bson.M{"$ne": bson.A{"$total_assets", 0}},
+						bson.M{"$divide": bson.A{
+							"$stock_assets", "$total_assets",
+						}},
+						0,
 					},
 				},
 				100,
@@ -865,8 +873,12 @@ func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats
 		"crypto_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{
-					"$divide": bson.A{
-						"$crypto_assets", "$total_assets",
+					"$cond": bson.A{
+						bson.M{"$ne": bson.A{"$total_assets", 0}},
+						bson.M{"$divide": bson.A{
+							"$crypto_assets", "$total_assets",
+						}},
+						0,
 					},
 				},
 				100,
@@ -875,8 +887,12 @@ func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats
 		"exchange_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{
-					"$divide": bson.A{
-						"$exchange_assets", "$total_assets",
+					"$cond": bson.A{
+						bson.M{"$ne": bson.A{"$total_assets", 0}},
+						bson.M{"$divide": bson.A{
+							"$exchange_assets", "$total_assets",
+						}},
+						0,
 					},
 				},
 				100,
@@ -885,8 +901,12 @@ func (assetModel *AssetModel) GetAllAssetStats(uid string) (responses.AssetStats
 		"commodity_percentage": bson.M{
 			"$multiply": bson.A{
 				bson.M{
-					"$divide": bson.A{
-						"$commodity_assets", "$total_assets",
+					"$cond": bson.A{
+						bson.M{"$ne": bson.A{"$total_assets", 0}},
+						bson.M{"$divide": bson.A{
+							"$commodity_assets", "$total_assets",
+						}},
+						0,
 					},
 				},
 				100,

@@ -38,6 +38,8 @@ func NewUserModel(mongoDB *db.MongoDB) *UserModel {
 *	- Max 2 bank accounts.
 * *Transactions
 *	- Max 10 per day.
+* *Favourite Investings
+* 	- Max 5 favourites.
 **/
 type User struct {
 	ID                 primitive.ObjectID `bson:"_id,omitempty" json:"_id"`

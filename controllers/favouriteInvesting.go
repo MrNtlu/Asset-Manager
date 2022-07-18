@@ -115,7 +115,7 @@ func (fi *FavouriteInvestingController) GetFavouriteInvestings(c *gin.Context) {
 		}
 
 		marshalInvestings, _ := msgpack.Marshal(favouriteInvestings)
-		go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisXLExpire)
+		go db.RedisDB.Set(context.TODO(), cacheKey, marshalInvestings, db.RedisSExpire)
 	} else if err := msgpack.Unmarshal([]byte(result), &favouriteInvestings); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),

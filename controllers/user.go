@@ -451,22 +451,27 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 	userModel := models.NewUserModel(u.Database)
 	assetModel := models.NewAssetModel(u.Database)
 	subscriptionModel := models.NewSubscriptionModel(u.Database)
+	favInvestingModel := models.NewFavouriteInvestingModel(u.Database)
 
 	info, _ := userModel.FindUserByID(uid)
 	assetCount := assetModel.GetUserAssetCount(uid)
 	subscritionCount := subscriptionModel.GetUserSubscriptionCount(uid)
+	favInvestingCount := favInvestingModel.GetFavouriteInvestingsCount(uid)
 
 	var (
 		investingLimit    string
 		subscriptionLimit string
+		favInvestingLimit string
 	)
 
 	if info.IsPremium {
 		investingLimit = fmt.Sprintf("%v", assetCount) + "/∞"
 		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/∞"
+		favInvestingLimit = fmt.Sprintf("%v", favInvestingCount) + "/10"
 	} else {
 		investingLimit = fmt.Sprintf("%v", assetCount) + "/10"
 		subscriptionLimit = fmt.Sprintf("%v", subscritionCount) + "/5"
+		favInvestingLimit = fmt.Sprintf("%v", favInvestingCount) + "/5"
 	}
 
 	userInfo := responses.UserInfo{
@@ -479,6 +484,7 @@ func (u *UserController) GetUserInfo(c *gin.Context) {
 		FCMToken:          info.FCMToken,
 		InvestingLimit:    investingLimit,
 		SubscriptionLimit: subscriptionLimit,
+		WatchlistLimit:    favInvestingLimit,
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Successfully fetched user info.", "data": userInfo})

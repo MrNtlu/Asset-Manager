@@ -14,5 +14,6 @@ type UserInfo struct {
 	Currency          string `bson:"currency" json:"currency"`
 	InvestingLimit    string `bson:"investing_limit" json:"investing_limit"`
 	SubscriptionLimit string `bson:"subscription_limit" json:"subscription_limit"`
+	WatchlistLimit    string `bson:"watchlist_limit" json:"watchlist_limit"`
 	FCMToken          string `bson:"fcm_token" json:"fcm_token"`
 }

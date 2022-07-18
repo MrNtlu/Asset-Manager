@@ -38,6 +38,7 @@ var (
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
 // @Success 201 {string} string
+// @Failure 403 {string} string
 // @Failure 500 {string} string
 // @Router /asset [post]
 func (a *AssetController) CreateAsset(c *gin.Context) {
@@ -53,7 +54,7 @@ func (a *AssetController) CreateAsset(c *gin.Context) {
 
 	assetModel := models.NewAssetModel(a.Database)
 	if !isPremium && assetModel.GetUserAssetCount(uid) >= 10 {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errAssetPremium,
 		})
 

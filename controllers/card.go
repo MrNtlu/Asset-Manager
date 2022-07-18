@@ -38,7 +38,7 @@ var (
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
 // @Success 201 {object} models.Card
-// @Failure 400 {string} string
+// @Failure 403 {string} string
 // @Failure 500 {string} string
 // @Router /card [post]
 func (cc *CardController) CreateCard(c *gin.Context) {
@@ -53,7 +53,7 @@ func (cc *CardController) CreateCard(c *gin.Context) {
 
 	cardModel := models.NewCardModel(cc.Database)
 	if !isPremium && cardModel.GetUserCardCount(uid) >= 3 {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errCardPremium,
 		})
 

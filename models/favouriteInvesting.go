@@ -64,10 +64,23 @@ func (favInvestingModel *FavouriteInvestingModel) CreateFavouriteInvesting(uid s
 			"uid": uid,
 		}).Error("failed to create new favourite investing: ", err)
 
-		return fmt.Errorf("Failed to create new favourite investing.")
+		return fmt.Errorf("Failed to create new watchlist.")
 	}
 
 	return nil
+}
+
+func (favInvestingModel *FavouriteInvestingModel) GetFavouriteInvestingsCount(uid string) int64 {
+	count, err := favInvestingModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to count user favourite investings: ", err)
+
+		return subscriptionPremiumLimit
+	}
+
+	return count
 }
 
 func (favInvestingModel *FavouriteInvestingModel) GetFavouriteInvestings(uid string) ([]responses.FavouriteInvesting, error) {
@@ -92,8 +105,41 @@ func (favInvestingModel *FavouriteInvestingModel) GetFavouriteInvestings(uid str
 			"uid": uid,
 		}).Error("failed to decode favourite investings: ", err)
 
-		return nil, fmt.Errorf("Failed to decode favourite investings.")
+		return nil, fmt.Errorf("Failed to decode watchlist.")
 	}
 
 	return favInvestings, nil
+}
+
+func (favInvestingModel *FavouriteInvestingModel) DeleteFavouriteInvestingByID(uid, fiID string) (bool, error) {
+	objectFavInvestingID, _ := primitive.ObjectIDFromHex(fiID)
+
+	count, err := favInvestingModel.Collection.DeleteOne(context.TODO(), bson.M{
+		"_id":     objectFavInvestingID,
+		"user_id": uid,
+	})
+	if err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid":                    uid,
+			"favourite_investing_id": fiID,
+		}).Error("failed to delete favourite investing by fav investing id: ", err)
+
+		return false, fmt.Errorf("Failed to delete watchlist by id.")
+	}
+
+	return count.DeletedCount > 0, nil
+}
+
+func (favInvestingModel *FavouriteInvestingModel) DeleteAllFavouriteInvestingsByUserID(uid string) error {
+	if _, err := favInvestingModel.Collection.DeleteMany(context.TODO(), bson.M{
+		"user_id": uid,
+	}); err != nil {
+		logrus.WithFields(logrus.Fields{
+			"uid": uid,
+		}).Error("failed to delete all favourite investings by user id: ", err)
+
+		return fmt.Errorf("Failed to delete all watchlist by user id.")
+	}
+
+	return nil
 }

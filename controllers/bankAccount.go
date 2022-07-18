@@ -37,7 +37,7 @@ var (
 // @Security BearerAuth
 // @Param Authorization header string true "Authentication header"
 // @Success 201 {object} models.BankAccount
-// @Failure 400 {string} string
+// @Failure 403 {string} string
 // @Failure 500 {string} string
 // @Router /ba [post]
 func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
@@ -52,7 +52,7 @@ func (ba *BankAccountController) CreateBankAccount(c *gin.Context) {
 
 	bankAccModel := models.NewBankAccountModel(ba.Database)
 	if !isPremium && bankAccModel.GetUserBankAccountCount(uid) >= 2 {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errBankAccountPremium,
 		})
 

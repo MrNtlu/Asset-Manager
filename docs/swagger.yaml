@@ -332,6 +332,22 @@ definitions:
     - log
     - log_type
     type: object
+  requests.FavouriteInvestingCreate:
+    properties:
+      market:
+        type: string
+      priority:
+        type: integer
+      symbol:
+        type: string
+      type:
+        type: string
+    required:
+    - market
+    - priority
+    - symbol
+    - type
+    type: object
   requests.ForgotPassword:
     properties:
       email_address:
@@ -653,6 +669,35 @@ definitions:
           type: number
         type: array
     type: object
+  responses.FavouriteInvesting:
+    properties:
+      _id:
+        type: string
+      investing:
+        $ref: '#/definitions/responses.Investing'
+      investing_id:
+        $ref: '#/definitions/responses.FavouriteInvestingID'
+      priority:
+        type: integer
+      user_id:
+        type: string
+    type: object
+  responses.FavouriteInvestingID:
+    properties:
+      market:
+        type: string
+      symbol:
+        type: string
+      type:
+        type: string
+    type: object
+  responses.Investing:
+    properties:
+      currency:
+        type: string
+      price:
+        type: number
+    type: object
   responses.InvestingResponse:
     properties:
       name:
@@ -942,6 +987,10 @@ paths:
       responses:
         "201":
           description: Created
+          schema:
+            type: string
+        "403":
+          description: Forbidden
           schema:
             type: string
         "500":
@@ -1387,8 +1436,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.BankAccount'
-        "400":
-          description: Bad Request
+        "403":
+          description: Forbidden
           schema:
             type: string
         "500":
@@ -1601,8 +1650,8 @@ paths:
           description: Created
           schema:
             $ref: '#/definitions/models.Card'
-        "400":
-          description: Bad Request
+        "403":
+          description: Forbidden
           schema:
             type: string
         "500":
@@ -1953,6 +2002,10 @@ paths:
             $ref: '#/definitions/responses.Subscription'
         "400":
           description: Bad Request
+          schema:
+            type: string
+        "403":
+          description: Forbidden
           schema:
             type: string
         "500":
@@ -2757,6 +2810,130 @@ paths:
       summary: Updates FCM User Token
       tags:
       - user
+  /watchlist:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes favourite investing by id
+      parameters:
+      - description: ID
+        in: body
+        name: ID
+        required: true
+        schema:
+          $ref: '#/definitions/requests.ID'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete favourite investing by favourite investing id
+      tags:
+      - favouriteinvesting
+    get:
+      consumes:
+      - application/json
+      description: Returns favourite investings by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/responses.FavouriteInvesting'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Get Favourite Investings by User ID
+      tags:
+      - favouriteinvesting
+    post:
+      consumes:
+      - application/json
+      description: Creates favourite investing
+      parameters:
+      - description: Favourite Investing Create
+        in: body
+        name: favouriteinvestingcreate
+        required: true
+        schema:
+          $ref: '#/definitions/requests.FavouriteInvestingCreate'
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            type: string
+        "403":
+          description: Forbidden
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Create Favourite Investing
+      tags:
+      - favouriteinvesting
+  /watchlist/all:
+    delete:
+      consumes:
+      - application/json
+      description: Deletes favourite investing by user id
+      parameters:
+      - description: Authentication header
+        in: header
+        name: Authorization
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: string
+        "500":
+          description: Internal Server Error
+          schema:
+            type: string
+      security:
+      - BearerAuth: []
+      summary: Delete all favourite investings by user id
+      tags:
+      - favouriteinvesting
 schemes:
 - https
 securityDefinitions:

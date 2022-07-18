@@ -276,7 +276,7 @@ func (t *TransactionController) UpdateTransaction(c *gin.Context) {
 	isPremium := userModel.IsUserPremium(uid)
 
 	if data.TransactionDate != nil && !isPremium && transactionModel.GetUserTransactionCountByTime(uid, *data.TransactionDate) >= 10 {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errTransactionPremium,
 		})
 

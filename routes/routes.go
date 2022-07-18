@@ -19,6 +19,7 @@ func SetupRoutes(router *gin.Engine, jwtToken *jwt.GinJWTMiddleware, mongoDB *db
 	transactionRouter(apiRouter, jwtToken, mongoDB)
 	oauth2Router(apiRouter, jwtToken, mongoDB)
 	logRouter(apiRouter, jwtToken, mongoDB)
+	favouriteInvestingRouter(apiRouter, jwtToken, mongoDB)
 
 	router.GET("/privacy", privacyPolicy)
 	router.GET("/terms", termsConditions)

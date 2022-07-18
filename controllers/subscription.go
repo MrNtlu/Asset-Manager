@@ -45,6 +45,7 @@ var (
 // @Param Authorization header string true "Authentication header"
 // @Success 201 {object} responses.Subscription
 // @Failure 400 {string} string
+// @Failure 403 {string} string
 // @Failure 500 {string} string
 // @Router /subscription [post]
 func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
@@ -59,7 +60,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 
 	subscriptionModel := models.NewSubscriptionModel(s.Database)
 	if !isPremium && subscriptionModel.GetUserSubscriptionCount(uid) >= 5 {
-		c.JSON(http.StatusInternalServerError, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errSubscriptionPremium,
 		})
 
@@ -67,7 +68,7 @@ func (s *SubscriptionController) CreateSubscription(c *gin.Context) {
 	}
 
 	if data.NotificationTime != nil && !isPremium {
-		c.JSON(http.StatusBadRequest, gin.H{
+		c.JSON(http.StatusForbidden, gin.H{
 			"error": errSubscriptionNotificationPremium,
 		})
 
@@ -552,7 +553,7 @@ func (s *SubscriptionController) UpdateSubscription(c *gin.Context) {
 	if data.NotificationTime != nil {
 		userModel := models.NewUserModel(s.Database)
 		if isPremium := userModel.IsUserPremium(uid); !isPremium {
-			c.JSON(http.StatusBadRequest, gin.H{
+			c.JSON(http.StatusForbidden, gin.H{
 				"error": errSubscriptionNotificationPremium,
 			})
 

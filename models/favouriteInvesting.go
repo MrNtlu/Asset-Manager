@@ -87,9 +87,48 @@ func (favInvestingModel *FavouriteInvestingModel) GetFavouriteInvestings(uid str
 	match := bson.M{"$match": bson.M{
 		"user_id": uid,
 	}}
+	lookup := bson.M{"$lookup": bson.M{
+		"from": "investings",
+		"let": bson.M{
+			"symbol": "$investing_id.symbol",
+			"type":   "$investing_id.type",
+			"market": "$investing_id.market",
+		},
+		"pipeline": bson.A{
+			bson.M{
+				"$match": bson.M{
+					"$expr": bson.M{
+						"$and": bson.A{
+							bson.M{"$eq": bson.A{"$_id.symbol", "$$symbol"}},
+							bson.M{"$eq": bson.A{"$_id.type", "$$type"}},
+							bson.M{"$eq": bson.A{"$_id.market", "$$market"}},
+						},
+					},
+				},
+			},
+		},
+		"as": "investing",
+	}}
+	unwindInvesting := bson.M{"$unwind": bson.M{
+		"path":                       "$investing",
+		"includeArrayIndex":          "index",
+		"preserveNullAndEmptyArrays": false,
+	}}
+	addCurrencyField := bson.M{"$addFields": bson.M{
+		"price": "$investing.price",
+		"currency": bson.M{
+			"$ifNull": bson.A{
+				"$investing._id.stock_currency",
+				"USD",
+			},
+		},
+	}}
+	sort := bson.M{"$sort": bson.M{
+		"priority": 1,
+	}}
 
 	cursor, err := favInvestingModel.Collection.Aggregate(context.TODO(), bson.A{
-		match,
+		match, lookup, unwindInvesting, addCurrencyField, sort,
 	})
 	if err != nil {
 		logrus.WithFields(logrus.Fields{

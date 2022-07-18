@@ -7,12 +7,8 @@ type FavouriteInvesting struct {
 	UserID      string               `bson:"user_id" json:"user_id"`
 	InvestingID FavouriteInvestingID `bson:"investing_id" json:"investing_id"`
 	Priority    int                  `bson:"priority" json:"priority"`
-	Investing   Investing            `bson:"investing" json:"investing"`
-}
-
-type Investing struct {
-	Price    float64 `bson:"price" json:"price"`
-	Currency string  `bson:"currency" json:"currency"`
+	Price       float64              `bson:"price" json:"price"`
+	Currency    string               `bson:"currency" json:"currency"`
 }
 
 type FavouriteInvestingID struct {

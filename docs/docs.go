@@ -4224,11 +4224,14 @@ const docTemplate = `{
                 "_id": {
                     "type": "string"
                 },
-                "investing": {
-                    "$ref": "#/definitions/responses.Investing"
+                "currency": {
+                    "type": "string"
                 },
                 "investing_id": {
                     "$ref": "#/definitions/responses.FavouriteInvestingID"
+                },
+                "price": {
+                    "type": "number"
                 },
                 "priority": {
                     "type": "integer"
@@ -4249,17 +4252,6 @@ const docTemplate = `{
                 },
                 "type": {
                     "type": "string"
-                }
-            }
-        },
-        "responses.Investing": {
-            "type": "object",
-            "properties": {
-                "currency": {
-                    "type": "string"
-                },
-                "price": {
-                    "type": "number"
                 }
             }
         },

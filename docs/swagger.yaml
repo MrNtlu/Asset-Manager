@@ -673,10 +673,12 @@ definitions:
     properties:
       _id:
         type: string
-      investing:
-        $ref: '#/definitions/responses.Investing'
+      currency:
+        type: string
       investing_id:
         $ref: '#/definitions/responses.FavouriteInvestingID'
+      price:
+        type: number
       priority:
         type: integer
       user_id:
@@ -690,13 +692,6 @@ definitions:
         type: string
       type:
         type: string
-    type: object
-  responses.Investing:
-    properties:
-      currency:
-        type: string
-      price:
-        type: number
     type: object
   responses.InvestingResponse:
     properties:

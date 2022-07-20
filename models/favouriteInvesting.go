@@ -70,6 +70,26 @@ func (favInvestingModel *FavouriteInvestingModel) CreateFavouriteInvesting(uid s
 	return nil
 }
 
+func (favInvestingModel *FavouriteInvestingModel) UpdateFavouriteInvestingOrder(uid string, data requests.FavouriteInvestingOrderUpdate) error {
+	for _, item := range data.Orders {
+		objectID, _ := primitive.ObjectIDFromHex(item.ID)
+
+		if _, err := favInvestingModel.Collection.UpdateOne(context.TODO(), bson.M{"_id": objectID}, bson.M{
+			"$set": bson.M{
+				"priority": item.Priority,
+			},
+		}); err != nil {
+			logrus.WithFields(logrus.Fields{
+				"uid": uid,
+			}).Error("failed to update order: ", err)
+
+			return fmt.Errorf("Failed to watchlist order.")
+		}
+	}
+
+	return nil
+}
+
 func (favInvestingModel *FavouriteInvestingModel) GetFavouriteInvestingsCount(uid string) int64 {
 	count, err := favInvestingModel.Collection.CountDocuments(context.TODO(), bson.M{"user_id": uid})
 	if err != nil {

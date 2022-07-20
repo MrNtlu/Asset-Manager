@@ -16,6 +16,7 @@ func favouriteInvestingRouter(router *gin.RouterGroup, jwtToken *jwt.GinJWTMiddl
 		favInvesting.DELETE("/all", favInvestingController.DeleteAllFavouriteInvestingsByUserID)
 		favInvesting.DELETE("", favInvestingController.DeleteFavouriteInvestingByID)
 		favInvesting.POST("", favInvestingController.CreateFavouriteInvesting)
+		favInvesting.PUT("", favInvestingController.UpdateFavouriteInvestingOrder)
 		favInvesting.GET("", favInvestingController.GetFavouriteInvestings)
 	}
 }

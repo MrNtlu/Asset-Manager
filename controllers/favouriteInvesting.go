@@ -69,6 +69,7 @@ func (fi *FavouriteInvestingController) CreateFavouriteInvesting(c *gin.Context)
 		return
 	}
 
+	data.Priority = int(count)
 	if err := favouriteInvestingModel.CreateFavouriteInvesting(uid, data); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err.Error(),
@@ -80,6 +81,39 @@ func (fi *FavouriteInvestingController) CreateFavouriteInvesting(c *gin.Context)
 	go db.RedisDB.Del(context.TODO(), ("watchlist/" + uid))
 
 	c.JSON(http.StatusCreated, gin.H{"message": "Successfully created."})
+}
+
+// Update Favourite Investings Priority
+// @Summary Updates Favourite Investings
+// @Description Updates favourite investings order
+// @Tags favouriteinvesting
+// @Accept application/json
+// @Produce application/json
+// @Security BearerAuth
+// @Param Authorization header string true "Authentication header"
+// @Success 200 {string} string
+// @Failure 500 {string} string
+// @Router /watchlist [put]
+func (fi *FavouriteInvestingController) UpdateFavouriteInvestingOrder(c *gin.Context) {
+	var data requests.FavouriteInvestingOrderUpdate
+	if shouldReturn := bindJSONData(&data, c); shouldReturn {
+		return
+	}
+
+	uid := jwt.ExtractClaims(c)["id"].(string)
+
+	favouriteInvestingModel := models.NewFavouriteInvestingModel(fi.Database)
+	if err := favouriteInvestingModel.UpdateFavouriteInvestingOrder(uid, data); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": err.Error(),
+		})
+
+		return
+	}
+
+	go db.RedisDB.Del(context.TODO(), ("watchlist/" + uid))
+
+	c.JSON(http.StatusCreated, gin.H{"message": "Successfully updated."})
 }
 
 // Favourite Investings By User ID

@@ -48,6 +48,6 @@ Frontend(Website): [Asset Manager Frontend](https://github.com/MrNtlu/Asset-Mana
 
 Scraper: [Asset Scraper](https://github.com/MrNtlu/Asset-Scraper)
 
-Mac: [Download Kantan Mac](https://github.com/MrNtlu/Asset-Manager-Flutter/raw/master/installers/dmg_creator/kantan.dmg)
+iOS: [Download Kanma on App Store](https://apps.apple.com/tr/app/kanma-personal-finance/id1629419797)
 
 Android: [Download Kantan on Google Play](https://play.google.com/store/apps/details?id=com.mrntlu.kantan)

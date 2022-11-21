@@ -17,7 +17,7 @@
     <li> Go-Password
     <li> google/UUID
     <li> jordan-wright/email
-    <li> logrus
+    <li> logrush
     <li> OAuth2
     <li> teambition/rrule-go
     <li> Validator
@@ -27,9 +27,9 @@
     <li> golang-module/Dongle
 </ul>
 
-[Swagger UI](https://rocky-reaches-65250.herokuapp.com/swagger/index.html)
+[Swagger UI](https://kanma-backend.onrender.com/swagger/index.html)
 
-[Open API 2 Doc](https://rocky-reaches-65250.herokuapp.com/swagger/doc.json)
+[Open API 2 Doc](https://kanma-backend.onrender.com/swagger/doc.json)
 
 ### Github Actions
 

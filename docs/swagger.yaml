@@ -874,7 +874,7 @@ definitions:
       watchlist_limit:
         type: string
     type: object
-host: rocky-reaches-65250.herokuapp.com
+host: https://kanma-backend.onrender.com
 info:
   contact:
     email: mrntlu@gmail.com
@@ -883,7 +883,7 @@ info:
   license:
     name: Apache 2.0
     url: http://www.apache.org/licenses/LICENSE-2.0.html
-  termsOfService: https://rocky-reaches-65250.herokuapp.com/terms/
+  termsOfService: https://kanma-backend.onrender.com/terms/
   title: Kantan Investment Manager API
   version: "1.0"
 paths:

@@ -27,7 +27,7 @@ import (
 // @title Kantan Investment Manager API
 // @version 1.0
 // @description REST Api of Kantan.
-// @termsOfService  https://rocky-reaches-65250.herokuapp.com/terms/
+// @termsOfService https://kanma-backend.onrender.com/terms/
 
 // @contact.name Burak Fidan
 // @contact.email mrntlu@gmail.com
@@ -35,7 +35,7 @@ import (
 // @license.name Apache 2.0
 // @license.url http://www.apache.org/licenses/LICENSE-2.0.html
 
-// @host rocky-reaches-65250.herokuapp.com
+// @host https://kanma-backend.onrender.com
 // @BasePath /api/v1
 // @schemes https
 

@@ -6,7 +6,7 @@
     "info": {
         "description": "REST Api of Kantan.",
         "title": "Kantan Investment Manager API",
-        "termsOfService": "https://rocky-reaches-65250.herokuapp.com/terms/",
+        "termsOfService": "https://kanma-backend.onrender.com/terms/",
         "contact": {
             "name": "Burak Fidan",
             "email": "mrntlu@gmail.com"
@@ -17,7 +17,7 @@
         },
         "version": "1.0"
     },
-    "host": "rocky-reaches-65250.herokuapp.com",
+    "host": "https://kanma-backend.onrender.com",
     "basePath": "/api/v1",
     "paths": {
         "/asset": {
